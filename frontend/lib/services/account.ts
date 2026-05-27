@@ -130,10 +130,10 @@ export class AccountService {
   }
 
   async updateProjectXCredentials(data: {
-    username?: string;
+    userName?: string;
     apiKey?: string;
   }): Promise<void> {
-    if (data.username && data.apiKey) {
+    if (data.userName && data.apiKey) {
       await this.client.post("/api/projectx/connect", data);
     }
   }

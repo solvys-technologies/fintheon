@@ -17,15 +17,15 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
 
       <div className="fintheon-fade-divider my-6" />
 
-      {/* ── TopstepX Credentials ─────────────────────────────────────── */}
+      {/* ── ProjectX API Credentials ─────────────────────────────────── */}
       <section>
         <h3 className="mb-4 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
-          TopstepX Credentials
+          ProjectX API Credentials
         </h3>
         <div className="space-y-4">
           <div>
             <label className="mb-2 block text-right text-sm text-gray-300">
-              Username
+              userName
             </label>
             <input
               type="text"
@@ -33,7 +33,7 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
               onChange={(e) =>
                 setAPIKeys({ ...apiKeys, topstepxUsername: e.target.value })
               }
-              placeholder="Enter your TopstepX username"
+              placeholder="ProjectX userName"
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
             />
           </div>
@@ -47,12 +47,15 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
               onChange={(e) =>
                 setAPIKeys({ ...apiKeys, topstepxApiKey: e.target.value })
               }
-              placeholder="Enter your TopstepX API key"
+              placeholder="ProjectX apiKey"
               className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30"
             />
           </div>
           <p className="text-right text-xs text-gray-500">
-            Sign up at{" "}
+            Uses ProjectX Gateway{" "}
+            <code className="bg-zinc-800 px-1 rounded">userName</code> and{" "}
+            <code className="bg-zinc-800 px-1 rounded">apiKey</code>. Link API
+            access from{" "}
             <a
               href="https://topstepx.com"
               target="_blank"
@@ -60,8 +63,8 @@ export function ApiTab({ apiKeys, setAPIKeys }: ApiTabProps) {
               className="text-[var(--fintheon-accent)] hover:underline"
             >
               topstepx.com
-            </a>{" "}
-            and contact support for API access
+            </a>
+            .
           </p>
         </div>
       </section>

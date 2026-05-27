@@ -31,7 +31,7 @@ async function parseJson(res: Response): Promise<unknown> {
 
 async function requestToken(credentials: ProjectXCredentials): Promise<string> {
   if (!credentials.username || !credentials.apiKey) {
-    throw gatewayError(400, "ProjectX username and API key are required");
+    throw gatewayError(400, "ProjectX userName and apiKey are required");
   }
 
   const cached = tokenCache.get(cacheKey(credentials));

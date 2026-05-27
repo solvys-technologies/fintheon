@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fintheon Toast Notification Bank</title>
+    <style>
+      @font-face {
+        font-family: "Inter";
+        src: url("frontend/public/fonts/inter-regular.woff2") format("woff2");
+        font-weight: 400;
+      }
+
+      @font-face {
+        font-family: "Inter";
+        src: url("frontend/public/fonts/inter-semibold.woff2") format("woff2");
+        font-weight: 650;
+      }
+
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("frontend/public/fonts/jetbrains-mono-regular.woff2")
+          format("woff2");
+        font-weight: 400;
+      }
+
+      :root {
+        color-scheme: dark;
+        --bg: #050402;
+        --surface: rgba(16, 14, 10, 0.92);
+        --surface-strong: rgba(25, 22, 15, 0.96);
+        --gold: #c79f4a;
+        --gold-soft: rgba(199, 159, 74, 0.16);
+        --line: rgba(199, 159, 74, 0.18);
+        --text: #f0ead6;
+        --muted: #8c846f;
+        --muted-2: #665f50;
+        --red: #e26055;
+        --green: #5fb88b;
+        --blue: #7ca2c2;
+        --orange: #c47c48;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        background: var(--bg);
+      }
+
+      body {
+        color: var(--text);
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          system-ui,
+          sans-serif;
+        letter-spacing: 0;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .toast-canvas {
+        width: min(1280px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 72px 0 54px;
+      }
+
+      .toast-bank {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(292px, 1fr));
+        gap: 12px;
+        align-items: start;
+      }
+
+      .prototype-action {
+        position: fixed;
+        top: 18px;
+        right: 18px;
+        z-index: 80;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 34px;
+        padding: 0 12px;
+        border: 1px solid rgba(199, 159, 74, 0.34);
+        border-radius: 8px;
+        background: rgba(14, 12, 8, 0.94);
+        color: var(--text);
+        cursor: pointer;
+        box-shadow: 0 12px 34px rgba(0, 0, 0, 0.36);
+        transition:
+          border-color 160ms var(--ease-out),
+          color 160ms var(--ease-out),
+          transform 160ms var(--ease-out);
+      }
+
+      .prototype-action:hover {
+        border-color: rgba(199, 159, 74, 0.58);
+        color: var(--gold);
+        transform: translateY(-1px);
+      }
+
+      .play-mark {
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 8px solid currentColor;
+      }
+
+      .toast-card {
+        position: relative;
+        min-width: 280px;
+        max-width: 390px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
+        isolation: isolate;
+        cursor: default;
+        transition:
+          border-color 180ms var(--ease-out),
+          background 180ms var(--ease-out),
+          transform 180ms var(--ease-out);
+      }
+
+      .toast-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+      }
+
+      .toast-card.is-active {
+        border-color: rgba(199, 159, 74, 0.58);
+        background: var(--surface-strong);
+        transform: translateY(-1px);
+      }
+
+      .toast-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 11px 12px;
+      }
+
+      .toast-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-width: 28px;
+        height: 18px;
+        padding: 0 6px;
+        border: 1px solid rgba(199, 159, 74, 0.24);
+        border-radius: 5px;
+        background: rgba(199, 159, 74, 0.11);
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9px;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .badge.success {
+        border-color: rgba(95, 184, 139, 0.28);
+        background: rgba(95, 184, 139, 0.12);
+        color: var(--green);
+      }
+
+      .badge.error,
+      .badge.high {
+        border-color: rgba(226, 96, 85, 0.32);
+        background: rgba(226, 96, 85, 0.12);
+        color: var(--red);
+      }
+
+      .badge.info {
+        border-color: rgba(124, 162, 194, 0.3);
+        background: rgba(124, 162, 194, 0.12);
+        color: var(--blue);
+      }
+
+      .badge.warn {
+        border-color: rgba(196, 124, 72, 0.32);
+        background: rgba(196, 124, 72, 0.12);
+        color: var(--orange);
+      }
+
+      .copy {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      .title {
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.25;
+      }
+
+      .desc {
+        color: var(--muted);
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+
+      .location {
+        margin-top: 2px;
+        color: var(--muted-2);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9.5px;
+        line-height: 1.25;
+      }
+
+      .dismiss {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: rgba(240, 234, 214, 0.42);
+      }
+
+      .toast-card:hover .dismiss,
+      .live-toast .dismiss {
+        color: rgba(240, 234, 214, 0.72);
+      }
+
+      .toast-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 5px;
+      }
+
+      .toast-action {
+        border: 1px solid rgba(199, 159, 74, 0.26);
+        border-radius: 5px;
+        background: rgba(199, 159, 74, 0.1);
+        color: var(--gold);
+        padding: 3px 7px;
+        font-size: 10px;
+        font-weight: 650;
+        line-height: 1;
+      }
+
+      .toast-action.secondary {
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .fuse {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .fuse-track {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 2px;
+        height: 7px;
+      }
+
+      .fuse-track span {
+        border-radius: 2px;
+        background: rgba(199, 159, 74, 0.14);
+      }
+
+      .fuse-track span.on {
+        background: rgba(199, 159, 74, 0.74);
+      }
+
+      .fuse b {
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9.5px;
+        font-weight: 400;
+      }
+
+      .native-shell {
+        border-color: rgba(240, 234, 214, 0.16);
+        background: rgba(20, 20, 19, 0.94);
+      }
+
+      .preview-stack {
+        position: fixed;
+        z-index: 70;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+
+      .preview-stack.top-right {
+        top: 70px;
+        right: 24px;
+        align-items: flex-end;
+      }
+
+      .preview-stack.bottom-left {
+        bottom: 24px;
+        left: 24px;
+        align-items: flex-start;
+      }
+
+      .preview-stack.bottom-right {
+        right: 24px;
+        bottom: 38px;
+        align-items: flex-end;
+      }
+
+      .preview-stack.native-os {
+        top: 58px;
+        right: 24px;
+        align-items: flex-end;
+      }
+
+      .live-toast {
+        opacity: 0;
+        pointer-events: none;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.48);
+        transition:
+          opacity 260ms var(--ease-out),
+          transform 320ms var(--ease-out);
+      }
+
+      .top-right .live-toast,
+      .bottom-right .live-toast,
+      .native-os .live-toast {
+        transform: translateX(16px) scale(0.96);
+      }
+
+      .bottom-left .live-toast {
+        transform: translateX(-16px) scale(0.96);
+      }
+
+      .live-toast.is-entered {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+
+      .live-toast.is-exiting {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+        transition:
+          opacity 180ms ease-out,
+          transform 180ms ease-out;
+      }
+
+      @media (max-width: 720px) {
+        .toast-canvas {
+          width: min(390px, calc(100vw - 24px));
+          padding-top: 68px;
+        }
+
+        .prototype-action {
+          top: 14px;
+          right: 12px;
+        }
+
+        .toast-bank {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-stack.top-right,
+        .preview-stack.bottom-right,
+        .preview-stack.native-os {
+          right: 12px;
+        }
+
+        .preview-stack.bottom-left {
+          left: 12px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          scroll-behavior: auto !important;
+          transition-duration: 1ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button class="prototype-action" id="preview-button" type="button">
+      <span class="play-mark" aria-hidden="true"></span>
+      <span>Preview loop</span>
+    </button>
+
+    <main class="toast-canvas" aria-label="Fintheon toast notification bank">
+      <section class="toast-bank">
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge success">OK</span>
+              <div class="copy">
+                <span class="title">Hermes connected</span>
+                <span class="desc">Gateway session recovered.</span>
+                <span class="location"
+                  >Location: bottom left, system stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge">Sync</span>
+              <div class="copy">
+                <span class="title">Reconnecting to Hermes...</span>
+                <span class="desc">Connection retry is running in place.</span>
+                <span class="location"
+                  >Location: bottom left, system stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge error">Alert</span>
+              <div class="copy">
+                <span class="title">Hermes disconnected, retrying</span>
+                <span class="desc"
+                  >The gateway will back off and reconnect.</span
+                >
+                <span class="location"
+                  >Location: bottom left, system stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge error">API</span>
+              <div class="copy">
+                <span class="title">Hermes credits exhausted</span>
+                <span class="desc"
+                  >Top up credits or replace the API key in Settings.</span
+                >
+                <span class="location"
+                  >Location: bottom left, system stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge info">Info</span>
+              <div class="copy">
+                <span class="title">A new epoch was released. 7.0.3</span>
+                <span class="desc"
+                  >Installer package is ready for the next launch.</span
+                >
+                <span class="location"
+                  >Location: bottom left, updater stack</span
+                >
+                <div class="toast-actions">
+                  <button class="toast-action" type="button">Update now</button>
+                  <button class="toast-action secondary" type="button">
+                    Later
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge error">Fail</span>
+              <div class="copy">
+                <span class="title">Update download failed</span>
+                <span class="desc">Try the CLI fallback: fintheon update.</span>
+                <span class="location"
+                  >Location: bottom left, updater stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge success">OK</span>
+              <div class="copy">
+                <span class="title">Week plan sent to CAO chat</span>
+                <span class="desc"
+                  >Weekly catalysts queued for Harper review.</span
+                >
+                <span class="location"
+                  >Location: bottom left, action feedback</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge warn">Info</span>
+              <div class="copy">
+                <span class="title">Settings saved locally</span>
+                <span class="desc">Backend sync is unavailable.</span>
+                <span class="location"
+                  >Location: bottom left, action feedback</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge warn">Plan</span>
+              <div class="copy">
+                <span class="title">Weekly desk plan empty</span>
+                <span class="desc"
+                  >Open Econ Calendar, queue catalysts, then send the week to
+                  CAO chat.</span
+                >
+                <span class="location"
+                  >Location: bottom left, reminder bridge</span
+                >
+                <div class="toast-actions">
+                  <button class="toast-action" type="button">
+                    Open calendar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="top-right">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge warn">Rem</span>
+              <div class="copy">
+                <span class="title">Pre-market caution</span>
+                <span class="desc"
+                  >Confirm your daily loss limit before trading.</span
+                >
+                <span class="location"
+                  >Location: top right, market reminder</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="top-right">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge warn">VIX</span>
+              <div class="copy">
+                <span class="title">VIX at 21.8, consider reducing risk</span>
+                <span class="desc">Elevated ahead of New York open.</span>
+                <span class="location"
+                  >Location: top right, market alert stack</span
+                >
+                <div class="fuse" aria-label="VIX fuse 8 of 10">
+                  <div class="fuse-track">
+                    <span class="on"></span><span class="on"></span
+                    ><span class="on"></span><span class="on"></span
+                    ><span class="on"></span><span class="on"></span
+                    ><span class="on"></span><span class="on"></span
+                    ><span></span><span></span>
+                  </div>
+                  <b>8.0</b>
+                </div>
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="top-right">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge success">Trade</span>
+              <div class="copy">
+                <span class="title">New Proposal Available, NVDA</span>
+                <span class="desc">View in Strategium.</span>
+                <span class="location"
+                  >Location: top right, trade alert stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="top-right">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge success">Clock</span>
+              <div class="copy">
+                <span class="title">08:45 Tue ES</span>
+                <span class="desc">Antilag clocked.</span>
+                <span class="location"
+                  >Location: top right, desk action stack</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-right">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge warn">Watch</span>
+              <div class="copy">
+                <span class="title"
+                  >Fed speakers flag upside inflation risk into June CPI</span
+                >
+                <span class="desc">WatchTag: inflation / IV 7.8</span>
+                <span class="location"
+                  >Location: bottom right, RiskFlow watch stack</span
+                >
+                <div class="fuse" aria-label="RiskFlow fuse 8 of 10">
+                  <div class="fuse-track">
+                    <span class="on"></span><span class="on"></span
+                    ><span class="on"></span><span class="on"></span
+                    ><span class="on"></span><span class="on"></span
+                    ><span class="on"></span><span class="on"></span
+                    ><span></span><span></span>
+                  </div>
+                  <b>IV 7.8</b>
+                </div>
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge warn">Risk</span>
+              <div class="copy">
+                <span class="title">RiskFlow</span>
+                <span class="desc"
+                  >Semis extend losses after export control headline.</span
+                >
+                <span class="location"
+                  >Location: bottom left, Zen mode news stack</span
+                >
+                <div class="toast-actions">
+                  <button class="toast-action" type="button">
+                    Open RiskFlow
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge info">Geo</span>
+              <div class="copy">
+                <span class="title">Treasury auction tail widens</span>
+                <span class="desc"
+                  >Rates desk should review duration exposure before the next
+                  window.</span
+                >
+                <span class="location"
+                  >Location: bottom left, notification poller</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge high">High</span>
+              <div class="copy">
+                <span class="title">Tilt threshold breached</span>
+                <span class="desc"
+                  >Step away from the set and let PsychAssist cool the
+                  session.</span
+                >
+                <span class="location"
+                  >Location: bottom left, notification poller</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card" data-position="bottom-left">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge success">Tool</span>
+              <div class="copy">
+                <span class="title">Research task approved</span>
+                <span class="desc"
+                  >Tool approval cleared and logged to the audit trail.</span
+                >
+                <span class="location"
+                  >Location: bottom left, notification poller</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+
+        <article class="toast-card native-shell" data-position="native-os">
+          <div class="toast-row">
+            <div class="toast-main">
+              <span class="badge info">OS</span>
+              <div class="copy">
+                <span class="title">touch grass, kid.</span>
+                <span class="desc"
+                  >This app has been blocked by the agentic desk.</span
+                >
+                <span class="location"
+                  >Location: native macOS notification center</span
+                >
+              </div>
+            </div>
+            <button class="dismiss" type="button" aria-label="Dismiss">
+              x
+            </button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <div
+      class="preview-stack top-right"
+      data-preview-position="top-right"
+    ></div>
+    <div
+      class="preview-stack bottom-left"
+      data-preview-position="bottom-left"
+    ></div>
+    <div
+      class="preview-stack bottom-right"
+      data-preview-position="bottom-right"
+    ></div>
+    <div
+      class="preview-stack native-os"
+      data-preview-position="native-os"
+    ></div>
+
+    <script>
+      const button = document.getElementById("preview-button");
+      const buttonLabel = button.querySelector("span:last-child");
+      const cards = Array.from(document.querySelectorAll(".toast-card"));
+      const stacks = new Map(
+        Array.from(document.querySelectorAll("[data-preview-position]")).map(
+          (stack) => [stack.dataset.previewPosition, stack],
+        ),
+      );
+      let isLooping = false;
+      let loopIndex = 0;
+      let activeTimers = [];
+
+      function clearTimers() {
+        activeTimers.forEach((timer) => window.clearTimeout(timer));
+        activeTimers = [];
+      }
+
+      function clearPreview() {
+        clearTimers();
+        cards.forEach((card) => card.classList.remove("is-active"));
+        stacks.forEach((stack) => stack.replaceChildren());
+      }
+
+      function schedule(callback, delay) {
+        const timer = window.setTimeout(callback, delay);
+        activeTimers.push(timer);
+      }
+
+      function previewCard(card, done) {
+        clearPreview();
+        const position = card.dataset.position || "bottom-left";
+        const stack = stacks.get(position) || stacks.get("bottom-left");
+        const clone = card.cloneNode(true);
+        card.classList.add("is-active");
+        clone.classList.add("live-toast");
+        clone.classList.remove("is-active");
+        stack.append(clone);
+        window.requestAnimationFrame(() => clone.classList.add("is-entered"));
+        schedule(() => clone.classList.add("is-exiting"), 2100);
+        schedule(() => {
+          clone.remove();
+          card.classList.remove("is-active");
+          done();
+        }, 2380);
+      }
+
+      function runNext() {
+        if (!isLooping) return;
+        const card = cards[loopIndex % cards.length];
+        loopIndex += 1;
+        previewCard(card, runNext);
+      }
+
+      function setLooping(next) {
+        isLooping = next;
+        buttonLabel.textContent = next ? "Stop loop" : "Preview loop";
+        if (next) {
+          loopIndex = 0;
+          runNext();
+          return;
+        }
+        clearPreview();
+      }
+
+      button.addEventListener("click", () => setLooping(!isLooping));
+
+      cards.forEach((card) => {
+        card.addEventListener("click", () => {
+          setLooping(false);
+          previewCard(card, () => {});
+        });
+      });
+    </script>
+  </body>
+</html>

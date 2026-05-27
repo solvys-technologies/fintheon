@@ -2,11 +2,31 @@ import { z } from "zod";
 
 export const ProjectXProvider = "projectx" as const;
 
-export const ProjectXConnectSchema = z.object({
-  username: z.string().trim().min(1).max(255),
-  apiKey: z.string().trim().min(20).max(4096),
-  activeAccountId: z.string().trim().max(80).optional(),
-});
+const ProjectXUserNameSchema = z.string().trim().min(1).max(255);
+
+export const ProjectXConnectSchema = z
+  .object({
+    userName: ProjectXUserNameSchema.optional(),
+    username: ProjectXUserNameSchema.optional(),
+    apiKey: z.string().trim().min(20).max(4096),
+    activeAccountId: z.string().trim().max(80).optional(),
+  })
+  .transform((input, ctx) => {
+    const username = input.userName ?? input.username;
+    if (!username) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["userName"],
+        message: "ProjectX userName is required",
+      });
+      return z.NEVER;
+    }
+    return {
+      username,
+      apiKey: input.apiKey,
+      activeAccountId: input.activeAccountId,
+    };
+  });
 
 export const ProjectXSyncSchema = z.object({
   mode: z.enum(["manual", "active", "fallback", "calendar"]).default("manual"),

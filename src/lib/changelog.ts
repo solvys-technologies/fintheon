@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T22:52:00-04:00",
+    agent: "codex",
+    summary:
+      "Toast prototype bank: added a standalone toast-only HTML canvas that renders the desktop notification variants, RiskFlow watch fuse toast, reminders, system/update/API states, notification-poller states, and a native OS notification specimen with a top-right preview loop control for enter/dwell/exit motion.",
+    files: ["toast-notification-bank.html", "src/lib/changelog.ts"],
+  },
+  {
     date: "2026-05-26T13:22:00-04:00",
     agent: "codex",
     summary:

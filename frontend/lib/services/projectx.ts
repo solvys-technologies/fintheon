@@ -93,7 +93,7 @@ export class ProjectXService {
   }
 
   async connect(data: {
-    username: string;
+    userName: string;
     apiKey: string;
     activeAccountId?: string;
   }): Promise<UplinkResponse> {

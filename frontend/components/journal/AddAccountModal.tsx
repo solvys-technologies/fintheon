@@ -7,7 +7,7 @@ interface AddAccountModalProps {
   onSave: (
     accountSize: number,
     broker?: string,
-    projectx?: { username: string; apiKey: string },
+    projectx?: { userName: string; apiKey: string },
   ) => Promise<void> | void;
   initialSize?: number;
 }
@@ -25,7 +25,7 @@ export function AddAccountModal({
     }
   });
   const [size, setSize] = useState(initialSize > 0 ? String(initialSize) : "");
-  const [projectxUsername, setProjectxUsername] = useState("");
+  const [projectxUserName, setProjectxUserName] = useState("");
   const [projectxApiKey, setProjectxApiKey] = useState("");
   const [screenshotName, setScreenshotName] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,10 +39,10 @@ export function AddAccountModal({
     setSaving(true);
     setError(null);
     if (
-      (projectxUsername.trim() && !projectxApiKey.trim()) ||
-      (!projectxUsername.trim() && projectxApiKey.trim())
+      (projectxUserName.trim() && !projectxApiKey.trim()) ||
+      (!projectxUserName.trim() && projectxApiKey.trim())
     ) {
-      setError("Nametag and API key are both required.");
+      setError("ProjectX userName and API key are both required.");
       setSaving(false);
       return;
     }
@@ -53,9 +53,9 @@ export function AddAccountModal({
       await onSave(
         parsedSize,
         broker || undefined,
-        projectxUsername.trim() && projectxApiKey.trim()
+        projectxUserName.trim() && projectxApiKey.trim()
           ? {
-              username: projectxUsername.trim(),
+              userName: projectxUserName.trim(),
               apiKey: projectxApiKey.trim(),
             }
           : undefined,
@@ -98,14 +98,14 @@ export function AddAccountModal({
           <div className="flex flex-col gap-1">
             <input
               type="text"
-              value={projectxUsername}
-              onChange={(e) => setProjectxUsername(e.target.value)}
-              placeholder="Nametag"
+              value={projectxUserName}
+              onChange={(e) => setProjectxUserName(e.target.value)}
+              placeholder="ProjectX userName"
               autoComplete="username"
               className="w-full bg-black/40 border border-(--fintheon-accent)/20 rounded-lg px-3 py-2 text-sm text-(--fintheon-text) placeholder:text-zinc-600 focus:outline-none focus:border-(--fintheon-accent)/50 transition-colors"
             />
             <span className="text-[10px] text-(--fintheon-muted)">
-              also your username
+              API login username for /api/Auth/loginKey
             </span>
           </div>
           <input

@@ -110,7 +110,7 @@ export function missingCredentialFields(
   credentials: ProjectXCredentials | null,
 ): string[] {
   const missing: string[] = [];
-  if (!credentials?.username) missing.push("username");
+  if (!credentials?.username) missing.push("userName");
   if (!credentials?.apiKey) missing.push("apiKey");
   return missing;
 }

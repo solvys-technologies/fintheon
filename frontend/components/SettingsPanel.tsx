@@ -298,7 +298,7 @@ export function SettingsPage() {
         if (apiKeys.topstepxUsername || apiKeys.topstepxApiKey) {
           try {
             await backend.account.updateProjectXCredentials({
-              username: apiKeys.topstepxUsername || undefined,
+              userName: apiKeys.topstepxUsername || undefined,
               apiKey: apiKeys.topstepxApiKey || undefined,
             });
           } catch (pxError) {
