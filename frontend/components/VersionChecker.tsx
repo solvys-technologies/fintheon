@@ -33,13 +33,13 @@ export function VersionChecker() {
         shownVersions.add(version);
         recordVersionNag();
         addToast(
-          `A new version is available (${version})`,
+          "One update is available",
           "info",
           undefined,
-          "system-update",
+          undefined,
           "bottom-left",
           {
-            label: "Install now",
+            label: "Update now",
             onClick: async () => {
               window.dispatchEvent(
                 new CustomEvent("fintheon:update-installing"),
@@ -58,7 +58,7 @@ export function VersionChecker() {
           {
             label: "Later",
             onClick: () => {
-              dismissVersion(version);
+              recordVersionNag();
               electron.deferUpdateUntilClose?.();
             },
           },
@@ -78,11 +78,14 @@ export function VersionChecker() {
       });
 
       const check = () => {
-        electron.checkForUpdate().then((result) => {
-          if (result.downloaded && result.latest) {
-            showDownloadedUpdate({ version: result.latest });
-          }
-        });
+        electron
+          .checkForUpdate()
+          .then((result) => {
+            if (result.downloaded && result.latest) {
+              showDownloadedUpdate({ version: result.latest });
+            }
+          })
+          .catch(() => undefined);
       };
       const timeoutId = window.setTimeout(check, 10_000);
       const intervalId = window.setInterval(check, ELECTRON_CHECK_INTERVAL_MS);
@@ -112,13 +115,13 @@ export function VersionChecker() {
     startVersionCheck({
       onUpdateAvailable: (serverVersion) => {
         addToast(
-          `A new version is available (${serverVersion})`,
+          "One update is available",
           "info",
           undefined,
-          "system-update",
+          undefined,
           "bottom-left",
           {
-            label: "Install now",
+            label: "Update now",
             onClick: () => {
               dismissVersion(serverVersion);
               window.dispatchEvent(

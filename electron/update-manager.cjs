@@ -60,14 +60,24 @@ function isUsableFile(filePath) {
   }
 }
 
-function hashFile(filePath) {
+function hashFile(filePath, algorithm = "sha256", encoding = "hex") {
   return new Promise((resolveHash, rejectHash) => {
-    const hash = crypto.createHash("sha256");
+    const hash = crypto.createHash(algorithm);
     const stream = fs.createReadStream(filePath);
     stream.on("error", rejectHash);
     stream.on("data", (chunk) => hash.update(chunk));
-    stream.on("end", () => resolveHash(hash.digest("hex")));
+    stream.on("end", () => resolveHash(hash.digest(encoding)));
   });
+}
+
+function getChecksum(update) {
+  if (update?.sha256) {
+    return { algorithm: "sha256", encoding: "hex", expected: update.sha256 };
+  }
+  if (update?.sha512) {
+    return { algorithm: "sha512", encoding: "base64", expected: update.sha512 };
+  }
+  return null;
 }
 
 function createUpdateManager({
@@ -119,7 +129,11 @@ function createUpdateManager({
 
   async function checkForDesktopUpdate() {
     try {
-      const base = (getCurrentApiBase() || remoteBackendUrl).replace(/\/$/, "");
+      const base = (
+        process.env.FINTHEON_UPDATE_BASE_URL ||
+        getCurrentApiBase() ||
+        remoteBackendUrl
+      ).replace(/\/$/, "");
       const arch = process.arch === "arm64" ? "arm64" : "x64";
       const res = await fetch(
         `${base}/api/desktop/update/latest?platform=darwin&arch=${arch}`,
@@ -201,16 +215,20 @@ function createUpdateManager({
   async function downloadUpdateAsset(version) {
     const update = latestUpdate?.version === version ? latestUpdate : null;
     if (!update?.downloadUrl) throw new Error("download URL unavailable");
+    const checksum = getChecksum(update);
+    if (!checksum) throw new Error("download checksum unavailable");
     const tag = update.tag || `v${normalizeVersion(version)}`;
     const paths = getAssetPaths(version, update.assetName);
     fs.mkdirSync(paths.updateDir, { recursive: true });
     fs.rmSync(paths.tempPath, { force: true });
     if (isUsableFile(paths.dmgPath)) {
-      if (update.sha256) {
-        const existingHash = await hashFile(paths.dmgPath);
-        if (existingHash !== update.sha256)
-          fs.rmSync(paths.dmgPath, { force: true });
-      }
+      const existingHash = await hashFile(
+        paths.dmgPath,
+        checksum.algorithm,
+        checksum.encoding,
+      );
+      if (existingHash !== checksum.expected)
+        fs.rmSync(paths.dmgPath, { force: true });
     }
     if (isUsableFile(paths.dmgPath)) {
       return {
@@ -219,6 +237,7 @@ function createUpdateManager({
         assetName: paths.assetName,
         dmgPath: paths.dmgPath,
         sha256: update.sha256 ?? null,
+        sha512: update.sha512 ?? null,
         releaseUrl: update.releaseUrl ?? releasesLatestUrl,
       };
     }
@@ -249,12 +268,14 @@ function createUpdateManager({
       fs.rmSync(paths.tempPath, { force: true });
       throw new Error("downloaded DMG is not usable");
     }
-    if (update.sha256) {
-      const downloadedHash = await hashFile(paths.tempPath);
-      if (downloadedHash !== update.sha256) {
-        fs.rmSync(paths.tempPath, { force: true });
-        throw new Error("downloaded DMG checksum mismatch");
-      }
+    const downloadedHash = await hashFile(
+      paths.tempPath,
+      checksum.algorithm,
+      checksum.encoding,
+    );
+    if (downloadedHash !== checksum.expected) {
+      fs.rmSync(paths.tempPath, { force: true });
+      throw new Error("downloaded DMG checksum mismatch");
     }
     fs.renameSync(paths.tempPath, paths.dmgPath);
     return {
@@ -263,6 +284,7 @@ function createUpdateManager({
       assetName: paths.assetName,
       dmgPath: paths.dmgPath,
       sha256: update.sha256 ?? null,
+      sha512: update.sha512 ?? null,
       releaseUrl: update.releaseUrl ?? releasesLatestUrl,
     };
   }

@@ -1270,9 +1270,112 @@ if (!gotTheLock) {
   });
 }
 
+async function installDownloadedUpdate(reason) {
+  updateInstallInProgress = true;
+  deferredUpdateOnClose = false;
+  closeReason = closeReason ?? `update:${reason}`;
+  const result = await updateManager.installUpdate();
+  if (!result?.ok) {
+    updateInstallInProgress = false;
+    throw new Error(result?.reason ?? "update install failed");
+  }
+  return result;
+}
+
+async function checkForUpdatesFromMenu() {
+  try {
+    const info = await updateManager.checkForDesktopUpdate();
+    if (!info.ok) {
+      await dialog.showMessageBox({
+        type: "warning",
+        message: "Update check failed",
+        detail: info.reason ?? "Fintheon could not check for updates.",
+      });
+      return;
+    }
+    if (!info.updateAvailable || !info.latest) {
+      await dialog.showMessageBox({
+        type: "info",
+        message: "Fintheon is up to date.",
+      });
+      return;
+    }
+    const download = await updateManager.downloadUpdate(info.latest);
+    if (!download.ok) {
+      await dialog.showMessageBox({
+        type: "warning",
+        message: "Update download failed",
+        detail: download.reason ?? "Fintheon could not download the update.",
+      });
+      return;
+    }
+    await installDownloadedUpdate("menu-check");
+  } catch (err) {
+    await dialog.showMessageBox({
+      type: "error",
+      message: "Update install failed",
+      detail: err?.message ?? String(err),
+    });
+  }
+}
+
+function installApplicationMenu() {
+  const appMenu = {
+    label: "Fintheon",
+    submenu: [
+      {
+        label: "Check for updates",
+        click: () => {
+          void checkForUpdatesFromMenu();
+        },
+      },
+      { type: "separator" },
+      { role: "about" },
+      { type: "separator" },
+      { role: "services" },
+      { type: "separator" },
+      { role: "hide" },
+      { role: "hideOthers" },
+      { role: "unhide" },
+      { type: "separator" },
+      { role: "quit" },
+    ],
+  };
+  const editMenu = {
+    label: "Edit",
+    submenu: [
+      { role: "undo" },
+      { role: "redo" },
+      { type: "separator" },
+      { role: "cut" },
+      { role: "copy" },
+      { role: "paste" },
+      { role: "selectAll" },
+    ],
+  };
+  const viewMenu = {
+    label: "View",
+    submenu: [
+      { role: "reload" },
+      { role: "forceReload" },
+      { role: "toggleDevTools" },
+      { type: "separator" },
+      { role: "resetZoom" },
+      { role: "zoomIn" },
+      { role: "zoomOut" },
+      { type: "separator" },
+      { role: "togglefullscreen" },
+    ],
+  };
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([appMenu, editMenu, viewMenu]),
+  );
+}
+
 app.whenReady().then(async () => {
   // Register fintheon:// as a custom protocol for OAuth callbacks
   app.setAsDefaultProtocolClient("fintheon");
+  installApplicationMenu();
 
   // [claude-code 2026-04-24] Decide the API base *after* we try to bring the
   // local backend up. If it never goes healthy (e.g. launchd boot-assert on
@@ -1490,6 +1593,18 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", () => {
   stopPolling();
   console.log("[Electron] All windows closed; backend engine remains running");
+  if (
+    deferredUpdateOnClose &&
+    !updateInstallInProgress &&
+    updateManager.hasDownloadedUpdate()
+  ) {
+    installDownloadedUpdate("deferred-window-close").catch((err) => {
+      logCrash("deferred-update-window-close-failed", {
+        message: err?.message ?? String(err),
+      });
+    });
+    return;
+  }
   if (process.platform !== "darwin") app.quit();
 });
 
@@ -1529,12 +1644,14 @@ ipcMain.handle("update-download", async () => {
 });
 
 ipcMain.handle("update-install", async () => {
-  deferredUpdateOnClose = false;
-  return await updateManager.installUpdate();
+  return await installDownloadedUpdate("renderer");
 });
 
 ipcMain.handle("update-defer-until-close", async () => {
-  deferredUpdateOnClose = false;
+  if (!updateManager.hasDownloadedUpdate()) {
+    return { ok: false, deferred: false, reason: "update is not downloaded" };
+  }
+  deferredUpdateOnClose = true;
   return { ok: true, deferred: true };
 });
 

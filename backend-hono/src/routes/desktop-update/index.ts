@@ -2,6 +2,8 @@ import { Hono } from "hono";
 
 const REPO = "solvys-technologies/fintheon";
 const GITHUB_RELEASES_API = `https://api.github.com/repos/${REPO}/releases`;
+const GITHUB_LATEST_MANIFEST_URL = `https://github.com/${REPO}/releases/latest/download/latest-mac.yml`;
+const GITHUB_LATEST_DOWNLOAD_URL = `https://github.com/${REPO}/releases/latest/download`;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface GitHubAsset {
@@ -20,7 +22,19 @@ interface GitHubRelease {
   assets: GitHubAsset[];
 }
 
-let cachedRelease: { release: GitHubRelease; fetchedAt: number } | null = null;
+interface DesktopRelease {
+  version: string;
+  tag: string;
+  assetName: string;
+  downloadUrl: string;
+  sha256: string | null;
+  sha512: string | null;
+  size: number | null;
+  releaseUrl: string;
+  publishedAt: string | null;
+}
+
+let cachedRelease: { release: DesktopRelease; fetchedAt: number } | null = null;
 
 function normalizeArch(value: string | undefined): "arm64" | "x64" {
   if (value === "x64" || value === "amd64") return "x64";
@@ -37,7 +51,52 @@ function readSha256(asset: GitHubAsset): string | null {
   return null;
 }
 
-async function fetchLatestRelease(): Promise<GitHubRelease | null> {
+function readManifestValue(manifest: string, key: string): string | null {
+  const match = manifest.match(
+    new RegExp(`^${key}:\\s*['"]?([^\\r\\n'"]+)['"]?$`, "m"),
+  );
+  return match?.[1]?.trim() || null;
+}
+
+function readManifestFileValue(manifest: string, key: string): string | null {
+  const match = manifest.match(
+    new RegExp(`^\\s{4}${key}:\\s*['"]?([^\\r\\n'"]+)['"]?$`, "m"),
+  );
+  return match?.[1]?.trim() || null;
+}
+
+async function fetchLatestFromManifest(): Promise<DesktopRelease | null> {
+  const res = await fetch(GITHUB_LATEST_MANIFEST_URL, {
+    headers: { "User-Agent": "Fintheon-Desktop-Updater" },
+  });
+  if (!res.ok) return null;
+
+  const manifest = await res.text();
+  const version = readManifestValue(manifest, "version");
+  const assetName =
+    readManifestFileValue(manifest, "url") ??
+    readManifestValue(manifest, "path");
+  const sha512 =
+    readManifestFileValue(manifest, "sha512") ??
+    readManifestValue(manifest, "sha512");
+  if (!version || !assetName || !sha512) return null;
+
+  const sizeText = readManifestFileValue(manifest, "size");
+  const size = sizeText ? Number.parseInt(sizeText, 10) : null;
+  return {
+    version,
+    tag: `v${version}`,
+    assetName,
+    downloadUrl: `${GITHUB_LATEST_DOWNLOAD_URL}/${encodeURIComponent(assetName)}`,
+    sha256: null,
+    sha512,
+    size: Number.isFinite(size) ? size : null,
+    releaseUrl: `https://github.com/${REPO}/releases/latest`,
+    publishedAt: readManifestValue(manifest, "releaseDate"),
+  };
+}
+
+async function fetchLatestRelease(): Promise<DesktopRelease | null> {
   if (cachedRelease && Date.now() - cachedRelease.fetchedAt < CACHE_TTL_MS) {
     return cachedRelease.release;
   }
@@ -50,19 +109,40 @@ async function fetchLatestRelease(): Promise<GitHubRelease | null> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(GITHUB_RELEASES_API, { headers });
-  if (!res.ok) return null;
+  if (res.ok) {
+    const releases = (await res.json()) as GitHubRelease[];
+    const latest = releases.find(
+      (release) =>
+        !release.draft &&
+        !release.prerelease &&
+        /^v\d+\.\d+\.\d+$/.test(release.tag_name),
+    );
+    const version = latest ? normalizeVersion(latest.tag_name) : null;
+    const asset = latest?.assets.find(
+      (item) => item.name === `Fintheon-${version}-arm64.dmg`,
+    );
+    if (latest && version && asset) {
+      const release = {
+        version,
+        tag: latest.tag_name,
+        assetName: asset.name,
+        downloadUrl: asset.browser_download_url,
+        sha256: readSha256(asset),
+        sha512: null,
+        size: asset.size ?? null,
+        releaseUrl: latest.html_url,
+        publishedAt: latest.published_at ?? null,
+      };
+      cachedRelease = { release, fetchedAt: Date.now() };
+      return release;
+    }
+  }
 
-  const releases = (await res.json()) as GitHubRelease[];
-  const latest = releases.find(
-    (release) =>
-      !release.draft &&
-      !release.prerelease &&
-      /^v\d+\.\d+\.\d+$/.test(release.tag_name),
-  );
-  if (!latest) return null;
+  const release = await fetchLatestFromManifest();
+  if (!release) return null;
 
-  cachedRelease = { release: latest, fetchedAt: Date.now() };
-  return latest;
+  cachedRelease = { release, fetchedAt: Date.now() };
+  return release;
 }
 
 export function createDesktopUpdateRoutes(): Hono {
@@ -79,17 +159,14 @@ export function createDesktopUpdateRoutes(): Hono {
       return c.json({ ok: false, reason: "latest release unavailable" }, 503);
     }
 
-    const version = normalizeVersion(release.tag_name);
     const arch = normalizeArch(c.req.query("arch"));
-    const assetName = `Fintheon-${version}-${arch}.dmg`;
-    const asset = release.assets.find((item) => item.name === assetName);
-
-    if (!asset) {
+    const assetName = `Fintheon-${release.version}-${arch}.dmg`;
+    if (release.assetName !== assetName) {
       return c.json(
         {
           ok: false,
-          version,
-          tag: release.tag_name,
+          version: release.version,
+          tag: release.tag,
           assetName,
           reason: "release asset unavailable",
         },
@@ -99,14 +176,15 @@ export function createDesktopUpdateRoutes(): Hono {
 
     return c.json({
       ok: true,
-      version,
-      tag: release.tag_name,
-      assetName,
-      downloadUrl: asset.browser_download_url,
-      sha256: readSha256(asset),
-      size: asset.size ?? null,
-      releaseUrl: release.html_url,
-      publishedAt: release.published_at ?? null,
+      version: release.version,
+      tag: release.tag,
+      assetName: release.assetName,
+      downloadUrl: release.downloadUrl,
+      sha256: release.sha256,
+      sha512: release.sha512,
+      size: release.size,
+      releaseUrl: release.releaseUrl,
+      publishedAt: release.publishedAt,
     });
   });
 

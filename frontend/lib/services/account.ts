@@ -133,9 +133,8 @@ export class AccountService {
     username?: string;
     apiKey?: string;
   }): Promise<void> {
-    // Use projectx sync endpoint
     if (data.username && data.apiKey) {
-      await this.client.post("/api/projectx/sync", data);
+      await this.client.post("/api/projectx/connect", data);
     }
   }
 }

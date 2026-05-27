@@ -1,4 +1,5 @@
 import { isPoolAvailable, query } from "../db/optimized.js";
+export { evaluateOvertrading } from "./er-overtrading.js";
 
 export type ERState = "stable" | "neutral" | "tilt";
 
@@ -374,24 +375,4 @@ export async function listSessions(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
-}
-
-export async function evaluateOvertrading(
-  userId: string,
-  options?: { windowMinutes?: number; threshold?: number },
-): Promise<{
-  isOvertrading: boolean;
-  tradesInWindow: number;
-  weightedTrades: number;
-  threshold: number;
-  penalty: number;
-  warning?: string;
-}> {
-  return {
-    isOvertrading: false,
-    tradesInWindow: 0,
-    weightedTrades: 0,
-    threshold: options?.threshold ?? 10,
-    penalty: 0,
-  };
 }

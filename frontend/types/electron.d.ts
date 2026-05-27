@@ -23,6 +23,9 @@ export interface DesktopDownloadedUpdate {
   tag?: string;
   assetName?: string;
   dmgPath?: string;
+  sha256?: string | null;
+  sha512?: string | null;
+  releaseUrl?: string;
   reason?: string;
 }
 
@@ -110,7 +113,11 @@ export interface ElectronAPI {
     target?: string;
     reason?: string;
   }>;
-  deferUpdateUntilClose: () => Promise<{ ok: boolean; deferred?: boolean }>;
+  deferUpdateUntilClose: () => Promise<{
+    ok: boolean;
+    deferred?: boolean;
+    reason?: string;
+  }>;
   onUpdateJustInstalled: (
     cb: ((payload: { version: string }) => void) | null,
   ) => void;

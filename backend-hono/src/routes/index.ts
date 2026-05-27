@@ -109,8 +109,8 @@ import { createFeatureProposalsRoutes } from "./feature-proposals.js";
 import { createFeatureProposalsWeeklyRoute } from "./harper-ops/feature-proposals-weekly.js";
 // [S29-T4] Catalyst slide-out panel — date-filtered RiskFlow headlines
 import { createCatalystsByDateRoute } from "./catalysts/by-date.js";
-// [S29-T1] ProjectX trades history — calendar heatmap data layer
-import { createProjectXTradesRoute } from "./projectx/trades.js";
+// ProjectX journal loop — connection, sync, account tracking, calendar trades
+import { createProjectXRoutes } from "./projectx/index.js";
 // [claude-code 2026-04-23] S32-T7: Advisory layer — calendar pill, size hint, watchouts log.
 import { createCalendarRoutes } from "./calendar/next-event.js";
 import { createAdvisoryRoutes } from "./advisory/index.js";
@@ -366,6 +366,8 @@ export function registerRoutes(app: Hono): void {
   app.use("/api/rithmic/*", authMiddleware, requireAuth);
   app.use("/api/hyperliquid", authMiddleware, requireAuth);
   app.use("/api/hyperliquid/*", authMiddleware, requireAuth);
+  app.use("/api/projectx", authMiddleware, requireAuth);
+  app.use("/api/projectx/*", authMiddleware, requireAuth);
   app.use("/api/voice", authMiddleware, requireAuth);
   app.use("/api/voice/*", authMiddleware, requireAuth);
   app.use("/api/settings", authMiddleware, requireAuth);
@@ -550,6 +552,6 @@ export function registerRoutes(app: Hono): void {
   // [S29-T4] Catalysts — date-filtered RiskFlow headlines for calendar panel
   app.route("/api/catalysts", createCatalystsByDateRoute());
 
-  // [S29-T1] ProjectX trades history — public (BYPASS_AUTH compatible)
-  app.route("/api/projectx", createProjectXTradesRoute());
+  // ProjectX journal/account sync — auth-scoped, production data path.
+  app.route("/api/projectx", createProjectXRoutes());
 }

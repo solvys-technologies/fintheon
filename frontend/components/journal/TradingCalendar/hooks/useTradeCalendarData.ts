@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useBackend } from "../../../../lib/backend";
 import type {
   CalendarTrade,
   ByDay,
@@ -30,6 +31,7 @@ export function useTradeCalendarData(
   to: string,
   origin: OriginFilter,
 ): CalendarDataResult {
+  const backend = useBackend();
   const [rawTrades, setRawTrades] = useState<CalendarTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,13 +41,9 @@ export function useTradeCalendarData(
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ from, to, limit: "500" });
-    if (origin !== "all") params.set("origin", origin);
-
-    fetch(`/api/projectx/trades?${params}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+    backend.projectx
+      .listTrades({ from, to, origin })
+      .then((json) => {
         if (!cancelled) setRawTrades(json.trades ?? []);
       })
       .catch((err) => {
@@ -61,7 +59,7 @@ export function useTradeCalendarData(
     return () => {
       cancelled = true;
     };
-  }, [from, to, origin]);
+  }, [backend, from, to, origin]);
 
   const result = useMemo<CalendarDataResult>(() => {
     const byDay: ByDay = {};
