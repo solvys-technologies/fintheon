@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { AlertTriangle, BookOpen, Loader2 } from "lucide-react";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
+import { cn } from "../../lib/utils";
 import { FadingRuler } from "../shared/FadingRuler";
 import { NothingFuse } from "../shared/NothingFuse";
 import {
@@ -8,9 +9,16 @@ import {
   type DeskPlanFeedItem,
 } from "./desk-plan-feed-utils";
 
-export function DeskPlansFeed() {
+export function DeskPlansFeed({
+  compact = false,
+  maxItems,
+}: {
+  compact?: boolean;
+  maxItems?: number;
+} = {}) {
   const { allPlans, isLoading, error } = useDayPlanMultiWeek();
   const items = useMemo(() => buildUpcomingDeskPlanFeed(allPlans), [allPlans]);
+  const visibleItems = maxItems ? items.slice(0, maxItems) : items;
 
   if (isLoading) {
     return (
@@ -30,7 +38,12 @@ export function DeskPlansFeed() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-end justify-between gap-3 px-4 pb-2 pt-3">
+      <div
+        className={cn(
+          "flex items-end justify-between gap-3",
+          compact ? "px-3 pb-2 pt-2.5" : "px-4 pb-2 pt-3",
+        )}
+      >
         <div>
           <p className="font-mono text-[9px] text-[var(--fintheon-accent)]/72">
             Upcoming
@@ -43,11 +56,16 @@ export function DeskPlansFeed() {
           {items.length}
         </span>
       </div>
-      <FadingRuler className="mx-4 opacity-45" />
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        <div className="flex flex-col gap-3">
-          {items.map((item) => (
-            <DeskPlanFeedCard key={item.id} item={item} />
+      <FadingRuler className={cn("opacity-45", compact ? "mx-3" : "mx-4")} />
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto",
+          compact ? "px-2.5 py-2.5" : "px-3 py-3",
+        )}
+      >
+        <div className={cn("flex flex-col", compact ? "gap-2.5" : "gap-3")}>
+          {visibleItems.map((item) => (
+            <DeskPlanFeedCard key={item.id} item={item} compact={compact} />
           ))}
         </div>
       </div>
@@ -55,11 +73,20 @@ export function DeskPlansFeed() {
   );
 }
 
-function DeskPlanFeedCard({ item }: { item: DeskPlanFeedItem }) {
+function DeskPlanFeedCard({
+  item,
+  compact,
+}: {
+  item: DeskPlanFeedItem;
+  compact: boolean;
+}) {
   const tone = getTone(item);
   return (
     <article
-      className="group relative overflow-hidden rounded-md border bg-[var(--fintheon-surface)]/72 p-3 transition-[border-color,background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-[var(--fintheon-accent)]/[0.035]"
+      className={cn(
+        "group relative overflow-hidden rounded-[14px] border bg-[var(--fintheon-surface)]/58 transition-[border-color,background-color,transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:bg-[var(--fintheon-accent)]/[0.035]",
+        compact ? "p-2.5" : "p-3",
+      )}
       style={{ borderColor: tone.color }}
     >
       <span
@@ -78,11 +105,16 @@ function DeskPlanFeedCard({ item }: { item: DeskPlanFeedItem }) {
               {item.timeRange}
             </span>
           </div>
-          <h3 className="mt-2 line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--fintheon-text)]/92">
+          <h3
+            className={cn(
+              "mt-2 line-clamp-2 font-semibold leading-snug text-[var(--fintheon-text)]/92",
+              compact ? "text-[11.5px]" : "text-[13px]",
+            )}
+          >
             {item.title}
           </h3>
         </div>
-        <div className="shrink-0 rounded border border-[var(--fintheon-accent)]/15 bg-black/20 px-1.5 py-1 text-right">
+        <div className="shrink-0 rounded-[10px] border border-[var(--fintheon-accent)]/15 bg-black/20 px-1.5 py-1 text-right">
           <p className="font-mono text-[9px] text-[var(--fintheon-accent)]/74">
             {item.country}
           </p>
@@ -91,10 +123,15 @@ function DeskPlanFeedCard({ item }: { item: DeskPlanFeedItem }) {
           </p>
         </div>
       </div>
-      <p className="mt-2 line-clamp-2 text-[10.5px] leading-relaxed text-[var(--fintheon-text)]/62">
+      <p
+        className={cn(
+          "mt-2 line-clamp-2 leading-relaxed text-[var(--fintheon-text)]/62",
+          compact ? "text-[9.5px]" : "text-[10.5px]",
+        )}
+      >
         {item.prediction}
       </p>
-      <div className="mt-3 flex items-center gap-2">
+      <div className={cn("flex items-center gap-2", compact ? "mt-2" : "mt-3")}>
         <div className="min-w-0 flex-1">
           <NothingFuse
             value={(item.probability ?? 42) / 100}
@@ -108,7 +145,12 @@ function DeskPlanFeedCard({ item }: { item: DeskPlanFeedItem }) {
           {item.probability != null ? `${item.probability}%` : "PEND"}
         </span>
       </div>
-      <p className="mt-2 line-clamp-1 font-mono text-[9px] text-[var(--fintheon-muted)]/36">
+      <p
+        className={cn(
+          "mt-2 line-clamp-1 font-mono text-[var(--fintheon-muted)]/36",
+          compact ? "text-[8px]" : "text-[9px]",
+        )}
+      >
         {item.forecast}
       </p>
     </article>

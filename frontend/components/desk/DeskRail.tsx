@@ -49,7 +49,7 @@ export function DeskRail() {
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "plans" ? (
-          <DeskPlansFeed />
+          <DeskPlansFeed compact maxItems={8} />
         ) : activeTab === "inbox" ? (
           <DeskInboxFeed />
         ) : (
