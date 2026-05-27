@@ -1,5 +1,6 @@
 import { isPoolAvailable, query } from "../../db/optimized.js";
 import type { CanonicalTrade, ProjectXAccount } from "./types.js";
+import { dbUserId } from "./user-id.js";
 
 interface TradeRow {
   id: string;
@@ -72,6 +73,7 @@ export async function upsertCanonicalTrades(
   if (!isPoolAvailable()) return 0;
   let count = 0;
   for (const trade of trades) {
+    const normalizedUserId = dbUserId(trade.userId);
     await query(
       `INSERT INTO trades (
          id, user_id, provider, account_id, contract, entry_at, exit_at, side,
@@ -89,7 +91,7 @@ export async function upsertCanonicalTrades(
              updated_at = NOW()`,
       [
         trade.id,
-        trade.userId,
+        normalizedUserId,
         trade.accountId,
         trade.contract,
         trade.entryAt,
@@ -114,6 +116,7 @@ export async function upsertProjectXActivity(
 ): Promise<void> {
   if (!isPoolAvailable()) return;
   for (const trade of trades) {
+    const normalizedUserId = dbUserId(trade.userId);
     await query(
       `INSERT INTO projectx_activity_events (
          user_id, account_id, provider, external_id, event_type, event_source,
@@ -126,7 +129,7 @@ export async function upsertProjectXActivity(
              realized_pnl = EXCLUDED.realized_pnl,
              payload = EXCLUDED.payload`,
       [
-        trade.userId,
+        normalizedUserId,
         Number(trade.accountId),
         trade.id,
         trade.entryAt,
@@ -147,10 +150,11 @@ export async function listStoredTrades(
 ): Promise<Array<Record<string, unknown>>> {
   if (!isPoolAvailable()) return [];
   const originSql = input.origin === "all" ? "" : "AND origin = $4";
+  const normalizedUserId = dbUserId(userId);
   const params =
     input.origin === "all"
-      ? [userId, input.from, input.to]
-      : [userId, input.from, input.to, input.origin];
+      ? [normalizedUserId, input.from, input.to]
+      : [normalizedUserId, input.from, input.to, input.origin];
   const result = await query<TradeRow>(
     `SELECT id, contract, entry_at, exit_at, side, qty, entry_price, exit_price,
             realized_pnl, fees, origin

@@ -14,7 +14,7 @@ import {
 import { DeletePlanButton } from "./DeskPlanDeleteButton";
 
 const POP_OUT_CARD =
-  "desk-sprint-event-card relative overflow-hidden transition-[transform,border-color,background-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-0.5 hover:scale-[1.006] active:translate-y-0 active:scale-[0.995]";
+  "desk-sprint-event-card relative overflow-hidden rounded-[14px] border transition-[transform,border-color,background-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-0.5 hover:scale-[1.006] active:translate-y-0 active:scale-[0.995]";
 
 interface SprintBlockItem {
   plan: DayPlan;
