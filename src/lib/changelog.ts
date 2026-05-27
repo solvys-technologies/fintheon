@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T00:30:00-04:00",
+    agent: "codex",
+    summary:
+      "v7.0.3 release prep: captured the new app toast notification surfaces and in-app desktop updater path, then refreshed setup/update script pointers for the patch release.",
+    files: [
+      "frontend/components/ui/Toast.tsx",
+      "frontend/contexts/ToastContext.tsx",
+      "frontend/index.css",
+      "backend-hono/src/routes/desktop-update/index.ts",
+      "electron/update-manager.cjs",
+      "package.json",
+      "backend-hono/package.json",
+      "mobile/package.json",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T23:05:00-04:00",
     agent: "codex",
     summary:

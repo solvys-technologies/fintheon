@@ -13,7 +13,7 @@ set -eo pipefail
 
 # [claude-code 2026-04-18] Resolve install path: FINTHEON_ROOT env > ~/.fintheon/install-path > default
 FINTHEON_ROOT="${FINTHEON_ROOT:-$(cat "$HOME/.fintheon/install-path" 2>/dev/null || echo "$HOME/Documents/Codebases/fintheon")}"
-UPDATE_VERSION="7.0.2"
+UPDATE_VERSION="7.0.3"
 
 # ── Self-update bootstrap (v5.25.2) ──────────────────────────────────────────
 # Root cause fix: bash loads the entire script into memory at invocation, so
@@ -102,7 +102,7 @@ torch_banner "FINTHEON UPDATE v${UPDATE_VERSION}" "Priced In Capital"
 if [[ ! -d "$FINTHEON_ROOT/.git" ]]; then
   echo -e "  ${_RED}✗${_R} ${_CREAM}Fintheon not found at $FINTHEON_ROOT${_R}"
   echo '    Run the setup script first:'
-  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v7.0.2/scripts/fintheon-setup.sh)"'
+  echo '    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/solvys-technologies/fintheon/v7.0.3/scripts/fintheon-setup.sh)"'
   exit 1
 fi
 
@@ -256,6 +256,7 @@ if [[ -f "$BACKEND_ENV" ]]; then
   grep -q "^VOICE_SIDECAR_DISABLED=" "$BACKEND_ENV" 2>/dev/null || echo "VOICE_SIDECAR_DISABLED=false" >> "$BACKEND_ENV"
   grep -q "^RISKFLOW_COMMENTARY_SCRAPER=" "$BACKEND_ENV" 2>/dev/null || echo "RISKFLOW_COMMENTARY_SCRAPER=disabled" >> "$BACKEND_ENV"
   grep -q "^FINTHEON_DESKTOP=" "$BACKEND_ENV" 2>/dev/null || echo "FINTHEON_DESKTOP=false" >> "$BACKEND_ENV"
+  grep -q "^PROJECTX_API_URL=" "$BACKEND_ENV" 2>/dev/null || echo "PROJECTX_API_URL=https://api.topstepx.com" >> "$BACKEND_ENV"
   grep -q "^ARBITRUM_SESSION_SCHEDULER_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_SESSION_SCHEDULER_ENABLED=true" >> "$BACKEND_ENV"
   grep -q "^ARBITRUM_EVENT_TRIGGER_ENABLED=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_EVENT_TRIGGER_ENABLED=true" >> "$BACKEND_ENV"
   grep -q "^ARBITRUM_EVENT_IV_THRESHOLD=" "$BACKEND_ENV" 2>/dev/null || echo "ARBITRUM_EVENT_IV_THRESHOLD=8.5" >> "$BACKEND_ENV"
