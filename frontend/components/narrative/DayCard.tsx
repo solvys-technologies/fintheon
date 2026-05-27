@@ -42,6 +42,7 @@ interface DayCardProps {
   fillThesis?: boolean;
   hideStreak?: boolean;
   windowControlsPortal?: HTMLElement | null;
+  preferredWindowId?: string | null;
 }
 
 function fmtTradingWindow(w: DayPlanWindow): string {
@@ -128,6 +129,7 @@ export function DayCard({
   fillThesis,
   hideStreak,
   windowControlsPortal,
+  preferredWindowId = null,
 }: DayCardProps) {
   const { data: todayData, isLoading: todayLoading } = useDayPlan();
   const { currentPlan: multiWeekPlan, isLoading: multiWeekLoading } =
@@ -180,9 +182,18 @@ export function DayCard({
       setCycleDirection(null);
       return;
     }
+    const preferredIndex = preferredWindowId
+      ? windows.findIndex((window) => window.id === preferredWindowId)
+      : -1;
+    const nextIndex =
+      preferredIndex >= 0
+        ? preferredIndex
+        : defaultWindowIndex(plan?.date, windows);
     setCycleDirection(null);
-    setCurrentWindowIndex(defaultWindowIndex(plan?.date, windows));
-  }, [plan?.date, windowSignature]);
+    setCurrentWindowIndex((current) =>
+      current === nextIndex ? current : nextIndex,
+    );
+  }, [plan?.date, preferredWindowId, windowSignature]);
 
   const cycleWindow = useCallback(
     (direction: "prev" | "next") => {
