@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookOpen } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
@@ -12,12 +12,56 @@ const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 
 export function DeskPlanWidget() {
   const { addToast } = useToast();
-  const { currentPlanIndex, totalPlans, goNext, goPrev, isLoading } =
+  const { allPlans, currentPlanIndex, goToPlan, isLoading } =
     useDayPlanMultiWeek();
   const [isAdvancing, setIsAdvancing] = useState(false);
-  const [windowControlsTarget, setWindowControlsTarget] =
-    useState<HTMLSpanElement | null>(null);
+  const [selectedQueuedIndex, setSelectedQueuedIndex] = useState(0);
   const deskDateLabel = useMemo(() => formatDeskDate(new Date()), []);
+  const queuedWindows = useMemo(
+    () =>
+      allPlans
+        .flatMap((plan, planIndex) =>
+          [...(plan.windows ?? [])]
+            .sort((a, b) => a.startTime.localeCompare(b.startTime))
+            .map((window) => ({
+              planIndex,
+              planId: plan.id,
+              window,
+              sortKey: `${plan.date}T${normalizeClock(window.startTime)}`,
+            })),
+        )
+        .sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
+    [allPlans],
+  );
+  const selectedQueuedWindow = queuedWindows[selectedQueuedIndex] ?? null;
+
+  useEffect(() => {
+    setSelectedQueuedIndex((current) =>
+      queuedWindows.length === 0
+        ? 0
+        : Math.min(current, queuedWindows.length - 1),
+    );
+  }, [queuedWindows.length]);
+
+  useEffect(() => {
+    if (queuedWindows.length === 0) return;
+    const selected = queuedWindows[selectedQueuedIndex];
+    if (selected?.planIndex === currentPlanIndex) return;
+    const nextIndex = queuedWindows.findIndex(
+      (item) => item.planIndex === currentPlanIndex,
+    );
+    if (nextIndex >= 0) setSelectedQueuedIndex(nextIndex);
+  }, [currentPlanIndex, queuedWindows, selectedQueuedIndex]);
+
+  const selectQueuedWindow = useCallback(
+    (index: number) => {
+      if (queuedWindows.length === 0) return;
+      const nextIndex = Math.max(0, Math.min(index, queuedWindows.length - 1));
+      setSelectedQueuedIndex(nextIndex);
+      goToPlan(queuedWindows[nextIndex]?.planIndex ?? 0);
+    },
+    [goToPlan, queuedWindows],
+  );
 
   const advanceDeskPlan = useCallback(async () => {
     if (isAdvancing) return;
@@ -54,15 +98,11 @@ export function DeskPlanWidget() {
         headerRight={
           <div className="ml-auto flex flex-col items-end gap-0.5">
             <div className="flex items-center gap-2">
-              <span
-                ref={setWindowControlsTarget}
-                className="inline-flex min-w-[46px] justify-end"
-              />
               <DeskPlanCycler
-                currentIndex={currentPlanIndex}
-                totalPlans={totalPlans}
-                onPrev={goPrev}
-                onNext={goNext}
+                currentIndex={selectedQueuedIndex}
+                totalPlans={queuedWindows.length}
+                onPrev={() => selectQueuedWindow(selectedQueuedIndex - 1)}
+                onNext={() => selectQueuedWindow(selectedQueuedIndex + 1)}
                 disabled={isLoading}
               />
               <DeskPlanAdvanceButton
@@ -85,12 +125,20 @@ export function DeskPlanWidget() {
           bare
           hideHeader
           fillThesis
-          windowControlsPortal={windowControlsTarget}
+          preferredWindowId={selectedQueuedWindow?.window.id ?? null}
           className="flex h-full flex-col"
         />
       </div>
     </section>
   );
+}
+
+function normalizeClock(value: string): string {
+  const [hourRaw = "00", minuteRaw = "00"] = value.split(":");
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return "00:00";
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 function formatDeskDate(date: Date) {
@@ -132,10 +180,10 @@ function DeskPlanCycler({
         type="button"
         onClick={onPrev}
         disabled={disabled || currentIndex <= 0}
-        className="rounded p-0.5 text-[var(--fintheon-accent)]/65 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-[var(--fintheon-muted)]/24"
+        className="rounded px-0.5 text-[var(--fintheon-accent)]/65 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-[var(--fintheon-muted)]/24"
         aria-label="Previous desk plan"
       >
-        <ChevronLeft className="h-3 w-3" />
+        &lt;
       </button>
       <span className="tabular-nums text-[var(--fintheon-accent)]/72">
         {displayIndex} of {totalPlans}
@@ -144,10 +192,10 @@ function DeskPlanCycler({
         type="button"
         onClick={onNext}
         disabled={disabled || currentIndex >= totalPlans - 1}
-        className="rounded p-0.5 text-[var(--fintheon-accent)]/65 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-[var(--fintheon-muted)]/24"
+        className="rounded px-0.5 text-[var(--fintheon-accent)]/65 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-[var(--fintheon-muted)]/24"
         aria-label="Next desk plan"
       >
-        <ChevronRight className="h-3 w-3" />
+        &gt;
       </button>
       <span>]</span>
     </span>
