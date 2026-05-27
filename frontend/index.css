@@ -3702,6 +3702,24 @@ html[data-zen-mode="true"] button[aria-label] {
   animation: desk-plan-inline-fade-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.desk-sprint-view-transition {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 190ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, filter, transform;
+}
+
+.desk-sprint-view-transition[data-phase="exiting"],
+.desk-sprint-view-transition[data-phase="entering"] {
+  opacity: 0;
+  filter: blur(2px);
+  transform: translateY(5px) scale(0.996);
+}
+
 @keyframes desk-plan-inline-fade-in {
   from {
     opacity: 0;

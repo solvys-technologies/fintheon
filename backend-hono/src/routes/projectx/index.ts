@@ -36,9 +36,12 @@ export function createProjectXRoutes() {
     if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
     const result = await saveProjectXCredentials(uid, parsed.data);
     const sync = await syncProjectXForUser(uid, { mode: "manual" });
-    const success = sync.success === true;
-    const status = sync.httpStatus === 429 ? 429 : success ? 200 : 400;
-    return c.json({ success, ...result, sync }, status);
+    return c.json({
+      success: true,
+      credentialStatus: "saved",
+      ...result,
+      sync,
+    });
   });
 
   app.post("/sync", async (c) => {

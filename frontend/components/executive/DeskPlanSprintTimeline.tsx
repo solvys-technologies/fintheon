@@ -14,7 +14,13 @@ import {
 import { DeletePlanButton } from "./DeskPlanDeleteButton";
 
 const POP_OUT_CARD =
-  "desk-sprint-event-card relative overflow-hidden rounded-[14px] border transition-[transform,border-color,background-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-0.5 hover:scale-[1.006] active:translate-y-0 active:scale-[0.995]";
+  "desk-sprint-event-card relative overflow-hidden rounded-[14px] border transition-[left,top,width,min-height,transform,border-color,background-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform hover:-translate-y-0.5 hover:scale-[1.006] active:translate-y-0 active:scale-[0.995]";
+
+const DAY_GUTTER_PX = 92;
+const MAP_CONTENT_GAP_PX = 24;
+const COLLAPSED_BLOCK_HEIGHT_PX = 64;
+const STACK_GAP_PX = 16;
+const EXPANDED_EXTRA_HEIGHT_PX = 186;
 
 interface SprintBlockItem {
   plan: DayPlan;
@@ -68,7 +74,13 @@ export function DeskPlanSprintTimeline({
       <FadingRuler className="opacity-35" />
 
       <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="grid grid-cols-[62px_1fr] gap-2">
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: `${DAY_GUTTER_PX}px minmax(0, 1fr)`,
+            columnGap: MAP_CONTENT_GAP_PX,
+          }}
+        >
           <span />
           <TimeRuler segment={segment} />
         </div>
@@ -112,16 +124,24 @@ function SprintDayRow({
     (item) => `${item.plan.id}-${item.window.id}` === expandedId,
   );
   const hasExpandedBlock = expandedBlockIndex >= 0;
-  const rowHeight = Math.max(
-    62,
-    row.blocks.length * 42 + 14 + (hasExpandedBlock ? 172 : 0),
-  );
+  const expandedExtra = hasExpandedBlock ? EXPANDED_EXTRA_HEIGHT_PX : 0;
+  const stackedHeight =
+    row.blocks.length > 0
+      ? row.blocks.length * COLLAPSED_BLOCK_HEIGHT_PX +
+        Math.max(0, row.blocks.length - 1) * STACK_GAP_PX +
+        expandedExtra
+      : 72;
+  const rowHeight = Math.max(96, stackedHeight + 20);
   return (
     <div
-      className="relative grid grid-cols-[62px_1fr] gap-2 py-2"
-      style={{ minHeight: rowHeight }}
+      className="relative grid py-3 transition-[min-height] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      style={{
+        minHeight: rowHeight,
+        gridTemplateColumns: `${DAY_GUTTER_PX}px minmax(0, 1fr)`,
+        columnGap: MAP_CONTENT_GAP_PX,
+      }}
     >
-      <div className="pt-1 text-right">
+      <div className="pt-1 text-left">
         <p
           className="text-[13px] uppercase leading-none text-[var(--fintheon-accent)]/82"
           style={{ fontFamily: "var(--font-display, var(--font-heading))" }}
@@ -141,8 +161,10 @@ function SprintDayRow({
           row.blocks.map((item, index) => {
             const blockId = `${item.plan.id}-${item.window.id}`;
             const top =
-              index * 42 +
-              (hasExpandedBlock && index > expandedBlockIndex ? 172 : 0);
+              index * (COLLAPSED_BLOCK_HEIGHT_PX + STACK_GAP_PX) +
+              (hasExpandedBlock && index > expandedBlockIndex
+                ? EXPANDED_EXTRA_HEIGHT_PX
+                : 0);
             return (
               <SprintBlock
                 key={blockId}
@@ -205,6 +227,9 @@ function SprintBlock({
         left: `${visualLeft}%`,
         top,
         width: `${visualWidth}%`,
+        minHeight: isExpanded
+          ? COLLAPSED_BLOCK_HEIGHT_PX + EXPANDED_EXTRA_HEIGHT_PX
+          : COLLAPSED_BLOCK_HEIGHT_PX,
         borderColor: tone.color,
         ["--desk-event-tone" as string]: tone.color,
       }}
@@ -267,9 +292,11 @@ function TimeGuides({ segment }: { segment: SprintSegment }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 right-0 left-[70px]"
+      className="pointer-events-none absolute inset-y-0 right-0"
+      style={{ left: DAY_GUTTER_PX + MAP_CONTENT_GAP_PX }}
     >
       {[0, 60, 120, 180, 240].map((offset) => {
+        if (offset === 0) return null;
         const left =
           ((segment.startMinute + offset - segment.startMinute) /
             (segment.endMinute - segment.startMinute)) *

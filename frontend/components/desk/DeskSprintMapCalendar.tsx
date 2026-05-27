@@ -33,6 +33,10 @@ export function DeskSprintMapCalendar({
   isLoading: boolean;
 }) {
   const [view, setView] = useState<DeskMapView>("sprint");
+  const [renderedView, setRenderedView] = useState<DeskMapView>("sprint");
+  const [viewPhase, setViewPhase] = useState<
+    "entering" | "entered" | "exiting"
+  >("entered");
   const [transitionDirection, setTransitionDirection] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -55,6 +59,17 @@ export function DeskSprintMapCalendar({
   useEffect(() => {
     setSegmentIndex(findNextDeskPlanSegmentIndex(segments));
   }, [segments]);
+
+  useEffect(() => {
+    if (view === renderedView) return;
+    setViewPhase("exiting");
+    const swapTimer = globalThis.setTimeout(() => {
+      setRenderedView(view);
+      setViewPhase("entering");
+      globalThis.requestAnimationFrame(() => setViewPhase("entered"));
+    }, 130);
+    return () => globalThis.clearTimeout(swapTimer);
+  }, [renderedView, view]);
 
   const handleSegmentIndexChange = (nextIndex: number) => {
     setTransitionDirection(nextIndex >= segmentIndex ? 1 : -1);
@@ -107,35 +122,42 @@ export function DeskSprintMapCalendar({
 
       <div
         className={`mt-4 min-h-0 flex-1 ${
-          view === "briefing" ? "overflow-hidden" : "overflow-y-auto pr-1"
+          renderedView === "briefing"
+            ? "overflow-hidden"
+            : "overflow-y-auto pr-1"
         }`}
       >
-        {isLoading ? (
-          <p className="text-[11px] text-[var(--fintheon-muted)]/45">
-            [LOADING...]
-          </p>
-        ) : view === "sprint" ? (
-          <DeskPlanSprintTimeline
-            plans={sortedPlans}
-            segments={segments}
-            segmentIndex={segmentIndex}
-            transitionDirection={transitionDirection}
-            deletingId={deletingId}
-            onDelete={handleDelete}
-          />
-        ) : view === "briefing" ? (
-          <DeskBriefingPanel plans={sortedPlans} isLoading={isLoading} />
-        ) : (
-          <DeskPlanCalendarBoard
-            days={calendarDays}
-            hasPlans={sortedPlans.length > 0}
-            focusedDate={focusedDate}
-            deletingId={deletingId}
-            onDelete={handleDelete}
-          />
-        )}
+        <div
+          className="desk-sprint-view-transition h-full min-h-0"
+          data-phase={viewPhase}
+        >
+          {isLoading ? (
+            <p className="text-[11px] text-[var(--fintheon-muted)]/45">
+              [LOADING...]
+            </p>
+          ) : renderedView === "sprint" ? (
+            <DeskPlanSprintTimeline
+              plans={sortedPlans}
+              segments={segments}
+              segmentIndex={segmentIndex}
+              transitionDirection={transitionDirection}
+              deletingId={deletingId}
+              onDelete={handleDelete}
+            />
+          ) : renderedView === "briefing" ? (
+            <DeskBriefingPanel plans={sortedPlans} isLoading={isLoading} />
+          ) : (
+            <DeskPlanCalendarBoard
+              days={calendarDays}
+              hasPlans={sortedPlans.length > 0}
+              focusedDate={focusedDate}
+              deletingId={deletingId}
+              onDelete={handleDelete}
+            />
+          )}
+        </div>
       </div>
-      {view === "sprint" ? (
+      {renderedView === "sprint" ? (
         <DeskPlanRelativeScrubber
           segments={segments}
           segmentIndex={segmentIndex}

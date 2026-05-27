@@ -50,8 +50,8 @@ export function PanelIcon({ side, active }: PanelIconProps) {
   return (
     <svg
       viewBox="0 0 14 14"
-      width="14"
-      height="14"
+      width="16"
+      height="16"
       aria-hidden="true"
       className="shrink-0"
     >
@@ -140,7 +140,7 @@ export function PanelToggleButton({ side, label }: PanelToggleButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className="w-7 h-7 flex items-center justify-center rounded transition-colors hover:bg-[var(--fintheon-accent)]/10"
+      className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-[var(--fintheon-accent)]/10"
       title={open ? `Hide ${label}` : `Show ${label}`}
       aria-label={open ? `Hide ${label}` : `Show ${label}`}
       aria-pressed={open}
