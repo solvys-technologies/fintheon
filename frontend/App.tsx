@@ -36,6 +36,7 @@ import { migrateStorageKeys } from "./lib/storage-migration";
 import { AuthShell } from "./components/auth/AuthShell";
 import { LoadingBootScreen } from "./components/loading/LoadingBootScreen";
 import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
+import { ProjectXSyncProvider } from "./components/projectx/ProjectXSyncProvider";
 import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
 
 // Run storage migration before any providers read localStorage
@@ -213,6 +214,7 @@ function AuthGate() {
                                   <ApiErrorToastBridge />
                                   <AiCreditToastBridge />
                                   <DeskPlanPlannerToastBridge />
+                                  <ProjectXSyncProvider />
                                   <VersionChecker />
                                   <MainLayout />
                                   <ConsulControlLayer />

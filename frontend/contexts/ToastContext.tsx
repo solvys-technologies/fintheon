@@ -53,6 +53,8 @@ export interface Toast {
   secondaryCta?: { label: string; onClick: () => void };
   /** Optional override for auto-dismiss duration */
   durationMs?: number;
+  /** Optional release/status glyph rendered left of the toast message */
+  leadingGlyph?: string;
 }
 
 interface ToastContextValue {
@@ -66,6 +68,7 @@ interface ToastContextValue {
     cta?: { label: string; onClick: () => void },
     secondaryCta?: { label: string; onClick: () => void },
     durationMs?: number,
+    leadingGlyph?: string,
   ) => string;
   dismissToast: (id: string) => void;
   /** Permanently block a notification type (Don't Show Again) */
@@ -153,6 +156,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       cta?: { label: string; onClick: () => void },
       secondaryCta?: { label: string; onClick: () => void },
       durationMs?: number,
+      leadingGlyph?: string,
     ): string => {
       // Skip if this notification type is blocked
       if (notificationType && blockedTypes.includes(notificationType)) {
@@ -170,6 +174,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         cta,
         secondaryCta,
         durationMs,
+        leadingGlyph,
       };
       setToasts((prev) => [...prev, toast]);
 

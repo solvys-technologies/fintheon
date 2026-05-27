@@ -9,6 +9,7 @@ export * from "./account";
 export * from "./riskflow";
 export * from "./ai";
 export * from "./trading";
+export * from "./projectx";
 export * from "./voice";
 export * from "./team";
 export * from "./boardroom";
@@ -31,11 +32,11 @@ import { RiskFlowService } from "./riskflow";
 import { AIService, PsychService, AnalystService } from "./ai";
 import {
   TradingService,
-  ProjectXService,
   RithmicService,
   HyperliquidService,
   AutopilotService,
 } from "./trading";
+import { ProjectXService } from "./projectx";
 import {
   NotificationsService,
   ERService,

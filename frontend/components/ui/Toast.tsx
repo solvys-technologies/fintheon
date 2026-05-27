@@ -91,13 +91,22 @@ function ToastItem({
                 {cfg.label}
               </span>
             )}
-            {!cfg.label && (
-              <cfg.Icon
-                size={13}
-                className={`flex-shrink-0 mt-0.5 ${toast.variant === "updating" ? "animate-spin" : ""}`}
-                style={{ color: "var(--fintheon-accent)", opacity: 0.7 }}
-              />
-            )}
+            {!cfg.label &&
+              (toast.leadingGlyph ? (
+                <span
+                  aria-hidden="true"
+                  className="flex-shrink-0 mt-0.5 text-[14px] leading-none"
+                  style={{ color: "var(--fintheon-accent)" }}
+                >
+                  {toast.leadingGlyph}
+                </span>
+              ) : (
+                <cfg.Icon
+                  size={13}
+                  className={`flex-shrink-0 mt-0.5 ${toast.variant === "updating" ? "animate-spin" : ""}`}
+                  style={{ color: "var(--fintheon-accent)", opacity: 0.7 }}
+                />
+              ))}
             <div className="flex flex-col" style={{ gap: "2px" }}>
               <span
                 className="text-[12px] font-medium leading-tight"

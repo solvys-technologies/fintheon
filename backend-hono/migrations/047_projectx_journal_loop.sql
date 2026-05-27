@@ -75,6 +75,24 @@ CREATE INDEX IF NOT EXISTS idx_trades_user_entry
 CREATE INDEX IF NOT EXISTS idx_trades_user_account_entry
   ON trades (user_id, account_id, entry_at DESC);
 
+CREATE TABLE IF NOT EXISTS projectx_activity_events (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL,
+  account_id INTEGER NOT NULL,
+  event_type VARCHAR(80) NOT NULL,
+  event_source VARCHAR(40) DEFAULT 'signalr',
+  event_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  is_trade BOOLEAN DEFAULT FALSE,
+  symbol VARCHAR(32),
+  side VARCHAR(16),
+  quantity NUMERIC(12, 2),
+  price NUMERIC(12, 4),
+  realized_pnl NUMERIC(14, 2),
+  event_weight NUMERIC(8, 2) DEFAULT 1,
+  payload JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 ALTER TABLE projectx_activity_events
   ADD COLUMN IF NOT EXISTS provider VARCHAR(40) NOT NULL DEFAULT 'projectx';
 

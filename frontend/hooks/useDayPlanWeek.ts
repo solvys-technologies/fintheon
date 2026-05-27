@@ -9,6 +9,20 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const POLL_INTERVAL = 5 * 60_000;
 const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 
+let sharedMultiWeekPlanIndex = 0;
+const multiWeekPlanIndexListeners = new Set<(index: number) => void>();
+
+function setSharedMultiWeekPlanIndex(
+  updater: number | ((index: number) => number),
+) {
+  const rawNext =
+    typeof updater === "function" ? updater(sharedMultiWeekPlanIndex) : updater;
+  const next = Math.max(0, rawNext);
+  if (next === sharedMultiWeekPlanIndex) return;
+  sharedMultiWeekPlanIndex = next;
+  multiWeekPlanIndexListeners.forEach((listener) => listener(next));
+}
+
 async function fetchTodayPlanFallback(): Promise<DayPlan | null> {
   const res = await fetch(`${API_BASE}/api/day-plan/today`);
   if (!res.ok) return null;
@@ -84,21 +98,37 @@ interface DayPlanMultiWeekState {
   error: string | null;
   goNext: () => void;
   goPrev: () => void;
+  goToPlan: (index: number) => void;
 }
 
 export function useDayPlanMultiWeek(): DayPlanMultiWeekState {
   const [allPlans, setAllPlans] = useState<DayPlan[]>([]);
-  const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
+  const [currentPlanIndex, setCurrentPlanIndex] = useState(
+    sharedMultiWeekPlanIndex,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const goNext = useCallback(() => {
-    setCurrentPlanIndex((i) => Math.min(allPlans.length - 1, i + 1));
+    if (allPlans.length <= 1) return;
+    setSharedMultiWeekPlanIndex((i) => Math.min(allPlans.length - 1, i + 1));
   }, [allPlans.length]);
 
   const goPrev = useCallback(() => {
-    setCurrentPlanIndex((i) => Math.max(0, i - 1));
+    setSharedMultiWeekPlanIndex((i) => Math.max(0, i - 1));
+  }, []);
+
+  const goToPlan = useCallback((index: number) => {
+    setSharedMultiWeekPlanIndex(index);
+  }, []);
+
+  useEffect(() => {
+    const listener = (index: number) => setCurrentPlanIndex(index);
+    multiWeekPlanIndexListeners.add(listener);
+    return () => {
+      multiWeekPlanIndexListeners.delete(listener);
+    };
   }, []);
 
   useEffect(() => {
@@ -127,7 +157,9 @@ export function useDayPlanMultiWeek(): DayPlanMultiWeekState {
             : flat;
         if (!cancelled) {
           setAllPlans(plans);
-          setCurrentPlanIndex((prev) => (prev >= plans.length ? 0 : prev));
+          setSharedMultiWeekPlanIndex((prev) =>
+            prev >= plans.length ? 0 : prev,
+          );
           setError(null);
           setIsLoading(false);
         }
@@ -158,10 +190,12 @@ export function useDayPlanMultiWeek(): DayPlanMultiWeekState {
     allPlans,
     currentPlanIndex,
     totalPlans: allPlans.length,
-    currentPlan: allPlans[currentPlanIndex] ?? null,
+    currentPlan:
+      allPlans[Math.min(currentPlanIndex, allPlans.length - 1)] ?? null,
     isLoading,
     error,
     goNext,
     goPrev,
+    goToPlan,
   };
 }

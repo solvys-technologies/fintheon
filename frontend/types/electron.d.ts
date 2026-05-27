@@ -98,7 +98,7 @@ export interface ElectronAPI {
     setNativeVibrancy: (enabled: boolean) => Promise<NativeVibrancyStatus>;
   };
   checkForUpdate: () => Promise<DesktopUpdateStatus>;
-  downloadUpdate: () => Promise<{
+  downloadUpdate: (version?: string) => Promise<{
     ok: boolean;
     version?: string;
     assetName?: string;

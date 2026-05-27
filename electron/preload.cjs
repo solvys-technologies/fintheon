@@ -113,7 +113,7 @@ contextBridge.exposeInMainWorld("electron", {
   // SOTA updater API (manual flow)
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   checkForUpdate: () => ipcRenderer.invoke("update-check"),
-  downloadUpdate: () => ipcRenderer.invoke("update-download"),
+  downloadUpdate: (version) => ipcRenderer.invoke("update-download", version),
   installUpdate: () => ipcRenderer.invoke("update-install"),
   deferUpdateUntilClose: () => ipcRenderer.invoke("update-defer-until-close"),
   onUpdateJustInstalled: (cb) => {

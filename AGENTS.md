@@ -15,6 +15,7 @@
 - Implement first, then iterate from feedback — prefer direct action over over-planning
 - Use compact text in UI labels, tooltips, and settings
 - Feature/protocol code should be a standalone Solvys skill (`~/.claude/skills/`) rather than built directly into the Fintheon codebase
+- Never publish a Fintheon release that would make a user call TP for basic install/update support. DMG releases must pass local preflight and deployed DMG download verification first.
 
 ## Learned Workspace Facts
 
@@ -31,3 +32,4 @@
 - Electron app uses CommonJS (`electron/main.cjs`, `electron/preload.cjs`), not ESM
 - Local backend managed via launchd at `io.solvys.fintheon-backend` — must unload before restart
 - RiskFlow scheduler has three independent tiers: FinancialJuice (5s real-time), Unified X (60s RTH / 600s AH), and Standard (5min)
+- Desktop release gate: run `bun run release:preflight` before publishing and `bun run release:verify-dmg` after deploying/uploading. The deployed update endpoint must produce a downloadable `Fintheon-{version}-arm64.dmg` with matching size and checksum.

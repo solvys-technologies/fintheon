@@ -35,6 +35,7 @@ Example: `v.5.28.1` (5th month, 28th day, 1st patch)
 - No build failures.
 - No duplicate imports.
 - Run `npx vite build` before merge.
+- Desktop releases must pass `bun run release:preflight` before publish and `bun run release:verify-dmg` after upload/deploy. Do not leave a release active unless the deployed updater endpoint produces a downloadable, checksum-verified GitHub DMG.
 
 ## Post-Ship Hook: Install Maintenance
 

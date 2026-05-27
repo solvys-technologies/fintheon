@@ -36,7 +36,9 @@ export function createProjectXRoutes() {
     if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
     const result = await saveProjectXCredentials(uid, parsed.data);
     const sync = await syncProjectXForUser(uid, { mode: "manual" });
-    return c.json({ success: true, ...result, sync });
+    const success = sync.success === true;
+    const status = sync.httpStatus === 429 ? 429 : success ? 200 : 400;
+    return c.json({ success, ...result, sync }, status);
   });
 
   app.post("/sync", async (c) => {
@@ -47,6 +49,10 @@ export function createProjectXRoutes() {
     );
     if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
     const result = await syncProjectXForUser(uid, parsed.data);
+    if (result.status === "rate_limited") return c.json(result, 429);
+    if (result.success === false && result.status === "needs_credentials") {
+      return c.json(result, 400);
+    }
     return c.json(result);
   });
 

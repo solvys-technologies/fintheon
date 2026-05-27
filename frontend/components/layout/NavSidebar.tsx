@@ -258,15 +258,23 @@ export function NavSidebar({
 
       {expanded ? (
         <div className="px-3 pb-3 pt-0.5">
-          <div className="flex flex-col leading-tight">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[var(--fintheon-accent)]">
-              {instanceName}
-            </span>
-            <span className="mt-0.5 hidden text-[9px] italic text-gray-600 xl:block">
-              {sidebarGreeting()}
-            </span>
+          <div className="relative -top-0.5">
+            <div className="flex flex-col leading-tight">
+              <span
+                className="text-[13.2px] font-semibold uppercase tracking-normal text-[var(--fintheon-accent)]"
+                style={{
+                  fontFamily:
+                    "'Doto', 'Readable Digits', var(--font-heading), ui-monospace, monospace",
+                }}
+              >
+                {instanceName}
+              </span>
+              <span className="mt-0.5 hidden text-[9px] italic text-gray-600 xl:block">
+                {sidebarGreeting()}
+              </span>
+            </div>
+            <FadingRuler className="mt-[13px] opacity-35" />
           </div>
-          <FadingRuler className="mt-4 opacity-35" />
         </div>
       ) : null}
 

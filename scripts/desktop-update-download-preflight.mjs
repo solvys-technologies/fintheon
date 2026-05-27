@@ -5,7 +5,9 @@ import os from "node:os";
 import path from "node:path";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+const pkg = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"),
+);
 const endpoint =
   process.env.FINTHEON_UPDATE_CHECK_URL ||
   "https://fintheon.fly.dev/api/desktop/update/latest?platform=darwin&arch=arm64";
@@ -35,7 +37,8 @@ async function main() {
   if (!updateRes.ok) fail(`update endpoint returned HTTP ${updateRes.status}`);
 
   const update = await updateRes.json();
-  if (!update?.ok) fail(`update endpoint is not ok: ${update?.reason ?? "unknown"}`);
+  if (!update?.ok)
+    fail(`update endpoint is not ok: ${update?.reason ?? "unknown"}`);
   if (update.version !== expectedVersion) {
     fail(`update version ${update.version} != expected ${expectedVersion}`);
   }
@@ -43,14 +46,21 @@ async function main() {
     fail(`update asset ${update.assetName} != expected ${expectedAsset}`);
   }
   if (!update.downloadUrl) fail("update endpoint did not return downloadUrl");
-  if (!update.sha256 && !update.sha512) fail("update endpoint did not return a checksum");
+  if (!update.sha256 && !update.sha512)
+    fail("update endpoint did not return a checksum");
 
   const downloadUrl = String(update.downloadUrl);
-  if (!/^https:\/\/github\.com\/solvys-technologies\/fintheon\/releases\//.test(downloadUrl)) {
+  if (
+    !/^https:\/\/github\.com\/solvys-technologies\/fintheon\/releases\//.test(
+      downloadUrl,
+    )
+  ) {
     fail(`downloadUrl is not the expected GitHub release URL: ${downloadUrl}`);
   }
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fintheon-dmg-preflight-"));
+  const tempDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), "fintheon-dmg-preflight-"),
+  );
   const tempPath = path.join(tempDir, update.assetName);
   try {
     console.log(`Downloading DMG: ${downloadUrl}`);
@@ -85,7 +95,8 @@ async function main() {
       out.on("error", reject);
     });
 
-    if (bytes <= 1024 * 1024) fail(`downloaded DMG is too small: ${bytes} bytes`);
+    if (bytes <= 1024 * 1024)
+      fail(`downloaded DMG is too small: ${bytes} bytes`);
     if (update.size && bytes !== update.size) {
       fail(`downloaded DMG size ${bytes} != endpoint size ${update.size}`);
     }
@@ -93,7 +104,11 @@ async function main() {
     const checksum = update.sha256
       ? { algorithm: "sha256", encoding: "hex", expected: update.sha256 }
       : { algorithm: "sha512", encoding: "base64", expected: update.sha512 };
-    const actual = await hashFile(tempPath, checksum.algorithm, checksum.encoding);
+    const actual = await hashFile(
+      tempPath,
+      checksum.algorithm,
+      checksum.encoding,
+    );
     if (actual !== checksum.expected) {
       fail(`${checksum.algorithm} checksum mismatch for downloaded DMG`);
     }

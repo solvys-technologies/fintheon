@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
+import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { DayCard } from "../narrative/DayCard";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import { DeskPlanAdvanceButton } from "../executive/DashboardKickstartButtons";
@@ -11,6 +12,8 @@ const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 
 export function DeskPlanWidget() {
   const { addToast } = useToast();
+  const { currentPlanIndex, totalPlans, goNext, goPrev, isLoading } =
+    useDayPlanMultiWeek();
   const [isAdvancing, setIsAdvancing] = useState(false);
   const [windowControlsTarget, setWindowControlsTarget] =
     useState<HTMLSpanElement | null>(null);
@@ -55,6 +58,13 @@ export function DeskPlanWidget() {
                 ref={setWindowControlsTarget}
                 className="inline-flex min-w-[46px] justify-end"
               />
+              <DeskPlanCycler
+                currentIndex={currentPlanIndex}
+                totalPlans={totalPlans}
+                onPrev={goPrev}
+                onNext={goNext}
+                disabled={isLoading}
+              />
               <DeskPlanAdvanceButton
                 isLoading={isAdvancing}
                 onClick={advanceDeskPlan}
@@ -91,4 +101,55 @@ function formatDeskDate(date: Date) {
     day: "numeric",
     year: "numeric",
   }).format(date);
+}
+
+function DeskPlanCycler({
+  currentIndex,
+  totalPlans,
+  onPrev,
+  onNext,
+  disabled,
+}: {
+  currentIndex: number;
+  totalPlans: number;
+  onPrev: () => void;
+  onNext: () => void;
+  disabled: boolean;
+}) {
+  if (totalPlans <= 0) {
+    return (
+      <span className="inline-flex min-w-[78px] justify-center font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/32">
+        [&lt; -- &gt;]
+      </span>
+    );
+  }
+
+  const displayIndex = Math.min(currentIndex + 1, totalPlans);
+  return (
+    <span className="inline-flex min-w-[96px] items-center justify-center gap-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/64">
+      <span>[</span>
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={disabled || currentIndex <= 0}
+        className="rounded p-0.5 text-[var(--fintheon-accent)]/65 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-[var(--fintheon-muted)]/24"
+        aria-label="Previous desk plan"
+      >
+        <ChevronLeft className="h-3 w-3" />
+      </button>
+      <span className="tabular-nums text-[var(--fintheon-accent)]/72">
+        {displayIndex} of {totalPlans}
+      </span>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={disabled || currentIndex >= totalPlans - 1}
+        className="rounded p-0.5 text-[var(--fintheon-accent)]/65 transition-colors hover:text-[var(--fintheon-accent)] disabled:cursor-default disabled:text-[var(--fintheon-muted)]/24"
+        aria-label="Next desk plan"
+      >
+        <ChevronRight className="h-3 w-3" />
+      </button>
+      <span>]</span>
+    </span>
+  );
 }

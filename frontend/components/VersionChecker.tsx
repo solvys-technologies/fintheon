@@ -16,6 +16,10 @@ import { isElectron } from "../lib/platform";
 
 const ELECTRON_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
+function epochUpdateMessage(version: string) {
+  return `Epoch ${version} is available`;
+}
+
 export function VersionChecker() {
   const { addToast } = useToast();
 
@@ -33,7 +37,7 @@ export function VersionChecker() {
         shownVersions.add(version);
         recordVersionNag();
         addToast(
-          "One update is available",
+          epochUpdateMessage(version),
           "info",
           undefined,
           undefined,
@@ -62,6 +66,8 @@ export function VersionChecker() {
               electron.deferUpdateUntilClose?.();
             },
           },
+          undefined,
+          "🏵",
         );
       };
 
@@ -80,9 +86,16 @@ export function VersionChecker() {
       const check = () => {
         electron
           .checkForUpdate()
-          .then((result) => {
+          .then(async (result) => {
             if (result.downloaded && result.latest) {
               showDownloadedUpdate({ version: result.latest });
+              return;
+            }
+            if (result.updateAvailable && result.latest) {
+              const download = await electron.downloadUpdate?.(result.latest);
+              if (download?.ok) {
+                showDownloadedUpdate({ version: result.latest });
+              }
             }
           })
           .catch(() => undefined);
@@ -115,7 +128,7 @@ export function VersionChecker() {
     startVersionCheck({
       onUpdateAvailable: (serverVersion) => {
         addToast(
-          "One update is available",
+          epochUpdateMessage(serverVersion.replace(/^v/, "")),
           "info",
           undefined,
           undefined,
@@ -138,6 +151,8 @@ export function VersionChecker() {
             label: "Later",
             onClick: () => dismissVersion(serverVersion),
           },
+          undefined,
+          "🏵",
         );
       },
     });

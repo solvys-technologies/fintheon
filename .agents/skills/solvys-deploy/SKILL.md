@@ -15,6 +15,7 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 - **UNIFICATION RELEASE CAPTURE RULE**: every deploy after unification must include every feature commit that is already clean, validated, and reachable from the release branch HEAD. Never publish or leave active a tag/release that points behind clean committed feature work. Before tagging, compare the latest release tag to `HEAD`; if `git log <latest-tag>..HEAD` contains implementation, hotfix, Linear-closeout, mobile, installer, or unification commits, bump the release, refresh installers, rebuild artifacts, and tag `HEAD`. If a tag/release was created early and more clean commits landed afterward, move/recreate the tag/release so GitHub, updater scripts, and the DMG all resolve to the final `HEAD`.
 - **Release prune rule** (standing auth — TP confirmed 2026-04-26): after publishing the new GH release, run `gh release list` and `gh release delete <tag> --yes --cleanup-tag=false` for (a) every release whose tag starts with the current major-version prefix (e.g. `v5.*`) EXCEPT the one just published, AND (b) every release published in the last 5 days from any major-version namespace EXCEPT the one just published. Keep exactly one release per major version at any time AND zero stale releases from the last 5 days. `--cleanup-tag=false` preserves git tags so history/diffs remain intact.
 - **Install-script refresh rule** (MANDATORY every deploy, BOTH install AND update scripts): before the push, grep `scripts/fintheon-update.sh`, `scripts/fintheon-setup.sh`, `scripts/install-cli.sh` for version renders and fetch pointers. Any `git describe --tags --always` → swap to `git describe --tags --abbrev=0` (drops the `-N-gHASH` post-tag drift suffix). Any hardcoded `UPDATE_VERSION=` / `SETUP_VERSION=` / tag pointer → bump to the new tag. Any `git clone --branch <X>` or `curl .../raw/<X>/...` pointer must resolve to the new release. Commit the script changes with `INSTALL-UPDATE:` prefix as part of the deploy push — do NOT leave them for a follow-up. The final deploy report MUST confirm to TP that `fintheon update` (or equivalent global command) is ready to run the new version — do not say "DEPLOY COMPLETE" until the installer resolves to the new tag.
+- **No 10PM support-bomb releases**: never publish or leave active a Fintheon release unless a nontechnical user can download the DMG from GitHub, mount it, drag it to `/Applications`, open it, and receive in-app updates without calling TP. `bun run release:preflight` and `bun run release:verify-dmg` are hard gates, not nice-to-have checks.
 - **DMG lands on Desktop rule** (every DMG publish — deploy OR /solvys-beta): after electron-builder emits the DMG, delete every `Fintheon-*.dmg` already on `~/Desktop/` and copy the new one there. TP installs from Desktop; old DMGs confuse it. `find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete` then `cp dist-electron/Fintheon-*.dmg ~/Desktop/`.
 - **Current major** = numeric prefix of the active deploy branch (e.g. `v5.*` while on `v5.22`). When the branch rolls to v6.x later, pivot the prune target.
 - Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
@@ -24,6 +25,7 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 - Always `rm -rf dist` before mobile vite build -- stale bundles deploy otherwise
 - Desktop frontend deploys as prebuilt from `frontend/` dir
 - Every desktop release must update install/update scripts
+- Every desktop release must produce a downloadable GitHub DMG verified by `bun run release:verify-dmg`
 - Always restart local backend after deploy (unless actively editing it)
 - Never start a vite dev server -- verify via `tsc --noEmit` + `vite build` only
 - Always redeploy to prod AND test endpoints before reporting done
@@ -184,10 +186,14 @@ gh release upload "v$VERSION" desktop-dist/Fintheon-*-arm64.dmg --repo solvys-te
 # Copy to Desktop (TP installs from there)
 find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete
 cp desktop-dist/Fintheon-*-arm64.dmg ~/Desktop/
+
+# Prove the deployed updater can produce and download the DMG users will receive
+bun run release:verify-dmg
 ```
 
 - FAIL if `desktop:build` fails (report, do not continue)
 - FAIL if the DMG upload fails (the release is incomplete without it)
+- FAIL if `release:verify-dmg` fails; delete or fix the broken GitHub release before ending the deploy
 - WARN if Desktop copy fails (non-blocking; DMG is still on the release)
 
 ### 2f. Prune older releases in the current major-version namespace
@@ -247,6 +253,18 @@ curl -s https://fintheon.fly.dev/api/riskflow/iv-aggregate | head -c 200
 
 - PASS if responses contain valid JSON
 - FAIL if empty, error, or timeout
+
+### 3d2. Desktop DMG Download Gate
+
+Run this after backend deploy and GitHub release asset upload:
+
+```bash
+bun run release:verify-dmg
+```
+
+- PASS only if `https://fintheon.fly.dev/api/desktop/update/latest?platform=darwin&arch=arm64` returns the current version, a real GitHub DMG URL, matching asset name, matching size, and a valid checksum.
+- FAIL if the endpoint returns an old version, no `downloadUrl`, a missing DMG, a wrong-size DMG, or checksum mismatch.
+- Do not report deploy complete while this fails. A release without this proof is a user-support incident waiting to happen.
 
 ### 3e. Local Backend Restart
 

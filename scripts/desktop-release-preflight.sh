@@ -56,6 +56,28 @@ spctl -a -vv -t open "$DMG"
 step "9/10" "Checking update metadata"
 [[ -f "$ROOT/desktop-dist/latest-mac.yml" ]] || fail "latest-mac.yml missing"
 grep -q "Fintheon-${VERSION}-arm64.dmg" "$ROOT/desktop-dist/latest-mac.yml" || fail "latest-mac.yml points at the wrong DMG"
+node - "$ROOT/desktop-dist/latest-mac.yml" "$DMG" <<'NODE'
+const crypto = require("crypto");
+const fs = require("fs");
+const manifest = fs.readFileSync(process.argv[2], "utf8");
+const dmgPath = process.argv[3];
+const sha512 = manifest.match(/^sha512:\s*([^\r\n]+)/m)?.[1]?.trim();
+const size = Number.parseInt(manifest.match(/^\s{4}size:\s*([0-9]+)/m)?.[1] ?? "", 10);
+if (!sha512) {
+  console.error("FAIL: latest-mac.yml is missing sha512");
+  process.exit(1);
+}
+const stat = fs.statSync(dmgPath);
+if (!Number.isFinite(size) || stat.size !== size) {
+  console.error(`FAIL: latest-mac.yml size ${size} != DMG size ${stat.size}`);
+  process.exit(1);
+}
+const actual = crypto.createHash("sha512").update(fs.readFileSync(dmgPath)).digest("base64");
+if (actual !== sha512) {
+  console.error("FAIL: latest-mac.yml sha512 does not match DMG");
+  process.exit(1);
+}
+NODE
 
 step "10/10" "Writing checksum"
 shasum -a 256 "$DMG"
