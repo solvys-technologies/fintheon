@@ -8,6 +8,7 @@ import {
   CalendarDays,
   GripVertical,
   BookOpenCheck,
+  PencilLine,
   Bell,
   BellOff,
   CubeFocus,
@@ -291,7 +292,7 @@ export function NavSidebar({
               }
               onDragOver={editMode ? handleDragOver : undefined}
               onDrop={editMode ? (e) => handleDrop(e, tabId) : undefined}
-              className={`flex items-center gap-1 rounded-md transition-colors ${expanded ? "group" : ""}`}
+              className={`relative flex items-center gap-1 rounded-md transition-colors ${expanded ? "group" : ""}`}
             >
               {expanded && editMode && (
                 <div
@@ -304,7 +305,7 @@ export function NavSidebar({
               <button
                 onClick={() => onTabChange(tabId as NavTab)}
                 data-tour-target={tabId}
-                className={`${expanded && isDashboard ? "flex-1" : "w-full"} ${SIDEBAR_BUTTON_CLASS} ${
+                className={`${expanded && isDashboard ? "flex-1 pr-6" : "w-full"} ${SIDEBAR_BUTTON_CLASS} ${
                   isActive ? "fintheon-nav-active" : "fintheon-nav-inactive"
                 }`}
                 title={expanded ? undefined : label}
@@ -329,10 +330,24 @@ export function NavSidebar({
                 <button
                   type="button"
                   onClick={() => setEditMode((v) => !v)}
-                  className="shrink-0 px-1 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55 hover:text-[var(--fintheon-accent)] transition-colors"
+                  className={`absolute bottom-[7px] right-1.5 grid h-3 w-3 place-items-center rounded-sm transition-colors ${
+                    isActive
+                      ? editMode
+                        ? "text-black"
+                        : "text-black/50 hover:text-black"
+                      : editMode
+                        ? "text-[var(--fintheon-accent)]"
+                        : "text-[var(--fintheon-accent)]/55 hover:text-[var(--fintheon-accent)]"
+                  }`}
                   title={editMode ? "Finish reordering" : "Enable drag reorder"}
+                  aria-label={
+                    editMode
+                      ? "Finish sidebar reordering"
+                      : "Edit sidebar order"
+                  }
+                  aria-pressed={editMode}
                 >
-                  {editMode ? "Done" : "Edit"}
+                  <PencilLine className="h-2.5 w-2.5" />
                 </button>
               )}
             </div>

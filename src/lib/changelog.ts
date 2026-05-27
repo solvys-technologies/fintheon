@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T13:20:00-04:00",
+    agent: "codex",
+    summary:
+      "Fixed the Arbitrum prediction-card icon crash by falling back to neutral for unknown lean values, centralized edit and lock aliases on the current icon-bank variants, and moved the sidebar edit control into the Desk subheader row as a compact pencil icon.",
+    files: [
+      "frontend/components/narrative/ArbitrumChamberPredictionCards.tsx",
+      "frontend/components/icon-bank/AnimatedIcons.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T13:10:00-04:00",
     agent: "codex",
     summary:

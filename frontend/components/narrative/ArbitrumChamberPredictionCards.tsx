@@ -17,9 +17,9 @@ interface InstrumentOutlook {
   symbol: string;
   name: string;
   ivScore: number;
-  lean: "bullish" | "bearish" | "neutral";
+  lean: string;
   range: [number, number];
-  conviction: "low" | "moderate" | "elevated";
+  conviction: string;
   drivers: string[];
   scoredItemCount: number;
 }
@@ -39,6 +39,27 @@ const CONVICTION_COLOR: Record<string, string> = {
   moderate: "var(--fintheon-accent)",
   elevated: "var(--fintheon-bearish)",
 };
+
+function getLeanConfig(lean: string) {
+  if (lean === "bullish" || lean === "bearish" || lean === "neutral")
+    return LEAN_CONFIG[lean];
+  return LEAN_CONFIG.neutral;
+}
+
+function getConvictionColor(conviction: string) {
+  return CONVICTION_COLOR[conviction] ?? CONVICTION_COLOR.moderate;
+}
+
+function getOutlookRange(range: InstrumentOutlook["range"]): [number, number] {
+  if (!Array.isArray(range)) return [0, 0];
+  const low = Number(range[0]);
+  const high = Number(range[1]);
+  return [Number.isFinite(low) ? low : 0, Number.isFinite(high) ? high : 0];
+}
+
+function formatPoints(value: number) {
+  return `${value > 0 ? "+" : ""}${value}`;
+}
 
 function IVHeatBar({ score }: { score: number }) {
   const hue = score >= 7 ? 0 : score >= 5 ? 30 : score >= 3 ? 45 : 120;
@@ -131,8 +152,10 @@ export function ArbitrumChamberPredictionCards() {
   return (
     <div className="flex items-stretch px-4 py-3 w-full gap-0">
       {outlook.map((inst, idx) => {
-        const leanCfg = LEAN_CONFIG[inst.lean];
+        const leanCfg = getLeanConfig(inst.lean);
         const LeanIcon = leanCfg.icon;
+        const convictionColor = getConvictionColor(inst.conviction);
+        const range = getOutlookRange(inst.range);
         const isLast = idx === outlook.length - 1;
         return (
           <div key={inst.symbol} className="flex items-stretch flex-1 min-w-0">
@@ -172,9 +195,7 @@ export function ArbitrumChamberPredictionCards() {
                   Range
                 </span>
                 <span className="text-[9px] font-mono text-[var(--fintheon-text)]">
-                  {inst.range[0] > 0 ? "+" : ""}
-                  {inst.range[0]} to {inst.range[1] > 0 ? "+" : ""}
-                  {inst.range[1]} pts
+                  {formatPoints(range[0])} to {formatPoints(range[1])} pts
                 </span>
               </div>
 
@@ -183,8 +204,8 @@ export function ArbitrumChamberPredictionCards() {
                 <span
                   className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5"
                   style={{
-                    color: CONVICTION_COLOR[inst.conviction],
-                    border: `1px solid ${CONVICTION_COLOR[inst.conviction]}`,
+                    color: convictionColor,
+                    border: `1px solid ${convictionColor}`,
                   }}
                 >
                   MARKET HEAT
