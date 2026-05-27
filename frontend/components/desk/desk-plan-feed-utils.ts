@@ -26,7 +26,7 @@ export function buildUpcomingDeskPlanFeed(
   return plans
     .flatMap(planToFeedItems)
     .filter((item) => item.endKey >= nowKey)
-    .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 }
 
 function planToFeedItems(plan: DayPlan): DeskPlanFeedItem[] {
