@@ -68,6 +68,37 @@ const INSTRUMENT_GROUPS: {
 
 const LOCKOUT_PRESETS = [5, 10, 15, 30, 60, 120];
 
+const LOCKOUT_TIMER_OPTIONS = [
+  { value: "am-ny", label: "AM NY session (8:55AM)", hour: 8, minute: 55 },
+  {
+    value: "am-pm-ny",
+    label: "AM-PM NY session (10:20AM)",
+    hour: 10,
+    minute: 20,
+  },
+  { value: "desk-plan", label: "Next Desk Plan" },
+  { value: "ny-close", label: "NY Market Close", hour: 16, minute: 0 },
+] as const;
+
+type LockoutTimerOption = (typeof LOCKOUT_TIMER_OPTIONS)[number]["value"];
+
+function nextLocalLockoutIso(hour: number, minute: number): string {
+  const target = new Date();
+  target.setHours(hour, minute, 0, 0);
+  if (target.getTime() <= Date.now()) {
+    target.setDate(target.getDate() + 1);
+  }
+  return target.toISOString();
+}
+
+function formatSystemTime(isoTimestamp: string): string {
+  return new Date(isoTimestamp).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 interface TradingTabProps {
   riskSettings: any;
   setRiskSettings: (settings: any) => void;
@@ -117,7 +148,37 @@ export function TradingTab({
     state: lockoutState,
     lock: lockoutLock,
     unlock: lockoutUnlock,
+    lockUntil,
+    lockUntilDeskSession,
   } = useLockout();
+  const [lockoutTimerPreset, setLockoutTimerPreset] = useState("");
+  const [lockoutTimerBusy, setLockoutTimerBusy] = useState(false);
+  const [lockoutTimerError, setLockoutTimerError] = useState<string | null>(
+    null,
+  );
+
+  const handleLockoutTimerChange = async (value: LockoutTimerOption | "") => {
+    setLockoutTimerPreset(value);
+    setLockoutTimerError(null);
+    if (!value) return;
+
+    const option = LOCKOUT_TIMER_OPTIONS.find((item) => item.value === value);
+    if (!option) return;
+
+    setLockoutTimerBusy(true);
+    try {
+      const ok =
+        option.value === "desk-plan"
+          ? (await lockUntilDeskSession()).locked
+          : "hour" in option
+            ? await lockUntil(nextLocalLockoutIso(option.hour, option.minute))
+            : false;
+      if (!ok) setLockoutTimerError("Could not set lock timer.");
+    } finally {
+      setLockoutTimerBusy(false);
+      setLockoutTimerPreset("");
+    }
+  };
 
   // [claude-code 2026-05-13] S63 T3: Sync quick access URL to main process for dock menu
   useEffect(() => {
@@ -362,6 +423,32 @@ export function TradingTab({
             </select>
           </div>
 
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-gray-400 shrink-0">Lock timer</label>
+            <select
+              value={lockoutTimerPreset}
+              disabled={lockoutTimerBusy}
+              onChange={(e) =>
+                handleLockoutTimerChange(
+                  e.target.value as LockoutTimerOption | "",
+                )
+              }
+              className="min-w-[220px] bg-[var(--fintheon-surface)] border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[var(--fintheon-accent)]/30 disabled:opacity-50"
+            >
+              <option value="">
+                {lockoutTimerBusy ? "Setting..." : "Choose lock timer"}
+              </option>
+              {LOCKOUT_TIMER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {lockoutTimerError && (
+            <p className="text-[11px] text-red-400">{lockoutTimerError}</p>
+          )}
+
           {/* S64 T3: Enhanced lockout settings */}
           <div className="pt-4 space-y-4">
             <div className="flex items-center gap-3">
@@ -412,7 +499,7 @@ export function TradingTab({
               <div className="bg-[var(--fintheon-surface)] border border-zinc-800 rounded p-3 text-xs text-gray-400 space-y-1">
                 <p>
                   <span className="text-gray-500">Scheduled unlock:</span>{" "}
-                  {new Date(lockoutState.autoReleaseAt).toLocaleTimeString()}
+                  {formatSystemTime(lockoutState.autoReleaseAt)}
                 </p>
                 {lockoutState.scheduledBy && (
                   <p>

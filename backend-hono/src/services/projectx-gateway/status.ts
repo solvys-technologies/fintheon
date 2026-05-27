@@ -3,6 +3,7 @@ import {
   missingCredentialFields,
   resolveProjectXCredentials,
 } from "./credentials.js";
+import { dbUserId } from "./user-id.js";
 
 interface StatusRow {
   status: string;
@@ -21,6 +22,7 @@ interface SummaryRow {
 export async function getProjectXStatus(userId: string) {
   const credentials = await resolveProjectXCredentials(userId);
   const missing = missingCredentialFields(credentials);
+  const normalizedUserId = dbUserId(userId);
   const base = {
     configured: missing.length === 0,
     missing,
@@ -55,7 +57,7 @@ export async function getProjectXStatus(userId: string) {
             MAX(entry_at)::text AS last_trade_at
      FROM trades
      WHERE user_id = $1 AND entry_at >= CURRENT_DATE`,
-    [userId],
+    [normalizedUserId],
   ).catch(() => ({ rows: [] as SummaryRow[] }));
 
   const row = connection.rows[0];

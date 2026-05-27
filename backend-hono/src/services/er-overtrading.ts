@@ -1,4 +1,5 @@
 import { isPoolAvailable, query } from "../db/optimized.js";
+import { dbUserId } from "./projectx-gateway/user-id.js";
 
 interface ActivitySummaryRow {
   trade_count: string;
@@ -57,6 +58,7 @@ export async function evaluateOvertrading(
 }> {
   const windowMinutes = clampWindow(options?.windowMinutes);
   const threshold = clampThreshold(options?.threshold);
+  const normalizedUserId = dbUserId(userId);
 
   if (!isPoolAvailable()) {
     return {
@@ -79,7 +81,7 @@ export async function evaluateOvertrading(
      WHERE user_id = $1
        AND is_trade = TRUE
        AND event_timestamp >= NOW() - ($2::int * INTERVAL '1 minute')`,
-    [userId, windowMinutes],
+    [normalizedUserId, windowMinutes],
   );
 
   let tradesInWindow = Number(activity.rows[0]?.trade_count ?? 0);
@@ -95,7 +97,7 @@ export async function evaluateOvertrading(
        FROM trades
        WHERE user_id = $1
          AND entry_at >= NOW() - ($2::int * INTERVAL '1 minute')`,
-      [userId, windowMinutes],
+      [normalizedUserId, windowMinutes],
     );
     tradesInWindow = Number(fallback.rows[0]?.trade_count ?? 0);
     weightedTrades = tradesInWindow;

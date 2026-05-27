@@ -14,6 +14,7 @@ import {
   upsertProjectXActivity,
 } from "./store.js";
 import type { CanonicalTrade, ProjectXSyncInput } from "./types.js";
+import { dbUserId } from "./user-id.js";
 
 const FALLBACK_LOOKBACK_MS = 48 * 60 * 60 * 1000;
 const ACTIVE_LOOKBACK_MS = 6 * 60 * 60 * 1000;
@@ -86,12 +87,13 @@ async function writeSyncRun(input: {
 }
 
 async function runPostSyncLoop(userId: string, trades: CanonicalTrade[]) {
+  const normalizedUserId = dbUserId(userId);
   const dates = Array.from(
     new Set(trades.map((trade) => trade.entryAt.slice(0, 10))),
   );
   await Promise.all(
     dates.slice(0, 5).map((date) =>
-      generateBlindspots(userId, date).catch(() => ({
+      generateBlindspots(normalizedUserId, date).catch(() => ({
         psych: [],
         trading: [],
       })),

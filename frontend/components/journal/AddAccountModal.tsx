@@ -42,7 +42,7 @@ export function AddAccountModal({
       (projectxUsername.trim() && !projectxApiKey.trim()) ||
       (!projectxUsername.trim() && projectxApiKey.trim())
     ) {
-      setError("ProjectX username and API key are both required.");
+      setError("Nametag and API key are both required.");
       setSaving(false);
       return;
     }
@@ -95,14 +95,19 @@ export function AddAccountModal({
         </div>
 
         <div className="grid grid-cols-1 gap-2">
-          <input
-            type="text"
-            value={projectxUsername}
-            onChange={(e) => setProjectxUsername(e.target.value)}
-            placeholder="ProjectX username"
-            autoComplete="username"
-            className="w-full bg-black/40 border border-(--fintheon-accent)/20 rounded-lg px-3 py-2 text-sm text-(--fintheon-text) placeholder:text-zinc-600 focus:outline-none focus:border-(--fintheon-accent)/50 transition-colors"
-          />
+          <div className="flex flex-col gap-1">
+            <input
+              type="text"
+              value={projectxUsername}
+              onChange={(e) => setProjectxUsername(e.target.value)}
+              placeholder="Nametag"
+              autoComplete="username"
+              className="w-full bg-black/40 border border-(--fintheon-accent)/20 rounded-lg px-3 py-2 text-sm text-(--fintheon-text) placeholder:text-zinc-600 focus:outline-none focus:border-(--fintheon-accent)/50 transition-colors"
+            />
+            <span className="text-[10px] text-(--fintheon-muted)">
+              also your username
+            </span>
+          </div>
           <input
             type="password"
             value={projectxApiKey}
