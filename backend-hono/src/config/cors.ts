@@ -15,6 +15,31 @@ const isLocalhostOrigin = (origin: string): boolean => {
   }
 };
 
+const isPrivateNetworkOrigin = (origin: string): boolean => {
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== "http:") return false;
+
+    const parts = url.hostname.split(".").map(Number);
+    if (
+      parts.length !== 4 ||
+      !parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255)
+    ) {
+      return url.hostname.endsWith(".local");
+    }
+
+    return (
+      parts[0] === 10 ||
+      (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168) ||
+      (parts[0] === 169 && parts[1] === 254)
+    );
+  } catch {
+    return false;
+  }
+};
+
 export const corsConfig = {
   origin: (origin: string) => {
     const allowlist = [
@@ -35,6 +60,7 @@ export const corsConfig = {
     if (allowlist.includes(origin)) return origin;
     // Allow any localhost origin (Electron, Vite dev, port hopping)
     if (isLocalhostOrigin(origin)) return origin;
+    if (isDev && isPrivateNetworkOrigin(origin)) return origin;
     return null;
   },
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

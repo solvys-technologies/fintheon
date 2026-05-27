@@ -192,12 +192,14 @@ function AuthenticatedApp() {
 
 function AuthGate() {
   const { isAuthenticated, isLoading, signIn } = useAuth();
+  const authBypass = import.meta.env.VITE_BYPASS_AUTH === "true";
+  const canEnterApp = isAuthenticated || authBypass;
 
   if (isLoading) {
     return <LoadingBootScreen phrase="Restoring session" compact />;
   }
 
-  if (!isAuthenticated) {
+  if (!canEnterApp) {
     return <MobileLoginScreen onSignIn={signIn} isLoading={isLoading} />;
   }
 
