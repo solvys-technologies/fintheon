@@ -3629,6 +3629,7 @@ html[data-zen-mode="true"] button[aria-label] {
 
 .desk-sprint-event-card {
   --desk-event-tone: var(--fintheon-accent);
+  border-radius: 14px;
   background:
     radial-gradient(
       circle at 18% 0%,
@@ -3642,7 +3643,7 @@ html[data-zen-mode="true"] button[aria-label] {
     ),
     color-mix(in srgb, var(--fintheon-surface) 42%, transparent) !important;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--desk-event-tone) 15%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--desk-event-tone) 10%, transparent),
     0 10px 24px color-mix(in srgb, black 24%, transparent);
   backdrop-filter: saturate(1.08);
   -webkit-backdrop-filter: saturate(1.08);
@@ -3675,6 +3676,7 @@ html[data-zen-mode="true"] button[aria-label] {
 }
 
 .desk-sprint-event-card[data-expanded="true"] {
+  border-radius: 14px;
   background:
     radial-gradient(
       circle at 18% 0%,

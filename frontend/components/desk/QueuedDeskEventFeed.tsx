@@ -95,13 +95,13 @@ export function QueuedDeskEventFeed({
       className={`min-h-0 overflow-y-auto pr-1 ${className}`}
       data-desk-queued-feed
     >
-      <div ref={contentRef} className={compact ? "space-y-3" : "space-y-5"}>
+      <div ref={contentRef} className={compact ? "space-y-4" : "space-y-8"}>
         {groups.map((group, groupIndex) => (
-          <section key={group.date}>
+          <section key={group.date} className={compact ? "" : "pt-1"}>
             <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-accent)]/72">
               {group.label}
             </h3>
-            <div className={compact ? "mt-1.5" : "mt-2"}>
+            <div className={compact ? "mt-2" : "mt-3.5"}>
               {group.items.map((event, index) => {
                 const absoluteIndex =
                   groups
@@ -139,10 +139,12 @@ function QueuedDeskEventRow({
   const toggleExpanded = () => setIsExpanded((value) => !value);
   return (
     <article
-      className={`group ${index > 0 ? "pt-2" : ""}`}
+      className={`group ${index > 0 ? (compact ? "pt-2.5" : "pt-4") : ""}`}
       style={{ opacity: afterThirdOpacity }}
     >
-      {index > 0 ? <FadingRuler className="mb-2 opacity-50" /> : null}
+      {index > 0 ? (
+        <FadingRuler className={`${compact ? "mb-2" : "mb-3"} opacity-50`} />
+      ) : null}
       <div
         role="button"
         tabIndex={0}
@@ -155,7 +157,7 @@ function QueuedDeskEventRow({
         }}
         className={`grid gap-3 ${
           compact ? "grid-cols-[1fr_auto]" : "grid-cols-[minmax(0,1fr)_auto]"
-        } cursor-pointer rounded-sm py-1 transition-[transform,color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-0.5`}
+        } cursor-pointer rounded-sm py-1.5 transition-[transform,color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-x-0.5`}
         aria-expanded={isExpanded}
       >
         <div className="min-w-0">

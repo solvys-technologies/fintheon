@@ -154,7 +154,7 @@ function DeskSprintViewToggle({
   onViewChange: (view: DeskMapView) => void;
 }) {
   return (
-    <div className="inline-flex h-8 w-[282px] items-center justify-between gap-1">
+    <div className="inline-flex h-8 items-center justify-end gap-1">
       <ToggleButton
         icon={FileText}
         label="Feed"
