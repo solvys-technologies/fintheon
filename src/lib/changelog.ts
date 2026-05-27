@@ -9,6 +9,13 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T13:25:00-04:00",
+    agent: "codex",
+    summary:
+      "Updated the overlay prototype toast bank with a live Streamdown market-ticker sparkline card sourced from the production macro-watchlist endpoint, using the same CSS-variable liquid-glass tint as the toast surfaces.",
+    files: ["toast-notification-bank.html", "src/lib/changelog.ts"],
+  },
+  {
     date: "2026-05-27T13:20:00-04:00",
     agent: "codex",
     summary:

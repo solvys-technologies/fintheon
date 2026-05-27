@@ -42,9 +42,16 @@
         --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         --fintheon-bg: var(--bg);
         --fintheon-text: var(--text);
+        --fintheon-muted: var(--muted);
         --fintheon-primary: var(--gold);
         --fintheon-accent: var(--gold);
         --fintheon-border: rgba(199, 159, 74, 0.22);
+        --fintheon-overlay-surface: rgba(8, 9, 10, 0.72);
+        --fintheon-overlay-border: color-mix(
+          in srgb,
+          var(--fintheon-primary) 24%,
+          transparent
+        );
         --fintheon-toast-glass-bg: rgba(8, 9, 10, 0.72);
         --fintheon-toast-glass-tint: color-mix(
           in srgb,
@@ -923,6 +930,184 @@
         --toast-tone: var(--fintheon-toast-accent);
       }
 
+      .streamdown-widget-row {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: flex-start;
+        padding-top: 2px;
+      }
+
+      .streamdown-slot-shell {
+        width: 310px;
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid var(--fintheon-toast-glass-line);
+        border-radius: var(--fintheon-toast-radius);
+        background:
+          linear-gradient(180deg, rgba(240, 234, 214, 0.07), transparent 28%),
+          linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--fintheon-primary) 8%, transparent),
+            transparent 54%
+          ),
+          var(--fintheon-toast-glass-bg);
+        backdrop-filter: blur(var(--fintheon-toast-blur)) saturate(1.18);
+        -webkit-backdrop-filter: blur(var(--fintheon-toast-blur)) saturate(1.18);
+      }
+
+      .streamdown-slot-label {
+        margin-bottom: 7px;
+        color: var(--fintheon-accent);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.85;
+      }
+
+      .fintheon-market-ticker-card {
+        position: relative;
+        isolation: isolate;
+        width: 286px;
+        padding: 12px;
+        border: 1px solid var(--fintheon-overlay-border);
+        border-radius: 8px;
+        background: color-mix(
+          in srgb,
+          var(--fintheon-overlay-surface) 70%,
+          transparent
+        );
+        overflow: hidden;
+      }
+
+      .fintheon-market-ticker-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, white 5%, transparent),
+          transparent 22%
+        );
+        opacity: 0.42;
+      }
+
+      .ticker-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .ticker-card-kicker,
+      .ticker-card-foot,
+      .ticker-metric-label {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        text-transform: uppercase;
+      }
+
+      .ticker-card-kicker {
+        margin: 0;
+        color: var(--fintheon-accent);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+      }
+
+      .ticker-card-price {
+        margin: 4px 0 0;
+        color: var(--fintheon-text);
+        font-size: 24px;
+        font-weight: 650;
+        line-height: 1;
+      }
+
+      .ticker-card-change {
+        margin: 5px 0 0;
+        color: var(--fintheon-accent);
+        font-size: 12px;
+      }
+
+      .ticker-card-change[data-direction="up"] {
+        color: rgb(110 231 183);
+      }
+
+      .ticker-card-change[data-direction="down"] {
+        color: rgb(252 165 165);
+      }
+
+      .ticker-card-link {
+        color: var(--fintheon-accent);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      .ticker-card-sparkline {
+        display: block;
+        width: 100%;
+        height: 74px;
+        margin-top: 12px;
+        overflow: visible;
+      }
+
+      .ticker-card-sparkline polyline {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .ticker-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 10px;
+      }
+
+      .ticker-metric {
+        padding: 8px;
+        border: 1px solid
+          color-mix(in srgb, var(--fintheon-accent) 10%, transparent);
+        border-radius: 5px;
+        background: rgba(0, 0, 0, 0.14);
+      }
+
+      .ticker-metric-label {
+        display: block;
+        color: rgba(140, 132, 111, 0.58);
+        font-size: 9px;
+      }
+
+      .ticker-metric-value {
+        display: block;
+        margin-top: 4px;
+        color: rgba(240, 234, 214, 0.7);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      .ticker-card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 12px;
+        color: rgba(140, 132, 111, 0.52);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+      }
+
+      .ticker-card-state {
+        display: flex;
+        min-height: 72px;
+        align-items: center;
+        justify-content: center;
+        color: rgba(140, 132, 111, 0.68);
+        font-size: 11px;
+      }
+
       .preview-stack {
         position: fixed;
         z-index: 70;
@@ -1508,6 +1693,22 @@
             </button>
           </div>
         </article>
+
+        <div
+          class="streamdown-widget-row"
+          data-production-source="frontend/components/chat/slots/MarketTickerCard.tsx"
+        >
+          <div class="streamdown-slot-shell">
+            <div class="streamdown-slot-label">5d performance</div>
+            <div
+              class="fintheon-market-ticker-card"
+              id="streamdown-instrument-widget"
+              aria-live="polite"
+            >
+              <div class="ticker-card-state">Loading TV scanner...</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <h2 class="bank-label">Popup modals</h2>
@@ -3717,6 +3918,175 @@
       let isLooping = false;
       let loopIndex = 0;
       let activeTimers = [];
+      const streamdownWidget = document.getElementById(
+        "streamdown-instrument-widget",
+      );
+
+      function getMarketScanBase() {
+        const host =
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1"
+            ? "127.0.0.1"
+            : window.location.hostname;
+        return `${window.location.protocol}//${host}:8080`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(
+          /[&<>"']/g,
+          (char) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[char],
+        );
+      }
+
+      function formatPrice(value) {
+        if (!Number.isFinite(value)) return "N/A";
+        if (Math.abs(value) >= 1000) {
+          return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+        }
+        if (Math.abs(value) >= 100) return value.toFixed(2);
+        return value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+      }
+
+      function formatSigned(value) {
+        return `${value >= 0 ? "+" : ""}${formatPrice(value)}`;
+      }
+
+      function formatSignedPct(value) {
+        return `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}%`;
+      }
+
+      function nullablePrice(value) {
+        return Number.isFinite(value) ? formatPrice(value) : "N/A";
+      }
+
+      function buildSparkline(quote) {
+        const points = Array.isArray(quote.sparkline) ? quote.sparkline : [];
+        if (points.length < 2) {
+          return `<div class="ticker-card-state">5D chart unavailable</div>`;
+        }
+        const width = 260;
+        const height = 74;
+        const pad = 6;
+        const values = points.map((point) => Number(point.close));
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const span = max - min || 1;
+        const line = points
+          .map((point, index) => {
+            const x = pad + (index / (points.length - 1)) * (width - pad * 2);
+            const y =
+              height -
+              pad -
+              ((Number(point.close) - min) / span) * (height - pad * 2);
+            return `${x.toFixed(2)},${y.toFixed(2)}`;
+          })
+          .join(" ");
+        const area = `${pad},${height - pad} ${line} ${width - pad},${
+          height - pad
+        }`;
+        const positive = quote.change >= 0;
+        const color = positive ? "#34d399" : "#ef4444";
+        const gradientId = `ticker-gradient-${escapeHtml(quote.label)}`;
+        return `
+          <svg class="ticker-card-sparkline" viewBox="0 0 ${width} ${height}" aria-hidden="true">
+            <defs>
+              <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${color}" stop-opacity="0.34"></stop>
+                <stop offset="100%" stop-color="${color}" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+            <polyline points="${area}" fill="url(#${gradientId})" stroke="none"></polyline>
+            <polyline points="${line}" fill="none" stroke="${color}" stroke-width="2"></polyline>
+          </svg>
+        `;
+      }
+
+      function renderStreamdownTicker(quote) {
+        const positive = quote.change >= 0;
+        const rollingHigh = quote.rolling5dHigh ?? quote.rolling7dHigh;
+        const rollingLow = quote.rolling5dLow ?? quote.rolling7dLow;
+        const tvUrl = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(
+          quote.tvSymbol,
+        )}`;
+        streamdownWidget.dataset.instrument = quote.label;
+        streamdownWidget.dataset.productionEndpoint =
+          "/api/market-scan/macro-watchlist";
+        streamdownWidget.innerHTML = `
+          <div class="ticker-card-head">
+            <div>
+              <p class="ticker-card-kicker">${escapeHtml(quote.label)} · ${escapeHtml(
+                quote.group,
+              )}</p>
+              <p class="ticker-card-price">${formatPrice(quote.price)}</p>
+              <p class="ticker-card-change" data-direction="${
+                positive ? "up" : "down"
+              }">${formatSigned(quote.change)} (${formatSignedPct(
+                quote.changePercent,
+              )})</p>
+            </div>
+          </div>
+          ${buildSparkline(quote)}
+          <div class="ticker-metrics">
+            <div class="ticker-metric">
+              <span class="ticker-metric-label">Open</span>
+              <span class="ticker-metric-value">${formatPrice(quote.open)}</span>
+            </div>
+            <div class="ticker-metric">
+              <span class="ticker-metric-label">Day range</span>
+              <span class="ticker-metric-value">${formatPrice(quote.low)}-${formatPrice(
+                quote.high,
+              )}</span>
+            </div>
+            <div class="ticker-metric">
+              <span class="ticker-metric-label">5D high</span>
+              <span class="ticker-metric-value">${nullablePrice(rollingHigh)}</span>
+            </div>
+            <div class="ticker-metric">
+              <span class="ticker-metric-label">5D low</span>
+              <span class="ticker-metric-value">${nullablePrice(rollingLow)}</span>
+            </div>
+          </div>
+          <div class="ticker-card-foot">
+            <span>Live TV scanner · 5D ${
+              quote.historySource === "yahoo" ? "Yahoo" : "unverified"
+            }</span>
+            <a class="ticker-card-link" href="${tvUrl}" target="_blank" rel="noreferrer">TV ↗</a>
+          </div>
+        `;
+      }
+
+      async function loadStreamdownTicker() {
+        if (!streamdownWidget) return;
+        try {
+          const response = await fetch(
+            `${getMarketScanBase()}/api/market-scan/macro-watchlist`,
+          );
+          const payload = response.ok ? await response.json() : null;
+          const quotes = Array.isArray(payload?.data) ? payload.data : [];
+          const preferred = ["NQ", "ES", "YM", "RTY"];
+          const quote =
+            preferred
+              .map((label) => quotes.find((item) => item.label === label))
+              .find((item) => item?.sparkline?.length >= 2) ??
+            quotes.find((item) => item?.sparkline?.length >= 2);
+          if (!quote) {
+            streamdownWidget.innerHTML =
+              '<div class="ticker-card-state">No live ticker data available.</div>';
+            return;
+          }
+          renderStreamdownTicker(quote);
+        } catch {
+          streamdownWidget.innerHTML =
+            '<div class="ticker-card-state">Live ticker endpoint unavailable.</div>';
+        }
+      }
 
       function clearTimers() {
         activeTimers.forEach((timer) => window.clearTimeout(timer));
@@ -3774,6 +4144,8 @@
         }
         clearPreview();
       }
+
+      loadStreamdownTicker();
 
       button.addEventListener("click", () => setLooping(!isLooping));
 
