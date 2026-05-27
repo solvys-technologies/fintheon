@@ -395,7 +395,7 @@ function formatWeekRange(date: string) {
   const endDayLabel = ordinal(end.getDate());
 
   if (sameMonth && sameYear) {
-    return `Week of: ${startMonthLabel} ${startDayLabel} thru ${endDayLabel}, ${yearLabel}`;
+    return `Week of: ${startMonthLabel} ${startDayLabel} thru ${endMonthLabel} ${endDayLabel}, ${yearLabel}`;
   }
 
   return `Week of: ${startMonthLabel} ${startDayLabel} thru ${endMonthLabel} ${endDayLabel}, ${yearLabel}`;

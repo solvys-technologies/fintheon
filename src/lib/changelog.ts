@@ -9,11 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-26T23:05:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk prototype final-check polish: softened chat composer drawer collapse, aligned top-toolbar icon sizing to the rail rhythm, renamed the Consilium Apparatus Desk entry to Agentic Desk, repeated the Sprint week-range end month, and kept Sprint/Feed card transitions plus compact Desk Rail cards wired for verification.",
+    files: [
+      "frontend/components/chat/composer/RepoChatComposer.tsx",
+      "frontend/components/consilium/ConsiliumTabConfig.ts",
+      "frontend/components/executive/DeskPlanSprintTimeline.tsx",
+      "frontend/index.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-26T22:52:00-04:00",
     agent: "codex",
     summary:
-      "Overlay prototype bank: expanded the standalone HTML canvas to render desktop toast notifications, popup modals, dropdown menus, composer popovers with chat drawers excluded, corrected toast placement metadata, swapped the VIX fuse for a mini sparkline, and kept the top-right preview loop for enter/dwell/exit motion.",
-    files: ["toast-notification-bank.html", "src/lib/changelog.ts"],
+      "Overlay prototype bank: expanded the standalone HTML canvas to render desktop toast notifications, popup modals, dropdown menus, and non-drawer chat/Streamdown surfaces, corrected toast placement metadata, swapped the VIX fuse for a mini sparkline, removed composer drawer specimens from the bank, deleted the orphaned FuturesChart widget, and kept the top-right preview loop for enter/dwell/exit motion.",
+    files: [
+      "toast-notification-bank.html",
+      "frontend/components/chat/widgets/FuturesChart.tsx",
+      "src/lib/changelog.ts",
+    ],
   },
   {
     date: "2026-05-26T13:22:00-04:00",
