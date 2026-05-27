@@ -78,6 +78,7 @@ function decideStatus(
 ): string {
   if (isExpired(forecast)) return "expired";
   if (matchesValidationRule(forecast, evidence)) return "thesis_proven";
+  if (hasMarketReferenceReversal(forecast)) return "invalidated";
   if (hasMarketReferenceBreak(forecast)) return "gaining_support";
   if (hasFreshEvidenceSupport(evidence)) return "gaining_support";
   if (forecast.status === "published") return "watching";
@@ -119,6 +120,14 @@ function hasMarketReferenceBreak(forecast: DeskForecast): boolean {
   });
 }
 
+function hasMarketReferenceReversal(forecast: DeskForecast): boolean {
+  if (forecast.marketReferences.length === 0) return false;
+  return forecast.marketReferences.some((ref) => {
+    const value = Number(String(ref.priceOrOdds ?? "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(value) && value > 0 && value <= 20;
+  });
+}
+
 function isExpired(forecast: DeskForecast): boolean {
   if (!forecast.expiresAt) return false;
   const expiry = new Date(forecast.expiresAt).getTime();
@@ -138,6 +147,9 @@ function buildReasons(
     status === "expired" ? "Forecast passed its expiry timestamp." : "",
     status === "thesis_proven"
       ? "Validation language matched attached evidence."
+      : "",
+    status === "invalidated"
+      ? "Prediction-market reference moved against thesis (≤20%)."
       : "",
   ].filter(Boolean);
 }

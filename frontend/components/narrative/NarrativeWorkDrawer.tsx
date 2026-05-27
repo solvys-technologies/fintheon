@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Clock, FileText, GitBranch, Tv, type LucideIcon } from "lucide-react";
 import { NarrativeDocsTab } from "./NarrativeDocsTab";
-import { NarrativeFlowTab } from "./NarrativeFlowTab";
+import { NarrativeFlowViewToggle } from "./NarrativeFlowViewToggle";
 import { NarrativeTimelineTab } from "./NarrativeTimelineTab";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import type { SensemakingResponse } from "./sensemaking-types";
@@ -209,11 +209,12 @@ export function NarrativeWorkDrawer({
       </div>
 
       <div
-        className={`min-h-0 flex-1 ${activeTab === "canvas" ? "overflow-hidden p-0" : "overflow-y-auto p-3"}`}
+        className={`min-h-0 flex-1 ${activeTab === "canvas" || activeTab === "flow" ? "overflow-hidden p-0" : "overflow-y-auto p-3"}`}
       >
         {activeTab === "canvas" ? canvasSlot : null}
         {activeTab === "flow" ? (
-          <NarrativeFlowTab
+          <NarrativeFlowViewToggle
+            compact={compactTabs}
             session={session}
             response={response}
             selectedNodeId={selectedNodeId}
