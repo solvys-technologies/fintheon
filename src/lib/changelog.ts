@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T13:10:00-04:00",
+    agent: "codex",
+    summary:
+      "v7.0.4 release hotfix: sealed the macOS app bundle during DMG packaging, made deployed DMG verification mount and codesign-check the downloaded app, and refreshed setup/update pointers so nontechnical installs receive the repaired package.",
+    files: [
+      "package.json",
+      "backend-hono/package.json",
+      "mobile/package.json",
+      "scripts/electron-after-pack.cjs",
+      "scripts/build-release.sh",
+      "scripts/desktop-release-preflight.sh",
+      "scripts/desktop-update-download-preflight.mjs",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      ".agents/skills/solvys-deploy/SKILL.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T01:35:00-04:00",
     agent: "codex",
     summary:
@@ -44,7 +65,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-27T00:30:00-04:00",
     agent: "codex",
     summary:
-      "v7.0.3 release prep: captured the new app toast notification surfaces and in-app desktop updater path, then refreshed setup/update script pointers for the patch release.",
+      "v7.0.4 release prep: captured the new app toast notification surfaces and in-app desktop updater path, then refreshed setup/update script pointers for the patch release.",
     files: [
       "frontend/components/ui/Toast.tsx",
       "frontend/contexts/ToastContext.tsx",

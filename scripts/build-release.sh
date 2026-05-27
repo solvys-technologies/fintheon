@@ -20,7 +20,7 @@ cd backend-hono && bun run build && cd ..
 
 # 3. Build Mac DMG
 echo "[3/3] Building Mac DMG..."
-bunx electron-builder --mac dmg
+FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg
 
 # Windows NSIS (uncomment on Windows or cross-compile CI)
 # bunx electron-builder --win nsis

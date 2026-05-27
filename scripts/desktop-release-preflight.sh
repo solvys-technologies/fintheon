@@ -1,12 +1,13 @@
 #!/bin/bash
 # Fintheon Desktop release preflight.
-# Fails the release unless the GitHub-ready DMG is buildable, signed, and sane.
+# Fails the release unless the GitHub-ready DMG is buildable, sealed, and sane.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
 DMG="$ROOT/desktop-dist/Fintheon-${VERSION}-arm64.dmg"
 APP="$ROOT/desktop-dist/mac-arm64/Fintheon.app"
+ALLOW_S100_UNSIGNED="${FINTHEON_ALLOW_S100_UNSIGNED:-0}"
 
 step() { printf '\n[%s] %s\n' "$1" "$2"; }
 fail() { echo "FAIL: $1" >&2; exit 1; }
@@ -45,13 +46,31 @@ bash -n \
 
 step "7/10" "Building Mac DMG"
 rm -rf "$ROOT/desktop-dist"
-(cd "$ROOT" && bunx electron-builder --mac dmg)
+(cd "$ROOT" && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg)
 [[ -f "$DMG" ]] || fail "DMG missing: $DMG"
 
-step "8/10" "Checking signature and Gatekeeper assessment"
+step "8/10" "Checking app seal, DMG contents, and Gatekeeper assessment"
 codesign --verify --deep --strict --verbose=2 "$APP"
-spctl -a -vv -t exec "$APP"
-spctl -a -vv -t open "$DMG"
+
+MOUNT_DIR="$(mktemp -d)"
+cleanup_mount() {
+  hdiutil detach "$MOUNT_DIR" -quiet 2>/dev/null || true
+  rm -rf "$MOUNT_DIR"
+}
+trap cleanup_mount EXIT
+hdiutil attach "$DMG" -nobrowse -readonly -quiet -mountpoint "$MOUNT_DIR"
+[[ -d "$MOUNT_DIR/Fintheon.app" ]] || fail "DMG does not contain Fintheon.app"
+codesign --verify --deep --strict --verbose=2 "$MOUNT_DIR/Fintheon.app"
+cleanup_mount
+trap - EXIT
+
+if spctl -a -vv -t exec "$APP" && spctl -a -vv -t open "$DMG"; then
+  echo "Gatekeeper assessment accepted"
+elif [[ "$ALLOW_S100_UNSIGNED" == "1" ]]; then
+  echo "WARN: Gatekeeper rejected unsigned/ad-hoc macOS artifact under Sprint 100 exception"
+else
+  fail "Gatekeeper rejected this release; set FINTHEON_ALLOW_S100_UNSIGNED=1 only under the Sprint 100 Developer ID exception"
+fi
 
 step "9/10" "Checking update metadata"
 [[ -f "$ROOT/desktop-dist/latest-mac.yml" ]] || fail "latest-mac.yml missing"
@@ -81,4 +100,8 @@ NODE
 
 step "10/10" "Writing checksum"
 shasum -a 256 "$DMG"
-echo "PASS: Fintheon Desktop v$VERSION release preflight complete"
+if [[ "$ALLOW_S100_UNSIGNED" == "1" ]]; then
+  echo "PASS WITH S100 UNSIGNED EXCEPTION: Fintheon Desktop v$VERSION release preflight complete"
+else
+  echo "PASS: Fintheon Desktop v$VERSION release preflight complete"
+fi

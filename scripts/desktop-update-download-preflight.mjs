@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import crypto from "node:crypto";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -27,6 +28,73 @@ function hashFile(filePath, algorithm, encoding) {
     stream.on("data", (chunk) => hash.update(chunk));
     stream.on("end", () => resolve(hash.digest(encoding)));
   });
+}
+
+function runQuiet(command, args) {
+  return execFileSync(command, args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
+function verifyDownloadedDmg(dmgPath) {
+  const mountDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), "fintheon-dmg-mount-"),
+  );
+  let mounted = false;
+
+  try {
+    runQuiet("hdiutil", [
+      "attach",
+      dmgPath,
+      "-nobrowse",
+      "-readonly",
+      "-quiet",
+      "-mountpoint",
+      mountDir,
+    ]);
+    mounted = true;
+
+    const appPath = path.join(mountDir, "Fintheon.app");
+    if (!fs.existsSync(appPath)) {
+      throw new Error("downloaded DMG does not contain Fintheon.app");
+    }
+
+    runQuiet("codesign", [
+      "--verify",
+      "--deep",
+      "--strict",
+      "--verbose=2",
+      appPath,
+    ]);
+
+    const requireGatekeeper = process.env.FINTHEON_REQUIRE_GATEKEEPER === "1";
+    try {
+      runQuiet("spctl", ["-a", "-vv", "-t", "exec", appPath]);
+      runQuiet("spctl", ["-a", "-vv", "-t", "open", dmgPath]);
+      console.log("PASS: Gatekeeper accepted downloaded DMG");
+    } catch (error) {
+      const detail =
+        error?.stderr?.toString?.() || error?.message || String(error);
+      if (requireGatekeeper) {
+        throw new Error(`Gatekeeper rejected downloaded DMG: ${detail}`);
+      }
+      console.warn(
+        "WARN: Gatekeeper rejected unsigned/ad-hoc DMG; app seal still verified. Sprint 100 covers Developer ID signing/notarization.",
+      );
+    }
+
+    console.log("PASS: downloaded DMG contains a sealed Fintheon.app");
+  } finally {
+    if (mounted) {
+      try {
+        runQuiet("hdiutil", ["detach", mountDir, "-quiet"]);
+      } catch {
+        // best effort cleanup only
+      }
+    }
+    fs.rmSync(mountDir, { recursive: true, force: true });
+  }
 }
 
 async function main() {
@@ -112,6 +180,8 @@ async function main() {
     if (actual !== checksum.expected) {
       fail(`${checksum.algorithm} checksum mismatch for downloaded DMG`);
     }
+
+    verifyDownloadedDmg(tempPath);
 
     console.log(
       `PASS: deployed endpoint produced downloadable ${update.assetName} (${bytes} bytes, ${checksum.algorithm} verified)`,

@@ -17,6 +17,7 @@ You are a release engineer. Follow every phase in order. Do not skip pre-flight.
 - **Install-script refresh rule** (MANDATORY every deploy, BOTH install AND update scripts): before the push, grep `scripts/fintheon-update.sh`, `scripts/fintheon-setup.sh`, `scripts/install-cli.sh` for version renders and fetch pointers. Any `git describe --tags --always` → swap to `git describe --tags --abbrev=0` (drops the `-N-gHASH` post-tag drift suffix). Any hardcoded `UPDATE_VERSION=` / `SETUP_VERSION=` / tag pointer → bump to the new tag. Any `git clone --branch <X>` or `curl .../raw/<X>/...` pointer must resolve to the new release. Commit the script changes with `INSTALL-UPDATE:` prefix as part of the deploy push — do NOT leave them for a follow-up. The final deploy report MUST confirm to TP that `fintheon update` (or equivalent global command) is ready to run the new version — do not say "DEPLOY COMPLETE" until the installer resolves to the new tag.
 - **No 10PM support-bomb releases**: never publish or leave active a Fintheon release unless a nontechnical user can download the DMG from GitHub, mount it, drag it to `/Applications`, open it, and receive in-app updates without calling TP. `bun run release:preflight` and `bun run release:verify-dmg` are hard gates, not nice-to-have checks.
 - **Sprint 100 Developer ID exception** (temporary, explicit override only): Apple Developer ID signing/notarization is deferred to Sprint 100. If, and only if, TP explicitly says to publish while disregarding the Developer ID/Gatekeeper failure for the moment, continue the deploy with an unsigned/ad-hoc macOS DMG. Do not claim `release:preflight` passed. Name the exception in the release notes, final report, and verification summary. This exception applies only to `codesign`/`spctl`/Developer ID failures; it does NOT waive frontend/backend/mobile builds, install/update script refresh, DMG creation, release asset upload, `latest-mac.yml`/blockmap upload, `bun run release:verify-dmg`, release pruning, endpoint checks, or local backend restart.
+- **macOS "damaged" is not a normal unsigned warning**: if a downloaded DMG says the app is damaged and macOS does not offer the Settings override, treat it as a broken app seal/resources failure. Rebuild with the repo-owned ad-hoc packaging path (`FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false`) and verify the mounted DMG's `Fintheon.app` with `codesign --verify --deep --strict` before upload. A checksum-only `release:verify-dmg` is not enough.
 - **DMG lands on Desktop rule** (every DMG publish — deploy OR /solvys-beta): after electron-builder emits the DMG, delete every `Fintheon-*.dmg` already on `~/Desktop/` and copy the new one there. TP installs from Desktop; old DMGs confuse it. `find ~/Desktop -maxdepth 1 -name "Fintheon-*.dmg" -type f -delete` then `cp dist-electron/Fintheon-*.dmg ~/Desktop/`.
 - **Current major** = numeric prefix of the active deploy branch (e.g. `v5.*` while on `v5.22`). When the branch rolls to v6.x later, pivot the prune target.
 - Deploy must hit ALL 3 targets: backend (Fly.io), desktop frontend (Vercel), mobile PWA (Vercel)
@@ -178,8 +179,18 @@ gh release create "v$VERSION" --generate-notes --title "v$VERSION"
 The DMG is what the in-app updater and `fintheon update` CLI download. Without it, every user sees "Release DMG download failed" and falls back to a full source rebuild. This step runs after the GitHub release is created.
 
 ```bash
-# Build the DMG
-bun run desktop:build
+# Build the DMG. Under the Sprint 100 Developer ID exception this still must
+# ad-hoc seal the app bundle before DMG creation; unsigned is allowed, broken
+# resources are not.
+FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bun run desktop:build
+
+# Verify the app bundle inside the DMG before upload; this catches the "damaged"
+# no-Settings-override failure mode.
+MOUNT_DIR="$(mktemp -d)"
+hdiutil attach "desktop-dist/Fintheon-${VERSION}-arm64.dmg" -nobrowse -readonly -quiet -mountpoint "$MOUNT_DIR"
+codesign --verify --deep --strict --verbose=2 "$MOUNT_DIR/Fintheon.app"
+hdiutil detach "$MOUNT_DIR" -quiet
+rm -rf "$MOUNT_DIR"
 
 # Upload to the release
 gh release upload "v$VERSION" desktop-dist/Fintheon-*-arm64.dmg --repo solvys-technologies/fintheon --clobber
@@ -196,7 +207,7 @@ bun run release:verify-dmg
 - FAIL if the DMG upload fails (the release is incomplete without it)
 - FAIL if `release:verify-dmg` fails; delete or fix the broken GitHub release before ending the deploy
 - WARN if Desktop copy fails (non-blocking; DMG is still on the release)
-- If the Sprint 100 Developer ID exception is explicitly active and `desktop:build`/`electron-builder` stalls on missing signing identity, rebuild the DMG with `CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg` after `bun run frontend:build`. Upload `desktop-dist/Fintheon-${VERSION}-arm64.dmg`, `desktop-dist/Fintheon-${VERSION}-arm64.dmg.blockmap`, and `desktop-dist/latest-mac.yml`. Add a release-body note: "Apple Developer ID signing/notarization is intentionally deferred to Sprint 100; this release publishes the current unsigned/ad-hoc macOS DMG." The release is still incomplete unless `bun run release:verify-dmg` passes against the deployed update endpoint.
+- If the Sprint 100 Developer ID exception is explicitly active and `desktop:build`/`electron-builder` stalls on missing signing identity, rebuild the DMG with `FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg` after `bun run frontend:build`. Upload `desktop-dist/Fintheon-${VERSION}-arm64.dmg`, `desktop-dist/Fintheon-${VERSION}-arm64.dmg.blockmap`, and `desktop-dist/latest-mac.yml`. Add a release-body note: "Apple Developer ID signing/notarization is intentionally deferred to Sprint 100; this release publishes the current unsigned/ad-hoc macOS DMG." The release is still incomplete unless `bun run release:verify-dmg` passes against the deployed update endpoint and confirms the mounted DMG contains a sealed `Fintheon.app`.
 
 ### 2f. Prune older releases in the current major-version namespace
 

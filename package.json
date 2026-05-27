@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "7.0.3",
+  "version": "7.0.4",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
@@ -60,9 +60,9 @@
     "build": "cd frontend && bun run build",
     "frontend:install": "cd frontend && bun install",
     "frontend:build": "cd frontend && bun run build",
-    "desktop:build": "bun run frontend:build && electron-builder --mac dmg",
+    "desktop:build": "bun run frontend:build && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
-    "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && bunx electron-builder --mac dmg --publish always",
+    "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg --publish always",
     "release:preflight": "bash scripts/desktop-release-preflight.sh",
     "release:verify-dmg": "node scripts/desktop-update-download-preflight.mjs",
     "frontend:build:windows": "cd frontend && bun run build:windows",
@@ -83,6 +83,7 @@
     "directories": {
       "output": "desktop-dist"
     },
+    "afterPack": "scripts/electron-after-pack.cjs",
     "mac": {
       "target": [
         "dmg",
