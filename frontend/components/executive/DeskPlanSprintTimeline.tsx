@@ -52,10 +52,6 @@ export function DeskPlanSprintTimeline({
 
   if (plans.length === 0 || !segment) return <EmptyTimeline />;
 
-  const blockCount = weekRows.reduce(
-    (count, row) => count + row.blocks.length,
-    0,
-  );
   const motionClass =
     transitionDirection && transitionDirection < 0
       ? "animate-in fade-in slide-in-from-left-1 duration-200"
@@ -63,12 +59,9 @@ export function DeskPlanSprintTimeline({
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", motionClass)}>
-      <div className="flex items-end justify-between gap-4 pb-2">
+      <div className="flex items-end justify-end gap-4 pb-2">
         <p className="font-mono text-[10px] text-[var(--fintheon-accent)]">
-          {segment.dateLabel}
-        </p>
-        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/45">
-          {blockCount} blocks
+          {formatWeekRange(segment.date)}
         </p>
       </div>
       <FadingRuler className="opacity-35" />
@@ -381,6 +374,46 @@ function getWeekDates(date: string) {
     cursor.setDate(cursor.getDate() + 1);
     return iso;
   });
+}
+
+function formatWeekRange(date: string) {
+  const dates = getWeekDates(date);
+  const [startYear, startMonth, startDay] = dates[0].split("-").map(Number);
+  const [endYear, endMonth, endDay] = dates[dates.length - 1]
+    .split("-")
+    .map(Number);
+  const start = new Date(startYear, startMonth - 1, startDay);
+  const end = new Date(endYear, endMonth - 1, endDay);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startMonthLabel = start.toLocaleDateString("en-US", {
+    month: "short",
+  });
+  const endMonthLabel = end.toLocaleDateString("en-US", { month: "short" });
+  const yearLabel = String(end.getFullYear());
+  const startDayLabel = ordinal(start.getDate());
+  const endDayLabel = ordinal(end.getDate());
+
+  if (sameMonth && sameYear) {
+    return `Week of: ${startMonthLabel} ${startDayLabel} thru ${endDayLabel}, ${yearLabel}`;
+  }
+
+  return `Week of: ${startMonthLabel} ${startDayLabel} thru ${endMonthLabel} ${endDayLabel}, ${yearLabel}`;
+}
+
+function ordinal(value: number) {
+  const tens = value % 100;
+  if (tens >= 11 && tens <= 13) return `${value}th`;
+  switch (value % 10) {
+    case 1:
+      return `${value}st`;
+    case 2:
+      return `${value}nd`;
+    case 3:
+      return `${value}rd`;
+    default:
+      return `${value}th`;
+  }
 }
 
 function formatDay(date: string) {
