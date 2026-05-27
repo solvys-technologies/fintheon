@@ -269,7 +269,10 @@ export function PromptBox({
   const isAttachOpen = attachOpen ?? showAttach;
   const setAttachOpen = useCallback(
     (open: boolean) => {
-      if (attachOpen === undefined) setShowAttach(open);
+      if (attachOpen === open) return;
+      if (attachOpen === undefined) {
+        setShowAttach((current) => (current === open ? current : open));
+      }
       onAttachOpenChange?.(open);
     },
     [attachOpen, onAttachOpenChange],
@@ -301,16 +304,16 @@ export function PromptBox({
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (toolboxOpen) setAttachOpen(false);
-  }, [setAttachOpen, toolboxOpen]);
+    if (toolboxOpen && isAttachOpen) setAttachOpen(false);
+  }, [isAttachOpen, setAttachOpen, toolboxOpen]);
 
   useEffect(() => {
-    if (approvalDrawerOpen) setAttachOpen(false);
-  }, [approvalDrawerOpen, setAttachOpen]);
+    if (approvalDrawerOpen && isAttachOpen) setAttachOpen(false);
+  }, [approvalDrawerOpen, isAttachOpen, setAttachOpen]);
 
   useEffect(() => {
-    if (!showAttachSelector) setAttachOpen(false);
-  }, [setAttachOpen, showAttachSelector]);
+    if (!showAttachSelector && isAttachOpen) setAttachOpen(false);
+  }, [isAttachOpen, setAttachOpen, showAttachSelector]);
 
   /* Draft persistence — load on mount */
   useEffect(() => {

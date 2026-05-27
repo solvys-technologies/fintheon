@@ -32,8 +32,8 @@ export function DeskPlanRelativeScrubber({
       }}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-muted)]/45">
-          {relativeDateLabel(baseDate, segment.date)} / {segment.label} ET
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-[var(--fintheon-muted)]/55">
+          Time Range: {segment.label} ET
         </span>
         <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/65">
           {segmentIndex + 1}/{segments.length}

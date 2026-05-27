@@ -3188,15 +3188,15 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-chat-input-drawer {
   position: relative;
   left: auto;
-  width: var(--fintheon-chat-drawer-width, 92%);
-  max-width: var(--fintheon-chat-drawer-width, 92%);
+  width: 100%;
+  max-width: 100%;
   transform: none;
-  margin-inline: auto;
-  margin-bottom: -1px;
+  margin-inline: 0;
+  margin-bottom: 10px;
   overflow: hidden;
-  padding-bottom: 4px;
+  padding-bottom: 12px;
   max-height: var(--fintheon-chat-drawer-max-height, 280px);
-  border-radius: 8px 8px 0 0;
+  border-radius: 12px;
   background: color-mix(
     in srgb,
     var(--fintheon-surface) 86%,
@@ -3261,7 +3261,7 @@ html[data-zen-mode="true"] button[aria-label] {
   min-height: 34px;
   max-height: 36px;
   padding-bottom: 0;
-  margin-bottom: -1px;
+  margin-bottom: 10px;
   padding: 0;
   cursor: pointer;
   color: inherit;

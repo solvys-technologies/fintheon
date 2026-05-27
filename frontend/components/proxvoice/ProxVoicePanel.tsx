@@ -63,7 +63,7 @@ export function ProxVoicePanel({
   return createPortal(
     <>
       <div
-        className="fixed z-[9998] w-[380px] overflow-hidden rounded-xl fintheon-fade-in"
+        className="fixed z-[9998] w-[360px] overflow-hidden rounded-xl fintheon-fade-in"
         style={panelPosition}
         onMouseMove={(event) => {
           if (!drag) return;
@@ -76,7 +76,7 @@ export function ProxVoicePanel({
         onMouseLeave={() => setDrag(null)}
       >
         <div
-          className="fintheon-fade-divider flex cursor-move items-center justify-between px-4 py-3"
+          className="overflow-hidden rounded-xl"
           style={{
             background:
               "linear-gradient(135deg, color-mix(in srgb, var(--fintheon-surface) 85%, transparent), color-mix(in srgb, var(--fintheon-bg) 92%, transparent))",
@@ -84,165 +84,173 @@ export function ProxVoicePanel({
             WebkitBackdropFilter: "blur(20px) saturate(1.3)",
             border:
               "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-            borderBottom:
-              "1px solid color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
+            boxShadow:
+              "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
           }}
-          onMouseDown={(event) =>
-            setDrag({
-              x: event.clientX,
-              y: event.clientY,
-              top: panelPosition.top,
-              right: panelPosition.right,
-            })
-          }
         >
-          <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
-            <Stadium className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">
-              Forum
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="ml-auto rounded-md p-1 text-[var(--fintheon-muted)] transition-colors hover:bg-white/5 hover:text-[var(--fintheon-accent)]"
-            title="Close forum"
-            aria-label="Close forum"
+          <div
+            className="flex cursor-move items-center justify-between px-4 py-3"
+            style={{
+              borderBottom:
+                "1px solid color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
+            }}
+            onMouseDown={(event) =>
+              setDrag({
+                x: event.clientX,
+                y: event.clientY,
+                top: panelPosition.top,
+                right: panelPosition.right,
+              })
+            }
           >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="fintheon-fade-divider flex gap-1 px-2 py-1.5">
-          {tabs.map((item) => (
+            <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
+              <Stadium className="h-3.5 w-3.5" />
+              <span className="text-[12px] font-semibold uppercase tracking-[0.16em]">
+                Forum
+              </span>
+            </div>
             <button
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              className={`flex-1 rounded-md px-2 py-1 text-[10px] uppercase tracking-wide transition-all duration-200 ${
-                tab === item.id
-                  ? "text-[var(--fintheon-accent)]"
-                  : "text-[var(--fintheon-text)]/45 hover:text-[var(--fintheon-text)]/75"
-              }`}
+              onClick={onClose}
+              onMouseDown={(event) => event.stopPropagation()}
+              className="ml-auto rounded-md p-1 text-[var(--fintheon-muted)] transition-colors hover:bg-white/5 hover:text-[var(--fintheon-accent)]"
+              title="Close forum"
+              aria-label="Close forum"
             >
-              {item.label}
+              <X className="h-3.5 w-3.5" />
             </button>
-          ))}
-        </div>
-        <div
-          className="max-h-[420px] overflow-y-auto p-3"
-          style={{
-            background:
-              "linear-gradient(135deg, color-mix(in srgb, var(--fintheon-surface) 82%, transparent), color-mix(in srgb, var(--fintheon-bg) 90%, transparent))",
-            borderInline:
-              "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-            borderBottom:
-              "1px solid color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
-          }}
-        >
-          {tab === "audio" && (
-            <div className="space-y-3">
-              <div className="fintheon-fade-divider rounded-md border border-[var(--fintheon-accent)]/10 p-3">
-                <p className="text-xs text-[var(--fintheon-text)]/60">
-                  {voice.state === "connected"
-                    ? "Live on the Fintheon floor."
-                    : voice.state === "connecting"
-                      ? "Connecting to the floor."
-                      : "Voice is idle."}
-                </p>
-                {voice.error && (
-                  <p className="mt-2 text-xs text-red-300">{voice.error}</p>
+          </div>
+          <div
+            className="flex gap-0.5 px-2 py-1.5"
+            style={{
+              borderBottom:
+                "1px solid color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
+            }}
+          >
+            {tabs.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className="flex-1 rounded-lg px-2 py-1.5 text-[10px] uppercase tracking-wide transition-all duration-200"
+                style={{
+                  color:
+                    tab === item.id
+                      ? "var(--fintheon-accent)"
+                      : "var(--fintheon-muted)",
+                  background: "transparent",
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="max-h-[420px] min-h-[200px] overflow-y-auto p-3 custom-scrollbar">
+            {tab === "audio" && (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-[var(--fintheon-accent)]/15 p-3">
+                  <p className="text-xs text-[var(--fintheon-text)]/60">
+                    {voice.state === "connected"
+                      ? "Live on the Fintheon floor."
+                      : voice.state === "connecting"
+                        ? "Connecting to the floor."
+                        : "Voice is idle."}
+                  </p>
+                  {voice.error && (
+                    <p className="mt-2 text-xs text-red-300">{voice.error}</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => void voice.toggleMute()}
+                    className="fintheon-action-link rounded-lg border border-[var(--fintheon-accent)]/15 px-3 py-2 text-xs"
+                  >
+                    {voice.muted ? (
+                      <MicOff className="mx-auto h-4 w-4" />
+                    ) : (
+                      <Mic className="mx-auto h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={voice.toggleDeafen}
+                    className="fintheon-action-link rounded-lg border border-[var(--fintheon-accent)]/15 px-3 py-2 text-xs"
+                  >
+                    {voice.deafened ? (
+                      <VolumeOff className="mx-auto h-4 w-4" />
+                    ) : (
+                      <Volume2 className="mx-auto h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={voice.disconnect}
+                    className="fintheon-action-link rounded-lg border border-[var(--fintheon-accent)]/15 px-3 py-2 text-xs text-red-300"
+                  >
+                    <PhoneOff className="mx-auto h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+            {tab === "audience" && (
+              <div className="grid grid-cols-4 gap-3">
+                {voice.participants.map((participant) => (
+                  <button
+                    key={participant.identity}
+                    onClick={() =>
+                      participant.profile && setProfile(participant.profile)
+                    }
+                    className={`proxvoice-pill-shimmer flex flex-col items-center gap-1 rounded-md bg-[var(--fintheon-bg)] p-2 transition-all duration-300 hover:opacity-80 ${
+                      participant.leaving
+                        ? "opacity-0"
+                        : "fintheon-fade-in opacity-100"
+                    }`}
+                    style={{
+                      border:
+                        "1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
+                      boxShadow:
+                        participant.isSpeaking ||
+                        (participant.audioLevel ?? 0) > 0.08
+                          ? `0 0 ${8 + Math.round((participant.audioLevel ?? 0.4) * 22)}px color-mix(in srgb, var(--fintheon-accent) ${12 + Math.round((participant.audioLevel ?? 0.4) * 24)}%, transparent)`
+                          : "none",
+                    }}
+                  >
+                    {participant.profile?.avatarUrl ? (
+                      <img
+                        src={participant.profile.avatarUrl}
+                        alt=""
+                        className={`h-10 w-10 rounded-full object-cover ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}
+                      />
+                    ) : (
+                      <span
+                        className={`flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fintheon-surface)] text-[10px] text-[var(--fintheon-accent)] ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}
+                      >
+                        {initials(participant.name) || "FT"}
+                      </span>
+                    )}
+                    <span className="max-w-full truncate text-[10px] text-[var(--fintheon-text)]/65">
+                      {participant.name}
+                    </span>
+                    <span className="max-w-full truncate text-[9px] text-[var(--fintheon-text)]/35">
+                      {participant.profile?.position || "Desk Team"}
+                    </span>
+                    <span className="max-w-full truncate rounded-sm bg-[var(--fintheon-surface)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[var(--fintheon-accent)]/70">
+                      {participant.profile?.broker || "Broker TBD"}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-[0.1em] text-[var(--fintheon-text)]/30">
+                      {participant.isMuted
+                        ? "Muted"
+                        : participant.outputMuted
+                          ? "Speaker off"
+                          : "Listening"}
+                    </span>
+                  </button>
+                ))}
+                {voice.participants.length === 0 && (
+                  <p className="col-span-4 text-xs text-[var(--fintheon-text)]/45">
+                    Nobody on the floor yet.
+                  </p>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => void voice.toggleMute()}
-                  className="fintheon-action-link rounded-md border border-[var(--fintheon-accent)]/10 px-3 py-2 text-xs"
-                >
-                  {voice.muted ? (
-                    <MicOff className="mx-auto h-4 w-4" />
-                  ) : (
-                    <Mic className="mx-auto h-4 w-4" />
-                  )}
-                </button>
-                <button
-                  onClick={voice.toggleDeafen}
-                  className="fintheon-action-link rounded-md border border-[var(--fintheon-accent)]/10 px-3 py-2 text-xs"
-                >
-                  {voice.deafened ? (
-                    <VolumeOff className="mx-auto h-4 w-4" />
-                  ) : (
-                    <Volume2 className="mx-auto h-4 w-4" />
-                  )}
-                </button>
-                <button
-                  onClick={voice.disconnect}
-                  className="fintheon-action-link rounded-md border border-[var(--fintheon-accent)]/10 px-3 py-2 text-xs text-red-300"
-                >
-                  <PhoneOff className="mx-auto h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
-          {tab === "audience" && (
-            <div className="grid grid-cols-4 gap-3">
-              {voice.participants.map((participant) => (
-                <button
-                  key={participant.identity}
-                  onClick={() =>
-                    participant.profile && setProfile(participant.profile)
-                  }
-                  className={`proxvoice-pill-shimmer flex flex-col items-center gap-1 rounded-md bg-[var(--fintheon-bg)] p-2 transition-all duration-300 hover:opacity-80 ${
-                    participant.leaving
-                      ? "opacity-0"
-                      : "fintheon-fade-in opacity-100"
-                  }`}
-                  style={{
-                    border:
-                      "1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
-                    boxShadow:
-                      participant.isSpeaking ||
-                      (participant.audioLevel ?? 0) > 0.08
-                        ? `0 0 ${8 + Math.round((participant.audioLevel ?? 0.4) * 22)}px color-mix(in srgb, var(--fintheon-accent) ${12 + Math.round((participant.audioLevel ?? 0.4) * 24)}%, transparent)`
-                        : "none",
-                  }}
-                >
-                  {participant.profile?.avatarUrl ? (
-                    <img
-                      src={participant.profile.avatarUrl}
-                      alt=""
-                      className={`h-10 w-10 rounded-full object-cover ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}
-                    />
-                  ) : (
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fintheon-surface)] text-[10px] text-[var(--fintheon-accent)] ${participant.isSpeaking ? "proxvoice-speaking-ring" : ""}`}
-                    >
-                      {initials(participant.name) || "FT"}
-                    </span>
-                  )}
-                  <span className="max-w-full truncate text-[10px] text-[var(--fintheon-text)]/65">
-                    {participant.name}
-                  </span>
-                  <span className="max-w-full truncate text-[9px] text-[var(--fintheon-text)]/35">
-                    {participant.profile?.position || "Desk Team"}
-                  </span>
-                  <span className="max-w-full truncate rounded-sm bg-[var(--fintheon-surface)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[var(--fintheon-accent)]/70">
-                    {participant.profile?.broker || "Broker TBD"}
-                  </span>
-                  <span className="text-[8px] uppercase tracking-[0.1em] text-[var(--fintheon-text)]/30">
-                    {participant.isMuted
-                      ? "Muted"
-                      : participant.outputMuted
-                        ? "Speaker off"
-                        : "Listening"}
-                  </span>
-                </button>
-              ))}
-              {voice.participants.length === 0 && (
-                <p className="col-span-4 text-xs text-[var(--fintheon-text)]/45">
-                  Nobody on the floor yet.
-                </p>
-              )}
-            </div>
-          )}
-          {tab === "signals" && <RiskSignalCards compact />}
+            )}
+            {tab === "signals" && <RiskSignalCards compact />}
+          </div>
         </div>
       </div>
       {profile && (
