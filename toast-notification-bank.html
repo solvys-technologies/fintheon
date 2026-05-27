@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Fintheon Toast Notification Bank</title>
+    <title>Fintheon Overlay Bank</title>
     <style>
       @font-face {
         font-family: "Inter";
@@ -83,6 +83,33 @@
         align-items: start;
       }
 
+      .bank-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 12px;
+        color: var(--gold);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .bank-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          rgba(199, 159, 74, 0.3),
+          transparent
+        );
+      }
+
+      .bank-label:not(:first-of-type) {
+        margin-top: 30px;
+      }
+
       .prototype-action {
         position: fixed;
         top: 18px;
@@ -148,6 +175,263 @@
         border-color: rgba(199, 159, 74, 0.58);
         background: var(--surface-strong);
         transform: translateY(-1px);
+      }
+
+      .overlay-card {
+        position: relative;
+        min-height: 148px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
+        isolation: isolate;
+        transition:
+          border-color 180ms var(--ease-out),
+          background 180ms var(--ease-out),
+          transform 180ms var(--ease-out);
+      }
+
+      .overlay-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+      }
+
+      .overlay-card.is-active {
+        border-color: rgba(199, 159, 74, 0.58);
+        background: var(--surface-strong);
+        transform: translateY(-1px);
+      }
+
+      .modal-card {
+        min-height: 216px;
+      }
+
+      .dropdown-card {
+        min-height: 176px;
+      }
+
+      .overlay-row {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .overlay-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .overlay-copy {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      .overlay-title {
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.25;
+      }
+
+      .overlay-desc {
+        color: var(--muted);
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+
+      .surface-frame {
+        display: grid;
+        gap: 9px;
+        padding: 10px;
+        border: 1px solid rgba(199, 159, 74, 0.12);
+        border-radius: 6px;
+        background: rgba(5, 4, 2, 0.42);
+      }
+
+      .surface-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(199, 159, 74, 0.1);
+      }
+
+      .surface-kicker {
+        color: var(--gold);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .surface-body {
+        display: grid;
+        gap: 7px;
+      }
+
+      .field {
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 9px;
+        border: 1px solid rgba(199, 159, 74, 0.12);
+        border-radius: 5px;
+        color: rgba(240, 234, 214, 0.74);
+        background: rgba(0, 0, 0, 0.22);
+        font-size: 10.5px;
+      }
+
+      .field.dim {
+        color: var(--muted);
+      }
+
+      .field strong {
+        color: var(--gold);
+        font-weight: 650;
+      }
+
+      .surface-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 7px;
+        padding-top: 3px;
+      }
+
+      .action {
+        height: 24px;
+        padding: 0 9px;
+        border: 1px solid rgba(199, 159, 74, 0.22);
+        border-radius: 5px;
+        background: rgba(199, 159, 74, 0.09);
+        color: var(--gold);
+        font-size: 10px;
+        font-weight: 650;
+      }
+
+      .action.primary {
+        background: var(--gold);
+        color: var(--bg);
+      }
+
+      .menu-list {
+        display: grid;
+        gap: 2px;
+      }
+
+      .menu-item {
+        display: grid;
+        gap: 2px;
+        padding: 7px 8px;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        background: transparent;
+      }
+
+      .menu-item.active {
+        border-color: rgba(199, 159, 74, 0.2);
+        background: rgba(199, 159, 74, 0.08);
+      }
+
+      .menu-item span {
+        color: var(--text);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .menu-item small {
+        color: var(--muted);
+        font-size: 9.5px;
+        line-height: 1.3;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .metric {
+        padding: 7px;
+        border: 1px solid rgba(199, 159, 74, 0.13);
+        border-radius: 5px;
+        background: rgba(0, 0, 0, 0.18);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted-2);
+        font-size: 8.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .metric b {
+        display: block;
+        margin-top: 3px;
+        color: var(--text);
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 11px;
+        font-weight: 400;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 5px;
+      }
+
+      .tab {
+        border: 1px solid rgba(199, 159, 74, 0.16);
+        border-radius: 5px;
+        padding: 4px 7px;
+        color: var(--muted);
+        font-size: 9.5px;
+      }
+
+      .tab.active {
+        color: var(--gold);
+        background: rgba(199, 159, 74, 0.08);
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .chip {
+        border: 1px solid rgba(199, 159, 74, 0.16);
+        border-radius: 999px;
+        padding: 3px 7px;
+        color: var(--muted);
+        font-size: 9.5px;
+      }
+
+      .chip.active {
+        color: var(--gold);
+        background: rgba(199, 159, 74, 0.08);
+      }
+
+      .swatches {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .swatch {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 1px solid rgba(240, 234, 214, 0.24);
       }
 
       .toast-row {
@@ -345,6 +629,37 @@
         align-items: flex-end;
       }
 
+      .preview-stack.center-modal {
+        inset: 0;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .preview-stack.center-modal.has-preview {
+        background: rgba(5, 4, 2, 0.55);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+      }
+
+      .preview-stack.anchor-menu {
+        top: 72px;
+        left: 24px;
+        align-items: flex-start;
+      }
+
+      .preview-stack.floating-popup {
+        top: 118px;
+        right: 84px;
+        align-items: flex-end;
+      }
+
+      .preview-stack.bottom-popover {
+        bottom: 82px;
+        left: 50%;
+        transform: translateX(-50%);
+        align-items: center;
+      }
+
       .live-toast {
         opacity: 0;
         pointer-events: none;
@@ -362,6 +677,22 @@
 
       .bottom-left .live-toast {
         transform: translateX(-16px) scale(0.96);
+      }
+
+      .center-modal .live-toast {
+        width: min(540px, calc(100vw - 40px));
+        transform: translateY(14px) scale(0.97);
+      }
+
+      .anchor-menu .live-toast,
+      .bottom-popover .live-toast {
+        width: min(340px, calc(100vw - 40px));
+        transform: translateY(-10px) scale(0.97);
+      }
+
+      .floating-popup .live-toast {
+        width: min(390px, calc(100vw - 40px));
+        transform: translateX(12px) scale(0.97);
       }
 
       .live-toast.is-entered {
