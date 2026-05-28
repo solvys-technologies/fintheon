@@ -21,7 +21,7 @@ Fintheon should stop behaving like it is restating an econ calendar and start be
 - [ ] Integrate Public.com as a V1 market-data provider for real-time quotes, bars, option chains, option Greeks, and source-attributed 5D/1W Streamdown instrument widgets where supported.
 - [ ] Register Public in the MCP connector metadata so agent surfaces can recognize the Public MCP/tooling path.
 - [ ] Create a GEPA/Refinement Engine proposal path for macro-event forecast review after events and sessions. GEPA proposes updates; it does not silently mutate doctrine.
-- [ ] Fix the NarrativeFlow long-prompt injection crash path: session openers may create sessions and visible user messages only when user-sent, but must not auto-inject a long hidden prompt into the first chat turn.
+- [ ] Fix the NarrativeFlow long-prompt injection crash path: session openers and handoff context may create sessions, workspace metadata, and visible drafts only, but must not auto-send a hidden first chat turn. A human typing `sup` must only get an answer to `sup`, not an answer to a prior invisible handoff.
 
 ## Scope -- Excluded (OUT OF BOUNDS)
 
@@ -37,6 +37,7 @@ Fintheon should stop behaving like it is restating an econ calendar and start be
 - Current macro watchlist/Streamdown ticker widgets already use `backend-hono/src/services/market-data/macro-watchlist.ts` plus `MarketTickerCard`/`MarketTickerStripSlot`; extend this path instead of replacing the Streamdown slot system.
 - `backend-hono/src/services/arbitrum/event-trigger.ts` currently asks `Does this warrant a macro re-read?` for event-triggered chamber work. Treat that as the exact low-grade prompt to replace, not as copy to polish.
 - React minified error #185 is "Maximum update depth exceeded" per official React docs. Treat NarrativeFlow startup auto-send loops as a crash-class blocker, not a cosmetic bug.
+- `NarrativeCanvas` currently passes `initialChatMessage` into `ChatInterface`, and `ChatInterface` can turn `initialMessageRequest` into `runtime.append({ role: "user" ... })` automatically. This is the proof path for the agent "jumping in" and answering invisible handoff text when the trader only typed a short message.
 
 ## Design Pass
 
@@ -120,7 +121,17 @@ Arbitrum should reason by chamber sequence: gather the 7-day risk-signal packet,
 
 ### React 185 / NarrativeFlow Guardrail
 
-Inspect `NarrativeCanvas`, `ChatInterface`, `useHermesChat`, and related initial-message handlers. Remove or guard any path that turns a session opener/system prompt into an automatic hidden chat send. Session creation can store the user-visible opener in the session, but chat should not auto-append long prompt text on mount, remount, conversation reset, or workspace switch. Any remaining initial message path needs an idempotent guard and max-length/type check so it cannot loop through `clearConversationId`, `setQueuedInitialMessage`, `runtime.append`, and hydration.
+Inspect `NarrativeCanvas`, `ChatInterface`, `useHermesChat`, and related initial-message handlers. Remove any path that turns a session opener, stored query, system handoff, or workspace handoff into an automatic chat send. Session creation can store the user-visible opener in the session, workspace record, or composer draft, but chat must not call `runtime.append` from `initialMessageRequest` on mount, remount, conversation reset, workspace switch, or hydration.
+
+The core rule: handoff prompts are context, not user turns. They can be injected into the backend prompt as system/context material only after an explicit user message is sent. They cannot be rendered as a hidden user message, queued as the first chat turn, or used to make the agent answer before the user asks.
+
+Implementation expectation:
+
+- Delete or disable the `initialMessageRequest -> sendInitialMessage -> runtime.append` auto-send path.
+- If the user entered a session-creation query, show it as a visible saved message or editable draft, not a hidden queued send.
+- Preserve `requestedConversationId` selection, but do not pair conversation reset with an automatic first send.
+- Add length/type guards so long handoff prompts cannot enter user-message state.
+- NF-Workspace smoke test: open an existing workspace with handoff context, type `sup`, and verify the first assistant reply responds only to `sup` unless the user explicitly asks for workspace context.
 
 ### Aesthetic Rules
 
@@ -136,7 +147,7 @@ Inspect `NarrativeCanvas`, `ChatInterface`, `useHermesChat`, and related initial
 
 ## Development Flow
 
-1. **Discovery and crash triage** -- Reproduce or locally inspect the NarrativeFlow React 185 path. Trace session opener creation through `NarrativeCanvas`, `ChatInterface`, and chat hydration. Confirm which prompt is silently inserted before editing.
+1. **Discovery and crash triage** -- Reproduce or locally inspect the NarrativeFlow React 185 path. Trace session opener creation through `NarrativeCanvas`, `ChatInterface`, and chat hydration. Confirm which prompt is silently inserted before editing. Specifically verify the `initialChatMessage` / `initialMessageRequest` / `queuedInitialMessage` / `runtime.append` chain.
 2. **Doctrine layer** -- Add `macro-event-risk-cognition.md`; update shared beliefs, philosophy blocks, and desk dossiers so agents inherit the PIC macro-event model and commandments.
 3. **Forecast contract** -- Extend backend/frontend day-plan forecast types to carry PIC internal forecast, miss/beat probabilities, confidence, consensus baseline, second-order read, confirmation, and invalidation.
 4. **Arbitrum chamber workflow** -- Replace the event-trigger prompt in `backend-hono/src/services/arbitrum/event-trigger.ts`; update chamber context/builders so every run fetches 7-day risk signals, compares headwind/tailwind risk, deliberates, emits first-order conclusion, and has CAO synthesize the second-order weekly/session insight.
@@ -164,6 +175,9 @@ Inspect `NarrativeCanvas`, `ChatInterface`, `useHermesChat`, and related initial
 - [ ] Streamdown market ticker widgets can show Public-backed 5D and 1W data with source attribution and nonblank fallback states.
 - [ ] Public missing credentials do not break Desk Plan, chat, Arbitrum, or market-scan endpoints.
 - [ ] NarrativeFlow session creation/opening does not silently inject a long hidden prompt into the first chat turn.
+- [ ] NF-Workspace handoff/context prompts are treated as system/context material only after an explicit user send, never as hidden user messages.
+- [ ] The `initialMessageRequest -> runtime.append` auto-send path is removed or made impossible for handoff/session-open context.
+- [ ] Opening an NF-Workspace with handoff context, typing `sup`, and sending it produces a response to `sup`, not a response to the invisible handoff.
 - [ ] React error #185 is not reproducible from NarrativeFlow session creation/opening/reset flows.
 - [ ] GEPA creates proposed macro-event cognition updates for Refinement Engine review rather than mutating doctrine automatically.
 - [ ] `npx tsc --noEmit --project frontend/tsconfig.json` passes.
