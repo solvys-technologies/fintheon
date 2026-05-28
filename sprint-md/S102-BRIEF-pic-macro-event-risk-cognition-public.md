@@ -12,6 +12,7 @@ Fintheon should stop behaving like it is restating an econ calendar and start be
 
 - [ ] Add a source-of-truth doctrine for PIC as an agentic macro event-risk desk, including the Fed/data-cycle model and trader commandments as active forecast guardrails.
 - [ ] Wire the doctrine into Harper, Oracle, Feucht, Consul, Herald, Arbitrum, Agentic Desk, Desk Plan, and Daily Brief prompt/context paths.
+- [ ] Make the desk-specific forecasting model, commandments overlay, and macro-event cognition source of truth manually editable from the desk's FileRoom. Only Desk Managers can edit; traders and other desk members can read.
 - [ ] Replace Arbitrum's generic "does this warrant a macro re-read" behavior with a mandatory chamber workflow for every Arbitrum run: 7-day risk-signal fetch, tailwind/headwind comparison, role deliberation, first-order conclusion, and CAO second-order insight for the rest of the week or the start of the next trading week.
 - [ ] Replace the Desk Plan rows between `Trading Window` and `Thesis` with the new PIC forecast system: internal forecast, miss probability, beat probability, confidence, delta vs consensus, data-cycle stage, second-order read, confirmation, and invalidation.
 - [ ] Treat calendar consensus as a baseline/obstacle only. It must never be displayed as Fintheon's forecast.
@@ -38,6 +39,7 @@ Fintheon should stop behaving like it is restating an econ calendar and start be
 - `backend-hono/src/services/arbitrum/event-trigger.ts` currently asks `Does this warrant a macro re-read?` for event-triggered chamber work. Treat that as the exact low-grade prompt to replace, not as copy to polish.
 - React minified error #185 is "Maximum update depth exceeded" per official React docs. Treat NarrativeFlow startup auto-send loops as a crash-class blocker, not a cosmetic bug.
 - `NarrativeCanvas` currently passes `initialChatMessage` into `ChatInterface`, and `ChatInterface` can turn `initialMessageRequest` into `runtime.append({ role: "user" ... })` automatically. This is the proof path for the agent "jumping in" and answering invisible handoff text when the trader only typed a short message.
+- FileRoom is currently list/read oriented through `GET /api/file-room` and `GET /api/file-room/item`. This sprint needs a write path with server-side authorization for Desk Manager edits; frontend-only hiding is not sufficient.
 
 ## Design Pass
 
@@ -74,6 +76,16 @@ commandmentChecks: string[]
 ```
 
 Public integration should live behind the backend market-data service boundary with graceful fallback when `PUBLIC_API_KEY` or equivalent auth is missing. Do not call Public directly from React components. Register Public metadata in the MCP connector registry and include a disabled/missing-key state.
+
+FileRoom source-of-truth editing should extend the existing desk-scoped FileRoom service instead of creating a new settings island. Add a desk-scoped section such as `forecasting-models` / `Desk Forecasting Models` for:
+
+- PIC internal macro-event cognition doctrine.
+- Desk-specific commandments and trading-model overlays.
+- Econ-cycle model notes and manual forecast model assumptions.
+- GEPA/Refinement Engine approved updates.
+- Public/GEX interpretation notes that are editable per desk after approval.
+
+Write APIs must enforce Desk Manager authorization server-side. If the current membership model only exposes `admin`/`peer`, map `admin` to Desk Manager for this sprint and document the follow-up to introduce an explicit `desk_manager` role. All writes should store editor identity, timestamp, previous version reference, and whether the edit came from manual FileRoom editing or approved GEPA/refinement.
 
 For Arbitrum and any event-risk deliberation, add a structured risk context that can be persisted with the verdict/digest:
 
@@ -119,6 +131,8 @@ Agents should reason by role: Oracle quantifies the forecast gap, Consul maps ec
 
 Arbitrum should reason by chamber sequence: gather the 7-day risk-signal packet, have seats compare headwind/tailwind paths through the forecasting layer, produce a first-order conclusion, then have CAO synthesize the second-order insight. The resulting digest should be aimed at viable trading windows that can realistically produce 40-180 market points when VIX, bonds, Greeks, and later GEX/HVL context allow it.
 
+Desk-specific FileRoom edits override the global default only for that desk. The global doctrine remains the PIC baseline; desk FileRoom material becomes the desk overlay that agents load when serving that desk.
+
 ### React 185 / NarrativeFlow Guardrail
 
 Inspect `NarrativeCanvas`, `ChatInterface`, `useHermesChat`, and related initial-message handlers. Remove any path that turns a session opener, stored query, system handoff, or workspace handoff into an automatic chat send. Session creation can store the user-visible opener in the session, workspace record, or composer draft, but chat must not call `runtime.append` from `initialMessageRequest` on mount, remount, conversation reset, workspace switch, or hydration.
@@ -149,19 +163,25 @@ Implementation expectation:
 
 1. **Discovery and crash triage** -- Reproduce or locally inspect the NarrativeFlow React 185 path. Trace session opener creation through `NarrativeCanvas`, `ChatInterface`, and chat hydration. Confirm which prompt is silently inserted before editing. Specifically verify the `initialChatMessage` / `initialMessageRequest` / `queuedInitialMessage` / `runtime.append` chain.
 2. **Doctrine layer** -- Add `macro-event-risk-cognition.md`; update shared beliefs, philosophy blocks, and desk dossiers so agents inherit the PIC macro-event model and commandments.
-3. **Forecast contract** -- Extend backend/frontend day-plan forecast types to carry PIC internal forecast, miss/beat probabilities, confidence, consensus baseline, second-order read, confirmation, and invalidation.
-4. **Arbitrum chamber workflow** -- Replace the event-trigger prompt in `backend-hono/src/services/arbitrum/event-trigger.ts`; update chamber context/builders so every run fetches 7-day risk signals, compares headwind/tailwind risk, deliberates, emits first-order conclusion, and has CAO synthesize the second-order weekly/session insight.
-5. **Forecast generation** -- Update econ forecast and redeliberation prompts/services so the model generates PIC internal forecasts from data-cycle context instead of echoing calendar consensus.
-6. **Desk Plan UI** -- Replace the `Forecast`, `Miss`, `Beat`, and optional `Notable` rows between `Trading Window` and `Thesis` in `DayCard` with the new PIC forecast rows while preserving thesis expansion and window cycling.
-7. **Public provider** -- Add a Public market-data provider module behind the existing backend market-data layer, expose Public-backed quotes/bars/option Greeks where credentials exist, and degrade to existing providers when missing.
-8. **Streamdown widgets** -- Extend macro watchlist data and ticker schemas/components for Public-backed 5D/1W sparklines, source labels, and clean unavailable states.
-9. **MCP metadata** -- Add Public to MCP connector metadata with category `trading` or `data`, API-key state, and no order-placement capability in this sprint.
-10. **GEPA proposal loop** -- Add a macro-event review proposal path that compares PIC forecast, consensus, actual print, tape reaction, and missed second-order chains, then writes proposals to the Refinement Engine/GEPA surface for review.
-11. **Validation and changelog** -- Build, typecheck, smoke the relevant endpoints, verify NarrativeFlow no longer crashes from opener injection, and update `src/lib/changelog.ts`.
+3. **FileRoom editable source of truth** -- Add a desk-scoped forecasting-model section and write/update route. Enforce Desk Manager-only edits on the backend, expose read-only state to other desk members, and version manual edits.
+4. **Forecast contract** -- Extend backend/frontend day-plan forecast types to carry PIC internal forecast, miss/beat probabilities, confidence, consensus baseline, second-order read, confirmation, and invalidation.
+5. **Arbitrum chamber workflow** -- Replace the event-trigger prompt in `backend-hono/src/services/arbitrum/event-trigger.ts`; update chamber context/builders so every run fetches 7-day risk signals, compares headwind/tailwind risk, deliberates, emits first-order conclusion, and has CAO synthesize the second-order weekly/session insight.
+6. **Forecast generation** -- Update econ forecast and redeliberation prompts/services so the model generates PIC internal forecasts from data-cycle context instead of echoing calendar consensus.
+7. **Desk Plan UI** -- Replace the `Forecast`, `Miss`, `Beat`, and optional `Notable` rows between `Trading Window` and `Thesis` in `DayCard` with the new PIC forecast rows while preserving thesis expansion and window cycling.
+8. **Public provider** -- Add a Public market-data provider module behind the existing backend market-data layer, expose Public-backed quotes/bars/option Greeks where credentials exist, and degrade to existing providers when missing.
+9. **Streamdown widgets** -- Extend macro watchlist data and ticker schemas/components for Public-backed 5D/1W sparklines, source labels, and clean unavailable states.
+10. **MCP metadata** -- Add Public to MCP connector metadata with category `trading` or `data`, API-key state, and no order-placement capability in this sprint.
+11. **GEPA proposal loop** -- Add a macro-event review proposal path that compares PIC forecast, consensus, actual print, tape reaction, and missed second-order chains, then writes proposals to the Refinement Engine/GEPA surface for review.
+12. **Validation and changelog** -- Build, typecheck, smoke the relevant endpoints, verify NarrativeFlow no longer crashes from opener injection, and update `src/lib/changelog.ts`.
 
 ## Acceptance Criteria
 
 - [ ] A new source-of-truth doctrine file defines PIC macro event-risk cognition, the econ cycle, and commandment usage.
+- [ ] FileRoom exposes a desk-scoped forecasting-model/source-of-truth section for macro-event cognition, commandments overlays, and approved refinement updates.
+- [ ] Desk Managers can manually edit the desk forecasting model in FileRoom; non-manager desk members can read but cannot save edits.
+- [ ] FileRoom edit authorization is enforced by backend auth/RBAC, not only frontend UI state.
+- [ ] FileRoom edits are versioned with editor identity, timestamp, and source (`manual` or `approved-refinement`).
+- [ ] Agents load the global PIC doctrine plus the active desk's FileRoom overlay before producing Desk Plan, Arbitrum, Agentic Desk, and Daily Brief forecasts.
 - [ ] Desk Plan forecast rows between `Trading Window` and `Thesis` show PIC internal forecast data, not calendar consensus as the forecast.
 - [ ] Every Desk Plan trading window has a forecast object with internal forecast, miss probability, beat probability, and confidence.
 - [ ] Arbitrum, Harper, Agentic Desk, and brief generation receive the macro-event cognition layer.
@@ -211,6 +231,9 @@ curl -s http://localhost:8080/api/arbitrum/latest | head -c 600
 
 # MCP registry smoke
 curl -s http://localhost:8080/api/mcp | head -c 600
+
+# FileRoom source-of-truth smoke
+curl -s "http://localhost:8080/api/file-room?deskId=priced-in-capital" | head -c 600
 ```
 
 ## Commit Format
