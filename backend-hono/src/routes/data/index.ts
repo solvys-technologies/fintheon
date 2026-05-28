@@ -29,6 +29,17 @@ import {
 } from "../../services/brief-generator.js";
 import { startPrediction } from "../../services/agent-desk/agent-desk-service.js";
 
+function triggerPostBriefArbitrum(): void {
+  if (process.env.ARBITRUM_POST_BRIEF_TRIGGER_ENABLED !== "true") return;
+  startPrediction(
+    { lanes: [], catalysts: [], ropes: [] },
+    undefined,
+    "full-brief",
+  ).catch((err) =>
+    console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
+  );
+}
+
 // S35-T5: legacy TOTT/WT alias sunsets 2026-05-08
 // Normalizes incoming brief-type query/body params — any caller still sending
 // "TOTT" or "WT" is silently mapped to "TWT" and logged once per invocation.
@@ -324,15 +335,7 @@ export function createDataRoutes(): Hono {
       }
       const result = await generateBrief(overrideType);
 
-      // Fire-and-forget: trigger ArbitrumChamber deliberation after brief publish
-      // Empty lanes → AgentDesk synthesizes from RiskFlow headlines
-      startPrediction(
-        { lanes: [], catalysts: [], ropes: [] },
-        undefined,
-        "full-brief",
-      ).catch((err) =>
-        console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
-      );
+      triggerPostBriefArbitrum();
 
       return c.json({
         content: result.content,
@@ -368,13 +371,7 @@ export function createDataRoutes(): Hono {
 
       const result = await generateBrief(briefType);
 
-      startPrediction(
-        { lanes: [], catalysts: [], ropes: [] },
-        undefined,
-        "full-brief",
-      ).catch((err) =>
-        console.warn("[Data] Post-brief ArbitrumChamber trigger failed:", err),
-      );
+      triggerPostBriefArbitrum();
 
       return c.json({
         content: result.content,

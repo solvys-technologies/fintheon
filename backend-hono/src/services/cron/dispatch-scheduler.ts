@@ -65,6 +65,17 @@ const DISPATCH_JOBS: DispatchJob[] = [
 let scheduledJobs: cron.ScheduledTask[] = [];
 let isRunning = false;
 
+function triggerPostBriefArbitrum(label: string): void {
+  if (process.env.ARBITRUM_POST_BRIEF_TRIGGER_ENABLED !== "true") return;
+  startPrediction(
+    { lanes: [], catalysts: [], ropes: [] },
+    undefined,
+    "full-brief",
+  ).catch((err) =>
+    log.warn(`${label} post-brief Arbitrum trigger failed:`, err),
+  );
+}
+
 /**
  * Run a single dispatch briefing — generate, store, and post to boardroom.
  */
@@ -89,14 +100,7 @@ async function runDispatch(job: DispatchJob): Promise<void> {
       // Non-fatal — brief is still stored in Supabase
     }
 
-    // Fire-and-forget: trigger AgentDesk ArbitrumChamber after every brief
-    startPrediction(
-      { lanes: [], catalysts: [], ropes: [] },
-      undefined,
-      "full-brief",
-    ).catch((err) =>
-      log.warn(`Post-brief ArbitrumChamber trigger failed:`, err),
-    );
+    triggerPostBriefArbitrum("Dispatch");
 
     log.info(`${job.briefType} dispatch complete`, {
       supabaseId: result.supabaseId,
@@ -247,14 +251,7 @@ export async function catchUpMissedBriefs(): Promise<void> {
         /* non-fatal */
       }
 
-      // Fire-and-forget: trigger AgentDesk ArbitrumChamber after catch-up brief
-      startPrediction(
-        { lanes: [], catalysts: [], ropes: [] },
-        undefined,
-        "full-brief",
-      ).catch((err) =>
-        log.warn(`Catch-up post-brief ArbitrumChamber trigger failed:`, err),
-      );
+      triggerPostBriefArbitrum("Catch-up");
 
       log.info(`Catch-up: ${job.briefType} generated`, {
         supabaseId: result.supabaseId,
