@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Lock, LockOpen, Moon, Sun, Sunset } from "lucide-react";
+import { BookOpen, Lock, LockOpen, Moon, Sun } from "lucide-react";
 import { useLockout, type BriefingAnchor } from "../../hooks/useLockout";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -13,7 +13,7 @@ const BRIEF_OPTIONS: Array<{
   icon: typeof Sun;
 }> = [
   { id: "mdb", label: "Morning Brief", detail: "6:30 AM ET", icon: Sun },
-  { id: "adb", label: "Afternoon Brief", detail: "10:45 AM ET", icon: Sunset },
+  { id: "adb", label: "Afternoon Brief", detail: "10:45 AM ET", icon: Sun },
   { id: "pmdb", label: "PM Brief", detail: "5:15 PM ET", icon: Moon },
 ];
 

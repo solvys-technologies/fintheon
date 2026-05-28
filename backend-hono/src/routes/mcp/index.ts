@@ -127,6 +127,15 @@ const KNOWN_SERVERS: Record<string, Partial<McpServerEntry>> = {
     category: "data",
     toolCount: 12,
   },
+  public: {
+    name: "Public",
+    description:
+      "Read-only Public.com market data: quotes, bars, option chains, and Greeks. Order placement disabled in Fintheon S102.",
+    category: "data",
+    toolCount: 6,
+    requiresApiKey: true,
+    apiKeyEnvVar: "PUBLIC_API_KEY",
+  },
   "unusual-whales": {
     name: "Unusual Whales",
     description: "Dark pool flow, congressional trades, options sweeps",

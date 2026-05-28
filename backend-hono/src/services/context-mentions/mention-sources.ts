@@ -56,6 +56,7 @@ const instruments = [
 const connectors = [
   ["riskflow", "RiskFlow", "Internal catalyst and headline connector"],
   ["tradingview", "TradingView", "Chart, calendar, and scanner context"],
+  ["public", "Public", "Public.com market-data connector"],
   ["playwright", "Playwright", "Browser automation connector"],
   ["exa", "Exa", "Web research connector"],
   ["fmp", "FMP", "Market data connector"],

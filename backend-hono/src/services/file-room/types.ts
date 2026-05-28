@@ -1,4 +1,6 @@
+// [Codex 2026-05-27] S102 desk forecasting model section.
 export type FileRoomSectionId =
+  | "forecasting-models"
   | "weekly-tribune"
   | "agentic-memos"
   | "narrative-tags"

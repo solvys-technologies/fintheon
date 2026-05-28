@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] FileRoom exposes desk forecasting models for S102.
 import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -12,6 +13,7 @@ export const DEFAULT_DESK_ID = "priced-in-capital";
 export const DEFAULT_DESK_NAME = "Priced In Capital";
 
 export const SECTION_FOLDERS: Record<FileRoomSectionId, string> = {
+  "forecasting-models": "Desk Forecasting Models",
   "weekly-tribune": "Weekly Tribune",
   "agentic-memos": "Agentic Memos",
   "narrative-tags": "Narrative Tags",
@@ -23,6 +25,8 @@ export const SECTION_FOLDERS: Record<FileRoomSectionId, string> = {
 };
 
 export const SECTION_COPY: Record<FileRoomSectionId, string> = {
+  "forecasting-models":
+    "Desk-specific source-of-truth overlays, commandment guardrails, and approved forecast refinements",
   "weekly-tribune": "Weekly market dispatches and Tribune artifacts",
   "agentic-memos": "Harper-authored memo approvals and published memos",
   "narrative-tags": "Narrative tags, thesis labels, and desk fit metadata",
@@ -63,6 +67,36 @@ export async function ensureDeskFolders(
           recursive: true,
         }),
       ),
+  );
+  await ensureForecastingModelSeed(deskId);
+}
+
+async function ensureForecastingModelSeed(deskId: string): Promise<void> {
+  const path = join(
+    sectionRoot(deskId, "forecasting-models"),
+    "pic-macro-event-risk-cognition.md",
+  );
+  if (existsSync(path)) return;
+  await writeFile(
+    path,
+    [
+      "---",
+      `title: "PIC Macro Event-Risk Cognition"`,
+      `summary: "Desk-editable overlay for S102 macro event-risk forecasting."`,
+      `tags: ["forecasting-model", "macro", "event-risk"]`,
+      `createdAt: ${JSON.stringify(new Date().toISOString())}`,
+      `updatedAt: ${JSON.stringify(new Date().toISOString())}`,
+      "---",
+      "",
+      "# PIC Macro Event-Risk Cognition Overlay",
+      "",
+      "This desk overlay extends the global source-of-truth file at `knowledge-base/source-of-truth/macro-event-risk-cognition.md`.",
+      "",
+      "Desk Managers can edit this file to add PIC-specific assumptions, commandment guardrails, approved GEPA refinements, Public/GEX interpretation notes, and event-risk review lessons.",
+      "",
+      "Consensus remains a baseline only. PIC internal forecast, miss/beat probabilities, confidence, data-cycle logic, cross-asset transmission, confirmation, and invalidation remain mandatory.",
+    ].join("\n"),
+    "utf8",
   );
 }
 

@@ -1,5 +1,6 @@
-import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, extname, join, relative } from "node:path";
+// [Codex 2026-05-27] Adds versioned FileRoom writes for forecasting-models.
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, extname, join, relative } from "node:path";
 import {
   DEFAULT_DESK_ID,
   DEFAULT_DESK_NAME,
@@ -28,6 +29,16 @@ import type {
 
 const FILE_CAP = 80;
 const FILE_EXTENSIONS = new Set([".md", ".pdf", ".url", ".webloc", ".json"]);
+
+export interface WriteFileRoomItemInput {
+  deskId?: string;
+  itemId?: string | null;
+  sectionId: FileRoomSectionId;
+  title: string;
+  content: string;
+  editorId: string;
+  source: "manual" | "approved-refinement";
+}
 
 export async function listFileRoom(
   deskId = DEFAULT_DESK_ID,
@@ -63,6 +74,46 @@ export async function readFileRoomItem(
     "utf8",
   ).catch(() => "");
   return { ...item, content: raw };
+}
+
+export async function writeFileRoomItem(
+  input: WriteFileRoomItemInput,
+): Promise<FileRoomItemDetail> {
+  if (input.sectionId !== "forecasting-models") {
+    throw new Error("Only forecasting models are editable in this sprint.");
+  }
+
+  const safeDeskId = sanitizeDeskId(input.deskId ?? DEFAULT_DESK_ID);
+  await ensureDeskFolders(safeDeskId);
+  const existing = input.itemId
+    ? await readFileRoomItem(input.itemId, safeDeskId)
+    : null;
+  const relPath =
+    existing?.path ??
+    join(SECTION_FOLDERS[input.sectionId], `${slugify(input.title)}.md`);
+  const fullPath = join(deskRoot(safeDeskId), relPath);
+  const previous = await readFile(fullPath, "utf8").catch(() => null);
+  const previousVersionRef = previous
+    ? await writePreviousVersion(fullPath, previous)
+    : null;
+  const now = new Date().toISOString();
+  await writeFile(
+    fullPath,
+    withEditFrontmatter({
+      title: input.title,
+      content: input.content,
+      editorId: input.editorId,
+      source: input.source,
+      updatedAt: now,
+      previousVersionRef,
+    }),
+    "utf8",
+  );
+
+  const itemId = `${input.sectionId}:${Buffer.from(relPath).toString("base64url")}`;
+  const item = await readFileRoomItem(itemId, safeDeskId);
+  if (!item) throw new Error("FileRoom write verification failed.");
+  return item;
 }
 
 async function readSection(
@@ -161,4 +212,54 @@ function sortItems(a: FileRoomItem, b: FileRoomItem): number {
   const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
   const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
   return bTime - aTime || a.title.localeCompare(b.title);
+}
+
+async function writePreviousVersion(
+  fullPath: string,
+  content: string,
+): Promise<string> {
+  const dir = join(dirname(fullPath), ".versions");
+  await mkdir(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const versionPath = join(dir, `${basename(fullPath, ".md")}.${stamp}.md`);
+  await writeFile(versionPath, content, "utf8");
+  return relative(dirname(dirname(fullPath)), versionPath);
+}
+
+function withEditFrontmatter(input: {
+  title: string;
+  content: string;
+  editorId: string;
+  source: "manual" | "approved-refinement";
+  updatedAt: string;
+  previousVersionRef: string | null;
+}): string {
+  return [
+    "---",
+    `title: ${JSON.stringify(input.title)}`,
+    `summary: "Desk forecasting model overlay."`,
+    `tags: ["forecasting-model", "macro-event-risk"]`,
+    `editorId: ${JSON.stringify(input.editorId)}`,
+    `source: ${JSON.stringify(input.source)}`,
+    `updatedAt: ${JSON.stringify(input.updatedAt)}`,
+    `previousVersionRef: ${JSON.stringify(input.previousVersionRef)}`,
+    "---",
+    "",
+    stripFrontmatter(input.content).trim(),
+    "",
+  ].join("\n");
+}
+
+function stripFrontmatter(content: string): string {
+  if (!content.startsWith("---")) return content;
+  const end = content.indexOf("\n---", 3);
+  return end >= 0 ? content.slice(end + 4) : content;
+}
+
+function slugify(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "forecasting-model";
 }

@@ -405,11 +405,11 @@ export function BlockerTab() {
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="text-[13px] font-semibold text-white">
-              Accessibility Permission
+              Lock Permission Gate
             </div>
             <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
-              Pre-authorizes Fintheon so locking works without a password
-              prompt.
+              Approve once so header and Desk Plan locks can activate the
+              blocker without re-opening the permission flow.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 text-right">
@@ -434,7 +434,7 @@ export function BlockerTab() {
               disabled={accessibilityCheckLoading}
               className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 border border-[var(--fintheon-accent)]/20 disabled:opacity-40 transition-all"
             >
-              {accessibilityCheckLoading ? "Checking..." : "Grant Permission"}
+              {accessibilityCheckLoading ? "Checking..." : "Approve Gate"}
             </button>
             <SettingsActionStatus
               label={

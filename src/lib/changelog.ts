@@ -9,6 +9,28 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T22:42:00-04:00",
+    agent: "codex",
+    summary:
+      "Unified header and Desk Plan terminal locks on the lockout runtime: restored the MDB/ADB/PMDB/Next Desk Plan dropdown, persisted blocker platform/custom domains through backend-synced settings, synced lock/unlock to the selected platform blocker, refreshed the in-app blocked screen, and hardened Eastern briefing-anchor timing.",
+    files: [
+      "frontend/components/layout/HeaderLockButton.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/desk/DeskPlanWidget.tsx",
+      "frontend/components/settings/BlockerTab.tsx",
+      "frontend/components/settings/LockoutTimerDropdown.tsx",
+      "frontend/components/settings/TradingTab.tsx",
+      "frontend/contexts/SettingsContext.tsx",
+      "frontend/hooks/useLockout.ts",
+      "frontend/hooks/usePlatformBlocker.ts",
+      "frontend/lib/platform-blocker.ts",
+      "backend-hono/src/routes/lockout/index.ts",
+      "backend-hono/src/routes/lockout/briefing-time.ts",
+      "electron/main.cjs",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T13:45:00-04:00",
     agent: "codex",
     summary:

@@ -73,8 +73,8 @@ export function MarketTickerCard({
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]/50">
-          Live TV scanner · 5D{" "}
-          {quote.historySource === "yahoo" ? "Yahoo" : "unverified"}
+          Live TV scanner · {quote.sparklineSpan === "1w" ? "1W" : "5D"}{" "}
+          {sourceLabel(quote)}
         </span>
         <a
           href={tvUrl}
