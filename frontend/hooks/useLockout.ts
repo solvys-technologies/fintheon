@@ -164,38 +164,41 @@ export function useLockout(pollMs = 5000) {
   const previousLockedRef = useRef(false);
   const notifiedRef = useRef(false);
 
-  const ensureSelectedPlatformBlocked = useCallback(async () => {
-    const api = getBlockerApi();
-    if (!api) return;
-    const target = resolveBlockerTarget({
-      target: blockerQuickTarget,
-      sources: proposerIframeSources,
-      selectedPlatform: defaultPlatform,
-    });
-    const blockerDomains = mergeDomainLists(
-      target?.domains ?? [],
-      blockerCustomDomains,
-    );
-    if (blockerDomains.length === 0) return;
+  const ensureSelectedPlatformBlocked = useCallback(
+    async (options?: { preferSystemLayer?: boolean }) => {
+      const api = getBlockerApi();
+      if (!api) return;
+      const target = resolveBlockerTarget({
+        target: blockerQuickTarget,
+        sources: proposerIframeSources,
+        selectedPlatform: defaultPlatform,
+      });
+      const blockerDomains = mergeDomainLists(
+        target?.domains ?? [],
+        blockerCustomDomains,
+      );
+      if (blockerDomains.length === 0) return;
 
-    try {
-      const result = await api.setDomains(blockerDomains);
-      if (!result.ok) return;
-      const status = api.getStatus ? await api.getStatus() : null;
-      const hasSystemLayer =
-        !!status?.layers?.hosts || !!status?.layers?.resolver;
-      if (hasSystemLayer) await api.enable();
-      await api.enableFast();
-      notifyBlockerStateUpdated();
-    } catch {
-      // Best effort only — lockout itself should still proceed.
-    }
-  }, [
-    blockerCustomDomains,
-    blockerQuickTarget,
-    defaultPlatform,
-    proposerIframeSources,
-  ]);
+      try {
+        const result = await api.setDomains(blockerDomains);
+        if (!result.ok) return;
+        const status = api.getStatus ? await api.getStatus() : null;
+        const hasSystemLayer =
+          !!status?.layers?.hosts || !!status?.layers?.resolver;
+        if (options?.preferSystemLayer || hasSystemLayer) await api.enable();
+        await api.enableFast();
+        notifyBlockerStateUpdated();
+      } catch {
+        // Best effort only — lockout itself should still proceed.
+      }
+    },
+    [
+      blockerCustomDomains,
+      blockerQuickTarget,
+      defaultPlatform,
+      proposerIframeSources,
+    ],
+  );
 
   const releaseSelectedPlatformBlocker = useCallback(async () => {
     const api = getBlockerApi();
@@ -261,7 +264,10 @@ export function useLockout(pollMs = 5000) {
           const releaseTime = new Date(prev.autoReleaseAt).getTime();
           if (!isNaN(releaseTime) && now >= releaseTime) {
             // Trigger unlock via API (async, outside setState)
-            toggleLockout(false).then(() => refresh());
+            toggleLockout(false).then(async (ok) => {
+              if (ok) await releaseSelectedPlatformBlocker();
+              await refresh();
+            });
           }
         }
         return prev; // always return current state
@@ -273,14 +279,16 @@ export function useLockout(pollMs = 5000) {
       if (autoReleaseIntervalRef.current)
         clearInterval(autoReleaseIntervalRef.current);
     };
-  }, [refresh, pollMs]);
+  }, [refresh, pollMs, releaseSelectedPlatformBlocker]);
 
   const lock = useCallback(
     async (durationMinutes?: number, windowStartTime?: string) => {
-      await ensureAccessibilityPermission();
+      const hasSystemGate = await ensureAccessibilityPermission();
       const ok = await toggleLockout(true, durationMinutes, windowStartTime);
       if (ok) {
-        await ensureSelectedPlatformBlocked();
+        await ensureSelectedPlatformBlocked({
+          preferSystemLayer: hasSystemGate,
+        });
         await refresh();
       }
       return ok;
@@ -300,7 +308,7 @@ export function useLockout(pollMs = 5000) {
   const lockUntilBriefing = useCallback(
     async (briefingAnchor: BriefingAnchor): Promise<LockoutState> => {
       try {
-        await ensureAccessibilityPermission();
+        const hasSystemGate = await ensureAccessibilityPermission();
         const res = await fetch(`${API_BASE}/api/lockout/toggle`, {
           method: "POST",
           credentials: "include",
@@ -309,7 +317,9 @@ export function useLockout(pollMs = 5000) {
         });
         const data = await res.json();
         if (res.ok) {
-          await ensureSelectedPlatformBlocked();
+          await ensureSelectedPlatformBlocked({
+            preferSystemLayer: hasSystemGate,
+          });
           await refresh();
         }
         return {
@@ -333,7 +343,7 @@ export function useLockout(pollMs = 5000) {
   const scheduleLock = useCallback(
     async (durationMinutes: number, windowStartTime?: string) => {
       try {
-        await ensureAccessibilityPermission();
+        const hasSystemGate = await ensureAccessibilityPermission();
         const body: Record<string, unknown> = { durationMinutes };
         if (windowStartTime) body.windowStartTime = windowStartTime;
         const res = await fetch(`${API_BASE}/api/lockout/schedule`, {
@@ -344,7 +354,9 @@ export function useLockout(pollMs = 5000) {
         });
         const ok = res.ok;
         if (ok) {
-          await ensureSelectedPlatformBlocked();
+          await ensureSelectedPlatformBlocked({
+            preferSystemLayer: hasSystemGate,
+          });
           await refresh();
         }
         return ok;
@@ -361,7 +373,7 @@ export function useLockout(pollMs = 5000) {
   const lockUntil = useCallback(
     async (isoTimestamp: string) => {
       try {
-        await ensureAccessibilityPermission();
+        const hasSystemGate = await ensureAccessibilityPermission();
         const res = await fetch(`${API_BASE}/api/lockout/schedule`, {
           method: "POST",
           credentials: "include",
@@ -370,7 +382,9 @@ export function useLockout(pollMs = 5000) {
         });
         const ok = res.ok;
         if (ok) {
-          await ensureSelectedPlatformBlocked();
+          await ensureSelectedPlatformBlocked({
+            preferSystemLayer: hasSystemGate,
+          });
           await refresh();
         }
         return ok;
@@ -386,7 +400,7 @@ export function useLockout(pollMs = 5000) {
    */
   const lockUntilDeskSession = useCallback(async (): Promise<LockoutState> => {
     try {
-      await ensureAccessibilityPermission();
+      const hasSystemGate = await ensureAccessibilityPermission();
       const res = await fetch(
         `${API_BASE}/api/lockout/lock-until-desk-session`,
         {
@@ -397,7 +411,9 @@ export function useLockout(pollMs = 5000) {
       );
       const data = await res.json();
       if (res.ok) {
-        await ensureSelectedPlatformBlocked();
+        await ensureSelectedPlatformBlocked({
+          preferSystemLayer: hasSystemGate,
+        });
         await refresh();
       }
       return {

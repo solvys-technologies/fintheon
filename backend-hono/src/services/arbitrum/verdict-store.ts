@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Persist S102 risk_context when the migration is present.
 // [claude-code 2026-04-24] S35-T1: Arbitrum verdict persistence + getLatestChamberRead
 // helper for T11 (PMDB Chamber Read injection).
 //
@@ -28,6 +29,7 @@ function toRow(v: ArbitrumVerdict): Record<string, unknown> {
     digest_text: v.digest_text,
     iv_simulation: v.iv_simulation,
     trigger_source: v.trigger_source,
+    risk_context: v.risk_context ?? null,
     latency_ms: v.latency_ms ?? null,
     model_cost_usd: v.model_cost_usd ?? null,
   };
@@ -55,6 +57,7 @@ function fromRow(row: Record<string, unknown>): ArbitrumVerdict {
       (row.iv_simulation as ArbitrumVerdict["iv_simulation"]) ?? null,
     trigger_source:
       (row.trigger_source as ArbitrumVerdict["trigger_source"]) ?? null,
+    risk_context: (row.risk_context as ArbitrumVerdict["risk_context"]) ?? null,
     latency_ms:
       row.latency_ms === null || row.latency_ms === undefined
         ? undefined
@@ -74,10 +77,18 @@ export async function saveVerdict(v: ArbitrumVerdict): Promise<boolean> {
     });
     return false;
   }
-  const { error } = await sb.from(TABLE).upsert(toRow(v), {
+  const row = toRow(v);
+  const { error } = await sb.from(TABLE).upsert(row, {
     onConflict: "verdict_id",
   });
   if (error) {
+    if (error.message.includes("risk_context")) {
+      const { risk_context: _riskContext, ...legacyRow } = row;
+      const retry = await sb.from(TABLE).upsert(legacyRow, {
+        onConflict: "verdict_id",
+      });
+      if (!retry.error) return true;
+    }
     log.error("saveVerdict failed", {
       verdict_id: v.verdict_id,
       error: error.message,

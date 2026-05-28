@@ -127,6 +127,7 @@ export function TradingTab({
     lock: lockoutLock,
     unlock: lockoutUnlock,
     lockUntil,
+    lockUntilBriefing,
     lockUntilDeskSession,
   } = useLockout();
 
@@ -375,6 +376,7 @@ export function TradingTab({
 
           <LockoutTimerDropdown
             lockUntil={lockUntil}
+            lockUntilBriefing={lockUntilBriefing}
             lockUntilDeskSession={lockUntilDeskSession}
           />
 

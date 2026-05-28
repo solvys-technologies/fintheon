@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Surface Public/Yahoo source attribution for ticker history.
 import { ExternalLink, X } from "lucide-react";
 import type { MarketTickerQuote } from "./market-ticker-types";
 import {
@@ -86,6 +87,12 @@ export function MarketTickerCard({
       </div>
     </div>
   );
+}
+
+function sourceLabel(quote: MarketTickerQuote): string {
+  if (quote.historySource === "public") return "Public";
+  if (quote.historySource === "yahoo") return "Yahoo";
+  return "unverified";
 }
 
 function Sparkline({

@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Preserve S102 Arbitrum risk_context from API responses.
 // [claude-code 2026-05-15] S66-T1: added optional instrument parameter to fetchLatest.
 // [claude-code 2026-04-24] S35-T3: fetch /api/arbitrum/latest with 60s poll
 // [claude-code 2026-04-29] S52-T3: normalize API response shape → ArbitrumVerdict/ArbitrumSeat
@@ -52,6 +53,7 @@ interface RawVerdict {
   phase?: string;
   question?: string;
   category?: string;
+  risk_context?: Record<string, unknown> | null;
 }
 
 function normalizeSeat(raw: RawSeat): ArbitrumSeat {
@@ -99,6 +101,7 @@ function normalizeVerdict(raw: RawVerdict): ArbitrumVerdict {
     trigger: (raw.trigger_type || raw.trigger) as ArbitrumVerdict["trigger"],
     question: raw.question,
     category: raw.category,
+    risk_context: raw.risk_context ?? null,
   };
 }
 

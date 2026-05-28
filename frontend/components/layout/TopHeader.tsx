@@ -513,9 +513,7 @@ export function TopHeader({
               {compactLevel < 2 && (
                 <FadingRuler orientation="vertical" className="mx-0.5" />
               )}
-              {compactLevel < 2 && (
-                <HeaderLockButton />
-              )}
+              {compactLevel < 2 && <HeaderLockButton />}
             </div>
           )}
           {compactLevel < 2 && voiceRoomWidget}

@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 event triggers use mandatory macro event-risk workflow.
 // [claude-code 2026-04-24] S35-T1/T12 Phase B: Arbitrum event trigger.
 // Fire-and-forget gate called from central-scorer.ts after writeScoredItems.
 // Fires a chamber deliberation when a newly-scored riskflow item clears:
@@ -91,8 +92,13 @@ export async function checkAndFire(item: FeedItem): Promise<void> {
     item_id: item.id,
   });
 
-  const question = `Does this warrant a macro re-read? "${item.headline.slice(0, 240)}"`;
+  const question =
+    `Run the PIC macro event-risk chamber workflow for: "${item.headline.slice(0, 240)}". ` +
+    "Use the seven-day risk packet, compare headwinds/tailwinds, produce the first-order conclusion, and synthesize Harper's second-order weekly/session read.";
   const contextParts: string[] = [];
+  contextParts.push(
+    "Mandatory workflow: fetch recent risk signals, compare tailwind/headwind risk, test data-cycle stage, Wall Street pre-positioning, rate futures, sector rotation, fractal time, correlation, VIX, bonds, Greeks, and pending GEX/HVL context.",
+  );
   if (item.body) contextParts.push(item.body.slice(0, 600));
   if (item.symbols.length > 0)
     contextParts.push(`Symbols: ${item.symbols.join(", ")}`);

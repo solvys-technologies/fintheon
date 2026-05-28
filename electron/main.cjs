@@ -48,7 +48,7 @@ const BLOCKED_DOMAINS_VERSION = 2;
 const BLOCKED_PAGE_URL =
   "data:text/html;charset=utf-8," +
   encodeURIComponent(
-    "<!doctype html><html><head><meta charset='utf-8'><style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}</style></head><body></body></html>",
+    "<!doctype html><html><head><meta charset='utf-8'><style>html,body{margin:0;width:100%;height:100%;background:#000;color:#f0ead6;overflow:hidden;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif}.shell{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at center,rgba(199,159,74,.13),transparent 42%),#000}.panel{width:min(390px,calc(100vw - 44px));padding:18px;border:1px solid rgba(199,159,74,.24);border-radius:8px;background:rgba(0,0,0,.72);text-align:center}.eyebrow{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#908774}.message{margin-top:10px;font-size:14px;font-weight:650;line-height:1.35}.button{display:inline-block;margin-top:14px;padding:9px 13px;border:1px solid rgba(199,159,74,.32);border-radius:6px;background:rgba(199,159,74,.16);color:#c79f4a;font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase}</style></head><body><main class='shell'><section class='panel'><div class='eyebrow'>Jump to NarrativeFlow</div><div class='message'>Desk Block Enabled. See you next Session!</div><div class='button'>Monitor The Situation</div></section></main></body></html>",
   );
 let fastBlockerEnabled = false;
 
@@ -2094,6 +2094,17 @@ function buildHostsBlockEntries(domains) {
   return [BLOCKER_MARKER_START, ...lines, BLOCKER_MARKER_END].join("\n");
 }
 
+function stripHostsBlock(current) {
+  const startIdx = current.indexOf(BLOCKER_MARKER_START);
+  const endIdx = current.indexOf(BLOCKER_MARKER_END);
+  if (startIdx === -1 || endIdx === -1) return current.trimEnd();
+  return (
+    current.slice(0, Math.max(0, startIdx - 1)).trimEnd() +
+    "\n" +
+    current.slice(endIdx + BLOCKER_MARKER_END.length + 1).trimStart()
+  ).trimEnd();
+}
+
 /** Get unique eTLD+1 domains from a domain list (for /etc/resolver/ files) */
 function getEtldPlusOne(domains) {
   return Array.from(
@@ -2154,15 +2165,13 @@ function enableBlocking() {
     return { ok: false, reason: "no domains configured" };
 
   // Layer 1: /etc/hosts
-  let hostsResult = "noop";
-  if (!readHostsBlocked()) {
-    const entries = buildHostsBlockEntries(domains);
-    const current = fs.readFileSync("/etc/hosts", "utf8");
-    const updated = current.trimEnd() + "\n\n" + entries + "\n";
-    const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-    sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
-    hostsResult = "written";
-  }
+  const hadHostsBlock = readHostsBlocked();
+  const entries = buildHostsBlockEntries(domains);
+  const current = fs.readFileSync("/etc/hosts", "utf8");
+  const updated = stripHostsBlock(current) + "\n\n" + entries + "\n";
+  const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+  sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+  const hostsResult = hadHostsBlock ? "updated" : "written";
 
   // Layer 2: /etc/resolver/ per-domain overrides
   let resolverResult = "noop";
@@ -2193,17 +2202,10 @@ function disableBlocking() {
   let hostsResult = "noop";
   if (readHostsBlocked()) {
     const current = fs.readFileSync("/etc/hosts", "utf8");
-    const startIdx = current.indexOf(BLOCKER_MARKER_START);
-    const endIdx = current.indexOf(BLOCKER_MARKER_END);
-    if (startIdx !== -1 && endIdx !== -1) {
-      const updated =
-        current.slice(0, startIdx - 1).trimEnd() +
-        "\n" +
-        current.slice(endIdx + BLOCKER_MARKER_END.length + 1).trimStart();
-      const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-      sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
-      hostsResult = "removed";
-    }
+    const updated = stripHostsBlock(current) + "\n";
+    const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+    sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
+    hostsResult = "removed";
   }
 
   // Layer 2: /etc/resolver/ removals — remove only files for the active block list.

@@ -1,14 +1,21 @@
+// [Codex 2026-05-27] Public.com history can back Streamdown ticker widgets when configured.
 // [codex 2026-05-23] TradingView macro watchlist snapshot for agent context.
 import {
   quotes,
   type QuoteRow,
   type ScannerMarket,
 } from "../tradingview/scanner.js";
+import {
+  fetchPublicBars,
+  type PublicInstrumentType,
+} from "./public-provider.js";
 
 export interface MacroWatchSymbol {
   label: string;
   tvSymbol: string;
   yahooSymbol?: string;
+  publicSymbol?: string;
+  publicType?: PublicInstrumentType;
   market: ScannerMarket;
   group: "equity" | "rates" | "vol" | "commodity" | "currency";
 }
@@ -28,8 +35,8 @@ export interface MacroWatchQuote {
   rolling5dHigh: number | null;
   rolling5dLow: number | null;
   sparkline: Array<{ time: number; close: number }>;
-  sparklineSpan: "5d" | "unavailable";
-  historySource: "yahoo" | "unavailable";
+  sparklineSpan: "5d" | "1w" | "unavailable";
+  historySource: "public" | "yahoo" | "unavailable";
   asOf: string;
 }
 
@@ -80,6 +87,8 @@ export const MACRO_WATCHLIST: MacroWatchSymbol[] = [
     label: "VIX",
     tvSymbol: "TVC:VIX",
     yahooSymbol: "^VIX",
+    publicSymbol: "VIX",
+    publicType: "INDEX",
     market: "america",
     group: "vol",
   },
@@ -152,8 +161,9 @@ export async function fetchMacroWatchlist(): Promise<MacroWatchQuote[]> {
       rolling5dHigh: hist?.high ?? null,
       rolling5dLow: hist?.low ?? null,
       sparkline: hist?.sparkline ?? [],
-      sparklineSpan: hist ? "5d" : "unavailable",
-      historySource: hist ? "yahoo" : "unavailable",
+      sparklineSpan:
+        hist?.source === "public" ? "1w" : hist ? "5d" : "unavailable",
+      historySource: hist?.source ?? "unavailable",
       asOf,
     };
   }).filter((row): row is MacroWatchQuote => Boolean(row));
@@ -193,6 +203,7 @@ interface YahooHistory {
   high: number;
   low: number;
   sparkline: Array<{ time: number; close: number }>;
+  source: "public" | "yahoo";
 }
 
 async function fetchYahooHistory(
@@ -201,15 +212,36 @@ async function fetchYahooHistory(
   const rows = await Promise.all(
     symbols.map(async (symbol) => {
       if (!symbol.yahooSymbol) return null;
-      const history = await fetchYahooSymbolHistory(symbol.yahooSymbol).catch(
-        () => null,
-      );
+      const history =
+        (await fetchPublicSymbolHistory(symbol).catch(() => null)) ??
+        (symbol.yahooSymbol
+          ? await fetchYahooSymbolHistory(symbol.yahooSymbol).catch(() => null)
+          : null);
       return history ? ([symbol.label, history] as const) : null;
     }),
   );
   return new Map(
     rows.filter((row): row is [string, YahooHistory] => Boolean(row)),
   );
+}
+
+async function fetchPublicSymbolHistory(
+  symbol: MacroWatchSymbol,
+): Promise<YahooHistory | null> {
+  if (!symbol.publicSymbol || !symbol.publicType) return null;
+  const bars = await fetchPublicBars({
+    symbol: symbol.publicSymbol,
+    type: symbol.publicType,
+    period: "WEEK",
+    aggregation: "ONE_DAY",
+  });
+  if (!bars || bars.length === 0) return null;
+  return {
+    high: Math.max(...bars.map((bar) => bar.high)),
+    low: Math.min(...bars.map((bar) => bar.low)),
+    sparkline: bars.map((bar) => ({ time: bar.time, close: bar.close })),
+    source: "public",
+  };
 }
 
 async function fetchYahooSymbolHistory(
@@ -259,6 +291,7 @@ async function fetchYahooSymbolHistory(
     high: Math.max(...highs),
     low: Math.min(...lows),
     sparkline,
+    source: "yahoo",
   };
 }
 

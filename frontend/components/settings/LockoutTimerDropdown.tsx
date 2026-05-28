@@ -1,7 +1,10 @@
 import { useState } from "react";
-import type { LockoutState } from "../../hooks/useLockout";
+import type { BriefingAnchor, LockoutState } from "../../hooks/useLockout";
 
 const LOCKOUT_TIMER_OPTIONS = [
+  { value: "mdb", label: "Morning Daily Brief", anchor: "mdb" },
+  { value: "adb", label: "Afternoon Daily Brief", anchor: "adb" },
+  { value: "pmdb", label: "PM Daily Brief", anchor: "pmdb" },
   { value: "am-ny", label: "AM NY session (8:55AM)", hour: 8, minute: 55 },
   {
     value: "am-pm-ny",
@@ -17,6 +20,7 @@ type LockoutTimerOption = (typeof LOCKOUT_TIMER_OPTIONS)[number]["value"];
 
 interface LockoutTimerDropdownProps {
   lockUntil: (isoTimestamp: string) => Promise<boolean>;
+  lockUntilBriefing: (anchor: BriefingAnchor) => Promise<LockoutState>;
   lockUntilDeskSession: () => Promise<LockoutState>;
 }
 
@@ -31,6 +35,7 @@ function nextSystemLockoutIso(hour: number, minute: number): string {
 
 export function LockoutTimerDropdown({
   lockUntil,
+  lockUntilBriefing,
   lockUntilDeskSession,
 }: LockoutTimerDropdownProps) {
   const [value, setValue] = useState("");
@@ -52,9 +57,13 @@ export function LockoutTimerDropdown({
       const ok =
         option.value === "desk-plan"
           ? (await lockUntilDeskSession()).locked
-          : "hour" in option
-            ? await lockUntil(nextSystemLockoutIso(option.hour, option.minute))
-            : false;
+          : "anchor" in option
+            ? (await lockUntilBriefing(option.anchor as BriefingAnchor)).locked
+            : "hour" in option
+              ? await lockUntil(
+                  nextSystemLockoutIso(option.hour, option.minute),
+                )
+              : false;
       if (!ok) setError("Could not set lock timer.");
     } finally {
       setBusy(false);

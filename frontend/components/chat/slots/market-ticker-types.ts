@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Streamdown ticker widgets accept Public-backed history.
 import { z } from "zod";
 
 export const MarketTickerQuoteSchema = z.object({
@@ -17,8 +18,8 @@ export const MarketTickerQuoteSchema = z.object({
   sparkline: z
     .array(z.object({ time: z.number(), close: z.number() }))
     .default([]),
-  sparklineSpan: z.enum(["5d", "unavailable"]).optional(),
-  historySource: z.enum(["yahoo", "unavailable"]).optional(),
+  sparklineSpan: z.enum(["5d", "1w", "unavailable"]).optional(),
+  historySource: z.enum(["public", "yahoo", "unavailable"]).optional(),
   asOf: z.string(),
 });
 

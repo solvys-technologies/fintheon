@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Mirrors S102 Arbitrum risk_context payload.
 // Local Arbitrum types — mirror T2's migration columns. Kept local to avoid
 // T9 merge conflicts (it renames frontend/types/agent-desk.ts → arbitrum.ts).
 //
@@ -44,6 +45,7 @@ export interface ArbitrumVerdict {
   trigger?: "scheduled" | "iv_threshold" | "manual" | string;
   question?: string;
   category?: string;
+  risk_context?: Record<string, unknown> | null;
 }
 
 // ── S56 Track A: health + override types ──

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Lock, LockOpen } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
 import { DAY_PLAN_REFETCH_EVENT } from "../../hooks/useDayPlan";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
+import { useLockout } from "../../hooks/useLockout";
 import { DayCard } from "../narrative/DayCard";
 import { KanbanTitle } from "../ui/KanbanTitle";
 import { DeskPlanAdvanceButton } from "../executive/DashboardKickstartButtons";
@@ -14,7 +15,9 @@ export function DeskPlanWidget() {
   const { addToast } = useToast();
   const { allPlans, currentPlanIndex, goToPlan, isLoading } =
     useDayPlanMultiWeek();
+  const { state: lockoutState, lockUntilDeskSession, unlock } = useLockout();
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [isLocking, setIsLocking] = useState(false);
   const [selectedQueuedIndex, setSelectedQueuedIndex] = useState(0);
   const deskDateLabel = useMemo(() => formatDeskDate(new Date()), []);
   const queuedWindows = useMemo(
@@ -90,6 +93,28 @@ export function DeskPlanWidget() {
     }
   }, [addToast, isAdvancing]);
 
+  const toggleDeskPlanLock = useCallback(async () => {
+    if (isLocking) return;
+    setIsLocking(true);
+    try {
+      if (lockoutState.locked) {
+        const ok = await unlock();
+        addToast(
+          ok ? "Terminal unlocked" : "Unlock failed",
+          ok ? "success" : "error",
+        );
+        return;
+      }
+      const next = await lockUntilDeskSession();
+      addToast(
+        next.locked ? "Locked until Desk Plan" : "Desk Plan lock failed",
+        next.locked ? "success" : "error",
+      );
+    } finally {
+      setIsLocking(false);
+    }
+  }, [addToast, isLocking, lockUntilDeskSession, lockoutState.locked, unlock]);
+
   return (
     <section className="flex min-h-0 flex-col overflow-hidden px-2 py-1">
       <KanbanTitle
@@ -108,6 +133,11 @@ export function DeskPlanWidget() {
               <DeskPlanAdvanceButton
                 isLoading={isAdvancing}
                 onClick={advanceDeskPlan}
+              />
+              <DeskPlanLockButton
+                isLocked={lockoutState.locked}
+                isLoading={isLocking}
+                onClick={toggleDeskPlanLock}
               />
               <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-[0.17em] text-[var(--fintheon-accent)]/72">
                 Desk Plan
@@ -130,6 +160,33 @@ export function DeskPlanWidget() {
         />
       </div>
     </section>
+  );
+}
+
+function DeskPlanLockButton({
+  isLocked,
+  isLoading,
+  onClick,
+}: {
+  isLocked: boolean;
+  isLoading: boolean;
+  onClick: () => void;
+}) {
+  const Icon = isLocked ? Lock : LockOpen;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isLoading}
+      className="p-1 rounded text-zinc-500 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)] disabled:opacity-40"
+      title={isLocked ? "Unlock terminal" : "Lock until next Desk Plan"}
+      aria-label={isLocked ? "Unlock terminal" : "Lock until next Desk Plan"}
+    >
+      <Icon
+        className={`h-3.5 w-3.5 ${isLoading ? "animate-pulse" : ""}`}
+        strokeWidth={2}
+      />
+    </button>
   );
 }
 

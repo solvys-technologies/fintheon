@@ -210,7 +210,7 @@ interface SettingsContextType {
   /** Selected instrument for IV scoring and desk plan (default: /NQ) */
   selectedInstrument: string;
   setSelectedInstrument: (instrument: string) => void;
-  /** Lockout accessibility permission status (default: "granted") */
+  /** Lockout accessibility permission status (default: "prompt") */
   lockoutPermission: "prompt" | "granted" | "denied";
   setLockoutPermission: (status: "prompt" | "granted" | "denied") => void;
   /** v5.22 S1: cross-device preferences contract (theme, notifications, fuse palette). */
@@ -610,7 +610,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
   const [lockoutPermission, setLockoutPermission] = useState<
     "prompt" | "granted" | "denied"
-  >(() => loadFromStorage("lockoutPermission", "granted"));
+  >(() => loadFromStorage("lockoutPermission", "prompt"));
 
   const setLockoutAutoBlockOutsideTradingWindow = useCallback(
     (enabled: boolean) => {

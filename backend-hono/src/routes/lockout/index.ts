@@ -13,6 +13,7 @@ import {
 } from "../../services/lockout.js";
 import type { LockoutReason, ScheduledBy } from "../../services/lockout.js";
 import { createLogger } from "../../lib/logger.js";
+import { resolveBriefingTime } from "./briefing-time.js";
 
 const log = createLogger("lockout-route");
 
@@ -30,40 +31,6 @@ const ToggleSchema = z.object({
   reason: z.enum(reasonValues).optional(),
   briefingAnchor: z.enum(briefingAnchorValues).optional(),
 });
-
-const BRIEFING_TIMES_ET: Record<string, { hour: number; minute: number }> = {
-  mdb: { hour: 6, minute: 30 },
-  adb: { hour: 10, minute: 45 },
-  pmdb: { hour: 17, minute: 15 },
-};
-
-function resolveBriefingTime(anchor: string): string | null {
-  const times = BRIEFING_TIMES_ET[anchor];
-  if (!times) return null;
-
-  // Compute next occurrence of this briefing time in America/New_York
-  const now = new Date();
-  const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
-  const etNow = new Date(etStr);
-
-  const briefingET = new Date(etNow);
-  briefingET.setHours(times.hour, times.minute, 0, 0);
-
-  if (briefingET <= etNow) {
-    // Already past today's briefing — schedule for tomorrow (or next weekday)
-    briefingET.setDate(briefingET.getDate() + 1);
-    // Skip to Monday if on weekend for MDB/ADB/PMDB (weekday briefs)
-    const dow = briefingET.getDay();
-    if (dow === 0) briefingET.setDate(briefingET.getDate() + 1); // Sun → Mon
-    if (dow === 6) briefingET.setDate(briefingET.getDate() + 2); // Sat → Mon
-  }
-
-  // Convert ET back to UTC
-  const utc = new Date(
-    briefingET.toLocaleString("en-US", { timeZone: "America/New_York" }),
-  );
-  return utc.toISOString();
-}
 
 const SetSchema = z.object({
   durationMinutes: z.number().int().min(1).max(480).default(30),

@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 digest includes first-order and CAO second-order risk context.
 // [claude-code 2026-04-24] S35-T1: Arbitrum facilitator — weighted consensus,
 // dissent detection, and human-readable digest. No `decision` field, no
 // `recommended_action`, no auto-trade output. Human-in-the-loop by design.
@@ -88,6 +89,28 @@ function buildDigest(
   lines.push(
     `Weighted confidence **${pctFmt(weightedConf)}** across ${finals.length} seats (category: ${input.category}).`,
   );
+  if (input.risk_context) {
+    const firstOrder =
+      weightedProb >= 0.6
+        ? "Risk packet supports a macro reprice path."
+        : weightedProb <= 0.4
+          ? "Risk packet argues against chasing the macro reprice."
+          : "Risk packet is mixed; wait for confirmation before timing entries.";
+    const secondOrder = `Watch ${input.risk_context.headwindRisks[0] ?? "headwinds"} versus ${input.risk_context.tailwindRisks[0] ?? "tailwinds"} through ${input.risk_context.volatilityGate.status} vol gates.`;
+    lines.push("");
+    lines.push("**Macro event-risk packet:**");
+    lines.push(
+      `- Headwinds: ${input.risk_context.headwindRisks.slice(0, 3).join(" | ")}`,
+    );
+    lines.push(
+      `- Tailwinds: ${input.risk_context.tailwindRisks.slice(0, 3).join(" | ")}`,
+    );
+    lines.push(
+      `- Vol gate: ${input.risk_context.volatilityGate.status}; GEX/HVL: ${input.risk_context.basisAdjustedGexReference ?? "unavailable"}`,
+    );
+    lines.push(`- First-order: ${firstOrder}`);
+    lines.push(`- CAO second-order: ${secondOrder}`);
+  }
 
   const sorted = [...finals].sort((a, b) => b.seat.weight - a.seat.weight);
   const bodyLines = sorted.map(
