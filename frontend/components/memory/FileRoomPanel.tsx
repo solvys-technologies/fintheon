@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Wires forecasting-model FileRoom saves through backend RBAC.
 import {
   useCallback,
   useEffect,
@@ -129,6 +130,16 @@ export function FileRoomPanel() {
           item={selectedItem}
           detail={selectedDetail}
           isLoading={isDetailLoading}
+          onSave={async (item, content) => {
+            const saved = await backend.fileRoom.saveItem({
+              id: item.id,
+              sectionId: "forecasting-models",
+              title: item.title,
+              content,
+            });
+            setSelectedDetail(saved);
+            await load();
+          }}
         />
       </main>
     </div>

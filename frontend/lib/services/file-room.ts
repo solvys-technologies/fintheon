@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Adds FileRoom forecasting-model save support.
 import ApiClient from "../apiClient";
 
 export interface FileRoomItem {
@@ -50,6 +51,25 @@ export class FileRoomService {
     const params = new URLSearchParams({ id, deskId });
     const json = await this.client.get<{ item: FileRoomItemDetail }>(
       `/api/file-room/item?${params}`,
+    );
+    return json.item;
+  }
+
+  async saveItem(input: {
+    id?: string;
+    deskId?: string;
+    sectionId: "forecasting-models";
+    title: string;
+    content: string;
+    source?: "manual" | "approved-refinement";
+  }): Promise<FileRoomItemDetail> {
+    const json = await this.client.put<{ item: FileRoomItemDetail }>(
+      "/api/file-room/item",
+      {
+        deskId: "priced-in-capital",
+        source: "manual",
+        ...input,
+      },
     );
     return json.item;
   }
