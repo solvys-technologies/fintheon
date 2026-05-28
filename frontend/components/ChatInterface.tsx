@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] NarrativeFlow opener context is a visible draft only; never an initial hidden send.
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import {
@@ -60,6 +61,16 @@ export interface ChatInitialMessageRequest {
 }
 
 type ChatComposerPlacement = "bottom" | "center-until-start";
+const MAX_INITIAL_DRAFT_LENGTH = 600;
+
+function normalizeInitialDraft(
+  request: ChatInitialMessageRequest | null,
+): string | null {
+  const text = request?.text.trim() ?? "";
+  if (!text) return null;
+  if (text.length > MAX_INITIAL_DRAFT_LENGTH) return null;
+  return text;
+}
 
 function ChatInterfaceInner({
   surfaceId,
@@ -152,8 +163,9 @@ function ChatInterfaceInner({
   const hasMountedWorkDrawerRef = useRef(false);
   const handledInitialMessageIdsRef = useRef<Set<string>>(new Set());
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [queuedInitialMessage, setQueuedInitialMessage] =
-    useState<ChatInitialMessageRequest | null>(null);
+  const [composerDraftRequest, setComposerDraftRequest] = useState<
+    string | null
+  >(null);
 
   // Todo list state — persisted to localStorage
   const { todos, addTodo, toggleTodo, removeTodo } = useTodoList();
@@ -165,17 +177,6 @@ function ChatInterfaceInner({
     },
     [runtime],
   );
-  const sendInitialMessage = useCallback(
-    (request: ChatInitialMessageRequest) => {
-      const text = request.text.trim();
-      if (!text) return;
-      setHasChatStarted(true);
-      runtime.append({ role: "user", content: [{ type: "text", text }] });
-      onInitialMessageHandled?.(request.id);
-    },
-    [onInitialMessageHandled, runtime],
-  );
-
   const {
     queue,
     addQueue,
@@ -234,33 +235,21 @@ function ChatInterfaceInner({
   }, [conversationId, requestedConversationId, setConversationId]);
 
   useEffect(() => {
-    if (!initialMessageRequest?.text.trim()) return;
-    if (handledInitialMessageIdsRef.current.has(initialMessageRequest.id))
-      return;
-    if (initialMessageRequest.resetConversation && conversationId) {
-      handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
-      setQueuedInitialMessage(initialMessageRequest);
-      clearConversationId();
+    const draft = normalizeInitialDraft(initialMessageRequest);
+    if (!initialMessageRequest || !draft) {
+      if (initialMessageRequest?.id) {
+        handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
+        onInitialMessageHandled?.(initialMessageRequest.id);
+      }
       return;
     }
-
+    if (handledInitialMessageIdsRef.current.has(initialMessageRequest.id))
+      return;
     handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
-    sendInitialMessage(initialMessageRequest);
-  }, [
-    clearConversationId,
-    conversationId,
-    initialMessageRequest,
-    sendInitialMessage,
-  ]);
-
-  useEffect(() => {
-    if (!queuedInitialMessage || conversationId) return;
-    const frame = window.requestAnimationFrame(() => {
-      sendInitialMessage(queuedInitialMessage);
-      setQueuedInitialMessage(null);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [conversationId, queuedInitialMessage, sendInitialMessage]);
+    if (initialMessageRequest.resetConversation) clearConversationId();
+    setComposerDraftRequest(draft);
+    onInitialMessageHandled?.(initialMessageRequest.id);
+  }, [clearConversationId, initialMessageRequest, onInitialMessageHandled]);
 
   useEffect(() => {
     const previousCount = previousWorkItemCountRef.current;
@@ -577,6 +566,8 @@ function ChatInterfaceInner({
               }
               drawerPeekSlot={composerIsCentered ? undefined : drawerPeekSlot}
               workspaceSlot={workspaceSlot}
+              draftTextRequest={composerDraftRequest}
+              onDraftTextRequestConsumed={() => setComposerDraftRequest(null)}
               queueCount={queue.length}
               onMessageSubmitted={() => setHasChatStarted(true)}
               showAttachSelector={isNarrativeFlowSurface}

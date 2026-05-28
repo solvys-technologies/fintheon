@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Accept visible draft requests without auto-sending NarrativeFlow handoffs.
 // [claude-code 2026-03-11] T2a: clear active skill badge after send
 // [claude-code 2026-03-11] T3b: MCP auto-activation when skill selected
 // [claude-code 2026-03-11] T5: steer strip removed, queue chips added, always full PromptBox
@@ -77,6 +78,8 @@ interface FintheonComposerProps {
   onQueueMessage?: (text: string) => void;
   queueCount?: number;
   onMessageSubmitted?: () => void;
+  draftTextRequest?: string | null;
+  onDraftTextRequestConsumed?: () => void;
   showAttachSelector?: boolean;
   attachSelectorTitle?: string;
 }
@@ -105,6 +108,8 @@ export function FintheonComposer({
   onQueueMessage,
   queueCount = 0,
   onMessageSubmitted,
+  draftTextRequest,
+  onDraftTextRequestConsumed,
   showAttachSelector = false,
   attachSelectorTitle,
 }: FintheonComposerProps) {
@@ -200,6 +205,15 @@ export function FintheonComposer({
     historyIndexRef.current = -1;
     setRecallText("");
   }, []);
+
+  const visibleDraftText = draftTextRequest ?? recallText;
+  const handleDraftTextConsumed = useCallback(() => {
+    if (draftTextRequest !== null && draftTextRequest !== undefined) {
+      onDraftTextRequestConsumed?.();
+      return;
+    }
+    setRecallText(null);
+  }, [draftTextRequest, onDraftTextRequestConsumed]);
 
   // Reset history index when new messages arrive
   useEffect(() => {
@@ -454,8 +468,8 @@ export function FintheonComposer({
           connectorCount: activeIds.length,
           activeSkillLabel,
         }}
-        recallText={recallText}
-        onRecallConsumed={() => setRecallText(null)}
+        recallText={visibleDraftText}
+        onRecallConsumed={handleDraftTextConsumed}
         onHistoryUp={handleHistoryUp}
         onHistoryDown={handleHistoryDown}
         onHistoryEscape={handleHistoryEscape}
