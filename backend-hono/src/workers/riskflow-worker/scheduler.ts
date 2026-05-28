@@ -31,7 +31,10 @@ import { isAfterHours } from "../../services/riskflow/market-hours.js";
 
 const UNIFIED_INTERVAL_RTH_MS = 60_000; // 60s between X cycles during regular trading hours
 const UNIFIED_INTERVAL_AH_MS = 600_000; // 10m between X cycles during after-hours
-const FINANCIALJUICE_INTERVAL_MS = 5_000; // Real-time RSS wire poll every 5s
+const FINANCIALJUICE_INTERVAL_MS =
+  Number(process.env.FINANCIALJUICE_INTERVAL_MS) || 30_000;
+const FINANCIALJUICE_BACKOFF_MS =
+  Number(process.env.FINANCIALJUICE_BACKOFF_MS) || 120_000;
 const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
 
 function getUnifiedIntervalMs(): number {
@@ -164,10 +167,11 @@ async function financialJuicePollLoop(): Promise<void> {
   const shouldPoll = await shouldPollThisCycle();
   if (shouldPoll) {
     await runCycle("financialjuice");
-    state.financialjuice.timer = setTimeout(
-      financialJuicePollLoop,
-      FINANCIALJUICE_INTERVAL_MS,
-    );
+    const nextMs =
+      state.financialjuice.lastErrors > 0
+        ? FINANCIALJUICE_BACKOFF_MS
+        : FINANCIALJUICE_INTERVAL_MS;
+    state.financialjuice.timer = setTimeout(financialJuicePollLoop, nextMs);
   } else {
     const checkMs = getCheckIntervalMs();
     state.financialjuice.timer = setTimeout(financialJuicePollLoop, checkMs);

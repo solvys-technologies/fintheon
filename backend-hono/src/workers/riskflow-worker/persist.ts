@@ -320,9 +320,19 @@ export async function upsertHeartbeat(row: {
   const sb = getSupabaseClient();
   if (!sb) return;
   try {
-    await sb.from("riskflow_worker_heartbeats").upsert(row, {
+    const { error } = await sb.from("riskflow_worker_heartbeats").upsert(row, {
       onConflict: "tier",
     });
+    if (error) {
+      console.warn(
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          service: "riskflow-worker",
+          stage: "heartbeat_error",
+          error: error.message,
+        }),
+      );
+    }
   } catch (err) {
     console.warn(
       JSON.stringify({

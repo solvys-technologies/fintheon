@@ -1170,6 +1170,11 @@ export function createDiagnosticsRoutes(): Hono {
   router.get("/feed-health", async (c) => {
     const health = getFeedHealth();
     const pollerRunning = isPollingActive();
+    const newsWorker = await getNewsWorkerSnapshot();
+    const workerRunning =
+      typeof newsWorker.age_seconds === "number" &&
+      newsWorker.age_seconds <= 300;
+    const feedIngestRunning = pollerRunning || workerRunning;
 
     // Scorer status (lazy import to avoid circular deps)
     let scorerRunning = false;
@@ -1203,7 +1208,7 @@ export function createDiagnosticsRoutes(): Hono {
     const status =
       health.cacheSize === 0
         ? "empty"
-        : !pollerRunning
+        : !feedIngestRunning
           ? "poller_stopped"
           : !scorerRunning
             ? "scorer_stopped"
@@ -1213,9 +1218,11 @@ export function createDiagnosticsRoutes(): Hono {
     return c.json({
       status,
       pollerRunning,
+      workerRunning,
       scorerRunning,
       unscoredBacklog: unscoredCount,
       ...health,
+      newsWorker,
       rettiwtPool: getPoolStatus(),
     });
   });

@@ -290,7 +290,16 @@ export async function readUnscoredItems(
         WHERE NOT EXISTS (
           SELECT 1 FROM scored_riskflow_items s WHERE s.tweet_id = r.tweet_id
         )
-        ORDER BY r.created_at ASC
+        ORDER BY
+          CASE
+            WHEN r.ingest_pipeline = 'financialjuice-rss'
+              AND r.created_at >= NOW() - INTERVAL '6 hours'
+              THEN 0
+            WHEN r.created_at >= NOW() - INTERVAL '6 hours'
+              THEN 1
+            ELSE 2
+          END,
+          r.created_at DESC
         LIMIT ${limit}
       `;
       return rows as (RawRiskFlowItem & { id: string })[];

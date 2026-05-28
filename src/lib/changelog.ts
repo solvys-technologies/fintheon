@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T09:20:00-04:00",
+    agent: "codex",
+    summary:
+      "RiskFlow real-time feed repair: fresh FinancialJuice RSS rows now take priority in the central scorer queue, the missing riskflow_worker_heartbeats table is restored for worker diagnostics, heartbeat upsert errors are logged instead of silently disappearing, and FinancialJuice polling backs off after rate-limit responses.",
+    files: [
+      "backend-hono/src/services/supabase-service.ts",
+      "backend-hono/src/routes/diagnostics/index.ts",
+      "backend-hono/src/workers/riskflow-worker/scheduler.ts",
+      "backend-hono/src/workers/riskflow-worker/persist.ts",
+      "backend-hono/.env.example",
+      "scripts/fintheon-update.sh",
+      "supabase/migrations/20260528132000_riskflow_worker_heartbeats.sql",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T08:42:00-04:00",
     agent: "codex",
     summary:
