@@ -28,8 +28,20 @@
     <main>
       <section id="hero" class="hero section">
         <div class="hero-sky" aria-hidden="true">
-          <div class="hero-horizon"></div>
-          <div class="hero-sitter"></div>
+          <video
+            class="hero-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            poster="/marketing/fintheon-hero-ascii-poster.jpg"
+          >
+            <source
+              src="/marketing/fintheon-hero-ascii.webm"
+              type="video/webm"
+            />
+          </video>
           <div class="hero-rain"></div>
         </div>
         <div class="hero-copy">
