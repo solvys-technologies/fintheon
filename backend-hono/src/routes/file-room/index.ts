@@ -50,7 +50,7 @@ export function createFileRoomRoutes(): Hono {
   });
 
   app.put("/item", async (c) => {
-    const userId = c.get("userId") as string | undefined;
+    const userId = (c as any).get("userId") as string | undefined;
     const parsed = writeSchema.safeParse(await c.req.json());
     if (!parsed.success)
       return c.json({ ok: false, error: parsed.error.message }, 400);
