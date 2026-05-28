@@ -2,12 +2,13 @@
 // [claude-code 2026-04-11] v2: Inline Catalyst Watch, Hot Times dropdown, Quick Clock
 // [claude-code 2026-04-11] v3: Extracted hook to useStickyBulletin.ts
 // [claude-code 2026-04-17] v4: Drag migrated to useDraggable hook (pointer events + rAF, grip-only)
+// [Codex 2026-05-27] Use exported lucide Clock instead of unavailable Clock705.
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   BookOpen,
   ClipboardList,
-  Clock705,
+  Clock,
   Eye,
   StickyNote,
   Plus,
@@ -32,7 +33,7 @@ interface StickyBulletinProps {
 
 const SECTIONS = [
   { id: "desk" as const, icon: BookOpen, label: "Desk" },
-  { id: "antilag" as const, icon: Clock705, label: "Antilag" },
+  { id: "antilag" as const, icon: Clock, label: "Antilag" },
   { id: "watch" as const, icon: Eye, label: "Watch" },
   { id: "notes" as const, icon: StickyNote, label: "Notes" },
   { id: "upcoming" as const, icon: TrendingUp, label: "Upcoming" },
@@ -152,7 +153,7 @@ export function StickyBulletin({
                 }}
                 title="Quick clock antilag"
               >
-                <Clock705
+                <Clock
                   className="w-3.5 h-3.5"
                   style={{
                     transform: b.quickClockPulse ? "scale(1.2)" : "scale(1)",
@@ -249,7 +250,7 @@ export function StickyBulletin({
                     transition: "all 0.3s ease",
                   }}
                 >
-                  <Clock705
+                  <Clock
                     className="w-5 h-5"
                     style={{
                       color: "var(--fintheon-accent)",
@@ -272,7 +273,7 @@ export function StickyBulletin({
                       {DAY_LABELS[new Date().getDay()]} · auto-time
                     </span>
                   </div>
-                  <Clock705
+                  <Clock
                     className="w-3.5 h-3.5"
                     style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
                   />
@@ -534,7 +535,7 @@ export function StickyBulletin({
                           "color-mix(in srgb, var(--fintheon-bg) 40%, transparent)",
                       }}
                     >
-                      <Clock705
+                      <Clock
                         className="w-3 h-3 shrink-0"
                         style={{
                           color: "var(--fintheon-accent)",

@@ -5,7 +5,8 @@
 // [claude-code 2026-03-16] Restore toolbar regressions: IV inline points badge (envLabel + pts inline)
 // [claude-code 2026-03-20] S3:T4a: createPortal to document.body for popup — escapes parent stacking context, position:fixed with viewport clamping
 // [claude-code 2026-04-24] S35-T3: embed ArbitrumPeek in IV hover portal
-import { Info, PlusMinusStack } from "lucide-react";
+// [Codex 2026-05-27] Use lucide Diff; PlusMinusStack is not exported by this lucide version.
+import { Diff, Info } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { IVScoreResponse } from "../types/market-data";
@@ -269,7 +270,7 @@ export function IVScoreCard({
         {pts && (
           <>
             <span className="text-gray-600 text-[10px]">|</span>
-            <PlusMinusStack className="w-3 h-3 text-[var(--fintheon-accent)]" />
+            <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
             <span className="text-[10px] text-[var(--fintheon-accent)] font-medium">
               ±{pts.scaledPoints} pts
             </span>
@@ -497,7 +498,7 @@ export function IVScoreCard({
                 {data.prediction && (
                   <div className="mb-3 space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <PlusMinusStack className="w-3 h-3 text-[var(--fintheon-accent)]" />
+                      <Diff className="w-3 h-3 text-[var(--fintheon-accent)]" />
                       <h5 className="text-xs font-semibold text-[var(--fintheon-accent)]">
                         Next Session Forecast
                       </h5>
