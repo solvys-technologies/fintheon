@@ -2,9 +2,10 @@
 // mechanism (calls the working x-home-timeline collector), no borders, fading rulers.
 // [claude-code 2026-05-04] Refinement control for X feed backfill.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Zap, Calendar } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { FinancialJuiceRssRefreshControl } from "./FinancialJuiceRssRefreshControl";
 
 const API_BASE = (
   import.meta.env.VITE_API_URL || "http://localhost:8080"
@@ -170,6 +171,8 @@ export function FinancialJuiceBackfillPanel() {
           <Zap className="w-3 h-3" />
           {loading ? "Running..." : "Run"}
         </button>
+
+        <FinancialJuiceRssRefreshControl />
 
         {daysBetween(fromDate, toDate) > 30 && (
           <span

@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T09:58:00-04:00",
+    agent: "codex",
+    summary:
+      "Added an operator FinancialJuice RSS refresh control: the admin backfill-drip route now exposes a one-shot RSS refresh that writes raw rows, updates the FinancialJuice heartbeat, seeds/rescores the feed cache, and reports rate-limit backoff; the Refinement Backfill panel now has a compact Refresh RSS button with live result text.",
+    files: [
+      "backend-hono/src/services/riskflow/financialjuice-backfill-drip.ts",
+      "backend-hono/src/routes/admin/riskflow-backfill-drip.ts",
+      "frontend/components/refinement/FinancialJuiceBackfillPanel.tsx",
+      "frontend/components/refinement/FinancialJuiceRssRefreshControl.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T09:20:00-04:00",
     agent: "codex",
     summary:
