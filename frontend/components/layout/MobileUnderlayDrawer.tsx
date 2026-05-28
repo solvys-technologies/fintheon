@@ -1,13 +1,13 @@
 import { useRef, type ReactNode } from "react";
 import {
   Bell,
+  Bot,
   CalendarDays,
   LogOut,
   MessageCircle,
   Newspaper,
   Settings,
   Users,
-  Workflow,
 } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 import { useDND } from "../../contexts/DNDContext";
@@ -37,6 +37,10 @@ export function MobileUnderlayDrawer({
   const { unreadCount } = useServerNotifications();
   const badgeCount = queueCount + unreadCount;
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const runAndClose = (action: () => void) => {
+    action();
+    onClose();
+  };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
     const touch = event.touches[0];
@@ -83,43 +87,43 @@ export function MobileUnderlayDrawer({
             label="Desk"
             active={activeTab === "dashboard"}
             icon={<Users className="h-4 w-4" />}
-            onClick={() => onTabChange("dashboard")}
+            onClick={() => runAndClose(() => onTabChange("dashboard"))}
           />
           <DrawerRow
             label="RiskFlow"
             active={activeTab === "riskflow"}
             icon={<Newspaper className="h-4 w-4" />}
-            onClick={() => onTabChange("riskflow")}
+            onClick={() => runAndClose(() => onTabChange("riskflow"))}
           />
           <DrawerRow
             label="Calendar"
             active={activeTab === "econ"}
             icon={<CalendarDays className="h-4 w-4" />}
-            onClick={() => onTabChange("econ")}
+            onClick={() => runAndClose(() => onTabChange("econ"))}
           />
           <DrawerRow
             label="Chat"
             active={activeTab === "analysis"}
             icon={<MessageCircle className="h-4 w-4" />}
-            onClick={() => onConsiliumView("chat")}
+            onClick={() => runAndClose(() => onConsiliumView("chat"))}
           />
           <DrawerRow
             label="Arbitrum"
             active={activeTab === "analysis"}
             icon={<ArbitrumGlyph size={16} />}
-            onClick={() => onConsiliumView("arbitrum")}
+            onClick={() => runAndClose(() => onConsiliumView("arbitrum"))}
           />
           <DrawerRow
             label="Desk Ops"
             active={activeTab === "desk-ops"}
-            icon={<Workflow className="h-4 w-4" />}
-            onClick={() => onTabChange("desk-ops")}
+            icon={<Bot className="h-4 w-4" />}
+            onClick={() => runAndClose(() => onTabChange("desk-ops"))}
           />
           <DrawerRow
             label="Settings"
             active={activeTab === "settings"}
             icon={<Settings className="h-4 w-4" />}
-            onClick={() => onTabChange("settings")}
+            onClick={() => runAndClose(() => onTabChange("settings"))}
           />
         </nav>
 
@@ -130,7 +134,7 @@ export function MobileUnderlayDrawer({
               active={false}
               badgeCount={badgeCount}
               icon={<Bell className="h-4 w-4" />}
-              onClick={onNotificationCenterToggle}
+              onClick={() => runAndClose(onNotificationCenterToggle)}
             />
           ) : null}
           <DrawerRow
@@ -138,7 +142,7 @@ export function MobileUnderlayDrawer({
             active={false}
             danger
             icon={<LogOut className="h-4 w-4" />}
-            onClick={onLogout}
+            onClick={() => runAndClose(onLogout)}
           />
         </div>
       </aside>

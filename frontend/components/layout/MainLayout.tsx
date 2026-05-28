@@ -295,7 +295,22 @@ function MainLayoutInner() {
       ivScore?: number | null;
       publishedAt?: string;
     }) => {
-      setShowChat(true);
+      if (surfaceCapabilities.isMobile) {
+        window.dispatchEvent(
+          new CustomEvent("fintheon:navigate-tab", {
+            detail: { tab: "analysis" },
+          }),
+        );
+        window.setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("fintheon:consilium-lite-view", {
+              detail: { view: "chat" },
+            }),
+          );
+        }, 40);
+      } else {
+        setShowChat(true);
+      }
       const parts: string[] = [];
       parts.push(`[RiskFlow Context]`);
       parts.push(`Headline: ${alert.headline}`);
@@ -317,7 +332,7 @@ function MainLayoutInner() {
         }),
       );
     },
-    [],
+    [surfaceCapabilities.isMobile],
   );
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showYouTubeMiniplayer, setShowYouTubeMiniplayer] = useState(() => {
@@ -1016,7 +1031,7 @@ function MainLayoutInner() {
         transform: mobileDrawerOpen
           ? "translateX(min(292px, calc(100vw - 72px)))"
           : "translateX(0)",
-        filter: mobileDrawerOpen ? "brightness(0.68)" : "none",
+        filter: mobileDrawerOpen ? "blur(1.5px) brightness(0.72)" : "none",
         transition:
           "transform 330ms cubic-bezier(0.32, 0.72, 0, 1), filter 330ms cubic-bezier(0.32, 0.72, 0, 1)",
         willChange: "transform, filter",

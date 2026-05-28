@@ -6,6 +6,7 @@ import { DeskRiskSignalsPanel } from "./DeskRiskSignalsPanel";
 import { DeskSprintMapCalendar } from "./DeskSprintMapCalendar";
 
 const DESK_PAGES = ["Briefing", "Sprint Map"];
+const MOBILE_DESK_PAGES = ["Briefing", "Desk Feed"];
 
 interface DeskDashboardPrototypeProps {
   onNavigateTab?: (tab: string) => void;
@@ -17,6 +18,8 @@ export function DeskDashboardPrototype({
   deskSecondPageMode = "all",
 }: DeskDashboardPrototypeProps) {
   const { allPlans, isLoading } = useDayPlanMultiWeek();
+  const pageLabels =
+    deskSecondPageMode === "feed-only" ? MOBILE_DESK_PAGES : DESK_PAGES;
   const [activePage, setActivePage] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -83,16 +86,22 @@ export function DeskDashboardPrototype({
           />
         </section>
       </div>
-      <DeskPrototypePager activePage={activePage} onSelect={scrollToPage} />
+      <DeskPrototypePager
+        activePage={activePage}
+        labels={pageLabels}
+        onSelect={scrollToPage}
+      />
     </div>
   );
 }
 
 function DeskPrototypePager({
   activePage,
+  labels,
   onSelect,
 }: {
   activePage: number;
+  labels: string[];
   onSelect: (index: number) => void;
 }) {
   return (
@@ -100,7 +109,7 @@ function DeskPrototypePager({
       className="flex w-6 shrink-0 flex-col items-center justify-center gap-3 py-8"
       aria-label="Desk prototype pages"
     >
-      {DESK_PAGES.map((label, index) => (
+      {labels.map((label, index) => (
         <button
           key={label}
           type="button"

@@ -35,6 +35,8 @@ export function DeskSprintMapCalendar({
   allowedViews?: readonly DeskMapView[];
 }) {
   const effectiveViews = allowedViews?.length ? allowedViews : ALL_VIEWS;
+  const isFeedOnly =
+    effectiveViews.length === 1 && effectiveViews[0] === "briefing";
   const initialView = effectiveViews.includes("sprint")
     ? "sprint"
     : effectiveViews[0];
@@ -114,9 +116,13 @@ export function DeskSprintMapCalendar({
       <header className="flex shrink-0 items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Route className="h-3.5 w-3.5 text-[var(--fintheon-accent)]" />
+            {isFeedOnly ? (
+              <FileText className="h-3.5 w-3.5 text-[var(--fintheon-accent)]" />
+            ) : (
+              <Route className="h-3.5 w-3.5 text-[var(--fintheon-accent)]" />
+            )}
             <h2 className="text-[11px] uppercase tracking-[0.24em] text-[var(--fintheon-accent)]">
-              Desk Sprint Map
+              {isFeedOnly ? "Desk Feed" : "Desk Sprint Map"}
             </h2>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">

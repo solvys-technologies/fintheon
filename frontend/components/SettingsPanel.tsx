@@ -400,6 +400,8 @@ export function SettingsPage({
             alertConfig={alertConfig}
             setAlertConfig={setAlertConfig}
             voiceMemory={voiceMemory}
+            allowPsychAssist={capabilities?.allowPsychAssist ?? true}
+            allowVoiceAssistant={capabilities?.allowVoiceAssistant ?? true}
           />,
         );
       case "trading":

@@ -21,6 +21,8 @@ interface NotificationsTabProps {
     setMicDeviceId: (id: string | null) => void;
     devices: MediaDeviceInfo[];
   };
+  allowPsychAssist?: boolean;
+  allowVoiceAssistant?: boolean;
 }
 
 const CHANNELS: Array<{
@@ -56,6 +58,8 @@ export function NotificationsTab({
   alertConfig,
   setAlertConfig,
   voiceMemory,
+  allowPsychAssist = true,
+  allowVoiceAssistant = true,
 }: NotificationsTabProps) {
   const { preferences, updatePreferences } = useSettings();
   const notifications = preferences.notifications;
@@ -173,13 +177,15 @@ export function NotificationsTab({
               setAlertConfig({ ...alertConfig, priceAlerts: val })
             }
           />
-          <SettingsToggleRow
-            label="Psychological Alerts"
-            enabled={alertConfig.psychAlerts}
-            onChange={(val) =>
-              setAlertConfig({ ...alertConfig, psychAlerts: val })
-            }
-          />
+          {allowPsychAssist && (
+            <SettingsToggleRow
+              label="Psychological Alerts"
+              enabled={alertConfig.psychAlerts}
+              onChange={(val) =>
+                setAlertConfig({ ...alertConfig, psychAlerts: val })
+              }
+            />
+          )}
           <SettingsToggleRow
             label="News Alerts"
             enabled={alertConfig.newsAlerts}
@@ -238,82 +244,93 @@ export function NotificationsTab({
       {/* Don't Show Again — reset blocked notifications */}
       <DndResetSection />
 
-      <section className="fintheon-fade-divider pb-2">
-        <h3 className="mb-1 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
-          Healing Bowl Sound
-        </h3>
-        <p className="mb-4 text-right text-xs text-gray-500">
-          Select a sound to play when emotional tilt is detected. Calm sounds
-          are relaxing, shock sounds are alerting.
-        </p>
-        <div className="space-y-0">
-          {HEALING_BOWL_SOUNDS.map((sound) => (
-            <div
-              key={sound.id}
-              className="fintheon-fade-divider flex cursor-pointer items-center justify-end gap-3 py-3 text-right transition-all hover:opacity-80"
-              onClick={() =>
-                setAlertConfig({ ...alertConfig, healingBowlSound: sound.id })
-              }
-            >
-              <div className="min-w-0 flex-1 text-right">
-                <div className="mb-1 flex items-center justify-end gap-2">
-                  <span className="text-[11px] font-medium text-white">
-                    {sound.name}
-                  </span>
-                  <span
-                    className={`text-[9px] uppercase tracking-wider ${
-                      sound.type === "calm"
-                        ? "text-blue-400"
-                        : "text-orange-400"
-                    }`}
-                  >
-                    {sound.type}
-                  </span>
-                </div>
-                <p className="text-[10px] text-gray-500">{sound.description}</p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  healingBowlPlayer.preview(sound.id);
-                }}
-                className="fintheon-icon-button shrink-0"
-                title="Preview sound"
-              >
-                <Volume2 className="w-4 h-4 text-[var(--fintheon-accent)]" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h3 className="mb-1 flex items-center justify-end gap-2 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
-          <Mic className="w-4 h-4" />
-          Microphone Device
-        </h3>
-        <p className="mb-4 text-right text-xs text-gray-500">
-          Select which microphone to use for voice commands. Changes apply on
-          next voice session.
-        </p>
-        <select
-          value={voiceMemory.micDeviceId ?? ""}
-          onChange={(e) => voiceMemory.setMicDeviceId(e.target.value || null)}
-          className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
-        >
-          <option value="">System Default</option>
-          {voiceMemory.devices.map((device) => (
-            <option key={device.deviceId} value={device.deviceId}>
-              {device.label || `Microphone (${device.deviceId.slice(0, 8)}...)`}
-            </option>
-          ))}
-        </select>
-        {voiceMemory.devices.length === 0 && (
-          <p className="mt-2 text-right text-[11px] text-zinc-600">
-            No microphones detected. Grant microphone permission to see devices.
+      {allowPsychAssist && (
+        <section className="fintheon-fade-divider pb-2">
+          <h3 className="mb-1 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+            Healing Bowl Sound
+          </h3>
+          <p className="mb-4 text-right text-xs text-gray-500">
+            Select a sound to play when emotional tilt is detected. Calm sounds
+            are relaxing, shock sounds are alerting.
           </p>
-        )}
-      </section>
+          <div className="space-y-0">
+            {HEALING_BOWL_SOUNDS.map((sound) => (
+              <div
+                key={sound.id}
+                className="fintheon-fade-divider flex cursor-pointer items-center justify-end gap-3 py-3 text-right transition-all hover:opacity-80"
+                onClick={() =>
+                  setAlertConfig({
+                    ...alertConfig,
+                    healingBowlSound: sound.id,
+                  })
+                }
+              >
+                <div className="min-w-0 flex-1 text-right">
+                  <div className="mb-1 flex items-center justify-end gap-2">
+                    <span className="text-[11px] font-medium text-white">
+                      {sound.name}
+                    </span>
+                    <span
+                      className={`text-[9px] uppercase tracking-wider ${
+                        sound.type === "calm"
+                          ? "text-blue-400"
+                          : "text-orange-400"
+                      }`}
+                    >
+                      {sound.type}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-gray-500">
+                    {sound.description}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    healingBowlPlayer.preview(sound.id);
+                  }}
+                  className="fintheon-icon-button shrink-0"
+                  title="Preview sound"
+                >
+                  <Volume2 className="w-4 h-4 text-[var(--fintheon-accent)]" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {allowVoiceAssistant && (
+        <section>
+          <h3 className="mb-1 flex items-center justify-end gap-2 text-right text-sm font-semibold text-[var(--fintheon-accent)]">
+            <Mic className="w-4 h-4" />
+            Microphone Device
+          </h3>
+          <p className="mb-4 text-right text-xs text-gray-500">
+            Select which microphone to use for voice commands. Changes apply on
+            next voice session.
+          </p>
+          <select
+            value={voiceMemory.micDeviceId ?? ""}
+            onChange={(e) => voiceMemory.setMicDeviceId(e.target.value || null)}
+            className="w-full bg-[var(--fintheon-surface)] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[var(--fintheon-accent)]/40 cursor-pointer"
+          >
+            <option value="">System Default</option>
+            {voiceMemory.devices.map((device) => (
+              <option key={device.deviceId} value={device.deviceId}>
+                {device.label ||
+                  `Microphone (${device.deviceId.slice(0, 8)}...)`}
+              </option>
+            ))}
+          </select>
+          {voiceMemory.devices.length === 0 && (
+            <p className="mt-2 text-right text-[11px] text-zinc-600">
+              No microphones detected. Grant microphone permission to see
+              devices.
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

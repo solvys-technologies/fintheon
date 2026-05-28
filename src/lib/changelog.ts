@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T14:36:42-04:00",
+    agent: "codex",
+    summary:
+      "Mobile Web-PWA shell now uses a Fintheon underlay drawer from the header, keeps a separate mobile back button, strips phone-only footer/voice/PsychAssist/Strategium/Desktop Rail chrome, adds a Desk Ops page for Team/Harper/status, clamps Bulletin to a mobile dropdown, and keeps Desk page two Feed-only while desktop and Electron retain the full surface.",
+    files: [
+      "frontend/App.tsx",
+      "frontend/lib/surface-capabilities.ts",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/MobileUnderlayDrawer.tsx",
+      "frontend/components/layout/DeskOpsPage.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/SettingsPanel.tsx",
+      "frontend/components/settings/NotificationsTab.tsx",
+      "frontend/components/desk/DeskDashboardPrototype.tsx",
+      "frontend/components/desk/DeskSprintMapCalendar.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T09:58:00-04:00",
     agent: "codex",
     summary:
