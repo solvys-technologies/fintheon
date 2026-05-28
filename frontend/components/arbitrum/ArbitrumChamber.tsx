@@ -99,6 +99,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { verdict, isLoading, error, refresh } =
     useArbitrumLatest(selectedInstrument);
   const manualHistory = useArbitrumManualHistory();
+  const refreshManualHistory = manualHistory.refresh;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [openSummaryRoles, setOpenSummaryRoles] = useState<
@@ -200,8 +201,8 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   useEffect(() => {
     setOpenSummaryRoles([]);
-    void manualHistory.refresh();
-  }, [verdict?.id]);
+    void refreshManualHistory();
+  }, [verdict?.id, refreshManualHistory]);
 
   const hasVerdict = Boolean(verdict);
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
