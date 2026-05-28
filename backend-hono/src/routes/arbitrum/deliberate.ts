@@ -21,7 +21,10 @@ export async function handleDeliberate(c: Context) {
   const category = typeof body.category === "string" ? body.category : "custom";
   const context = typeof body.context === "string" ? body.context : undefined;
   const rounds = typeof body.rounds === "number" ? body.rounds : undefined;
-  const presetIds = normalizeArbitrumRunPresetIds(body.preset_ids);
+  const presetIds =
+    body.preset_ids === undefined
+      ? normalizeArbitrumRunPresetIds(["roro"])
+      : normalizeArbitrumRunPresetIds(body.preset_ids);
   const presetContext = buildArbitrumPresetContext(presetIds);
   const combinedContext = [presetContext, context]
     .filter((part): part is string => Boolean(part?.trim()))

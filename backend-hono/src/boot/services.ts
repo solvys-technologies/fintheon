@@ -399,8 +399,13 @@ export async function bootBackground(): Promise<void> {
   startAgentDeskDaily();
   log.info("AgentDeskDaily cron scheduled");
 
-  // ArbitrumChamber AI scheduler (Oracle/Nous — 60min interval, first run 20s after boot)
-  startArbitrumChamberScheduler();
+  // ArbitrumChamber outlook scheduler is opt-in. The only default automated
+  // chamber run is the 17:00 ET session scheduler above.
+  if (process.env.ARBITRUM_CHAMBER_OUTLOOK_SCHEDULER_ENABLED === "true") {
+    startArbitrumChamberScheduler();
+  } else {
+    log.info("ArbitrumChamberScheduler disabled by default");
+  }
 
   // Polymarket/Kalshi divergence detector (15min interval, first run 30s after boot)
   startDivergenceDetector();

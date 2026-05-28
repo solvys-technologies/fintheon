@@ -1,9 +1,11 @@
 // [Codex 2026-05-27] Extracted Arbitrum chamber header actions.
-import { Settings } from "lucide-react";
+import { History, Settings } from "lucide-react";
+import type { ArbitrumManualHistoryState } from "../../hooks/useArbitrumManualHistory";
 
 interface ArbitrumChamberHeaderProps {
   selectedInstrument: string;
   phaseNotice: string | null;
+  manualHistory: ArbitrumManualHistoryState;
   onInstrumentChange: (instrument: string) => void;
   onOpenPresets: () => void;
   onToggleSettings: () => void;
@@ -32,6 +34,7 @@ const INSTRUMENTS = [
 export function ArbitrumChamberHeader({
   selectedInstrument,
   phaseNotice,
+  manualHistory,
   onInstrumentChange,
   onOpenPresets,
   onToggleSettings,
@@ -68,6 +71,24 @@ export function ArbitrumChamberHeader({
             {phaseNotice}
           </span>
         ) : null}
+        <button
+          onClick={() => void manualHistory.refresh()}
+          className="rounded p-1 transition-colors hover:bg-[var(--fintheon-accent)]/10"
+          aria-label={manualHistory.label}
+          title={manualHistory.label}
+        >
+          <History
+            className="h-3.5 w-3.5 transition-colors"
+            style={{
+              color: manualHistory.hasFreshRun
+                ? "var(--fintheon-accent)"
+                : "var(--fintheon-text)",
+              opacity: manualHistory.hasFreshRun
+                ? 0.25 + manualHistory.decayRatio * 0.75
+                : 0.28,
+            }}
+          />
+        </button>
         <button
           onClick={onOpenPresets}
           className="rounded px-1.5 py-1 text-[10px] uppercase tracking-wider text-[var(--fintheon-accent)]/55 transition-colors hover:bg-[var(--fintheon-accent)]/10 hover:text-[var(--fintheon-accent)]"

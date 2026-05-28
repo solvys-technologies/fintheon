@@ -48,6 +48,7 @@ export const ARBITRUM_RUN_PRESETS: readonly ArbitrumRunPreset[] = [
 ] as const;
 
 const STORAGE_KEY = "fintheon:arbitrum-run-preset-ids";
+const DEFAULT_SELECTED_IDS: readonly ArbitrumRunPresetId[] = ["roro"];
 const VALID_IDS = new Set(ARBITRUM_RUN_PRESETS.map((preset) => preset.id));
 
 export function normalizeArbitrumRunPresetIds(
@@ -65,10 +66,12 @@ export function normalizeArbitrumRunPresetIds(
 export function loadSelectedArbitrumRunPresetIds(): ArbitrumRunPresetId[] {
   if (typeof window === "undefined") return [];
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [...DEFAULT_SELECTED_IDS];
+    const parsed = JSON.parse(raw);
     return normalizeArbitrumRunPresetIds(parsed);
   } catch {
-    return [];
+    return [...DEFAULT_SELECTED_IDS];
   }
 }
 

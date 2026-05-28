@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { useArbitrumManualHistory } from "../../hooks/useArbitrumManualHistory";
 import { useSettings } from "../../contexts/SettingsContext";
 import { FadingRuler } from "../shared/FadingRuler";
 import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
@@ -97,6 +98,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { selectedInstrument, setSelectedInstrument } = useSettings();
   const { verdict, isLoading, error, refresh } =
     useArbitrumLatest(selectedInstrument);
+  const manualHistory = useArbitrumManualHistory();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [openSummaryRoles, setOpenSummaryRoles] = useState<
@@ -198,6 +200,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
 
   useEffect(() => {
     setOpenSummaryRoles([]);
+    void manualHistory.refresh();
   }, [verdict?.id]);
 
   const hasVerdict = Boolean(verdict);
@@ -212,6 +215,7 @@ export function ArbitrumChamber(props: ArbitrumChamberProps) {
         <ArbitrumChamberHeader
           selectedInstrument={selectedInstrument}
           phaseNotice={phaseNotice}
+          manualHistory={manualHistory}
           onInstrumentChange={setSelectedInstrument}
           onOpenPresets={openPresets}
           onToggleSettings={toggleSettings}

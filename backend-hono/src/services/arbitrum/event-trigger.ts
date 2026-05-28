@@ -61,7 +61,7 @@ function markFired(speaker: string): void {
  * scorer pipeline never blocks on this.
  */
 export async function checkAndFire(item: FeedItem): Promise<void> {
-  if (process.env.ARBITRUM_EVENT_TRIGGER_ENABLED === "false") return;
+  if (process.env.ARBITRUM_EVENT_TRIGGER_ENABLED !== "true") return;
 
   const iv = item.ivScore ?? 0;
   if (iv < envThreshold()) return;

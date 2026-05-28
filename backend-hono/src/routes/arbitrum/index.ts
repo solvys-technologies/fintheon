@@ -133,8 +133,26 @@ export function createArbitrumRoutes(): Hono {
 
   app.get("/latest", async (c) => {
     const rawTrigger = c.req.query("trigger");
+    const maxAgeHours = Number(c.req.query("max_age_hours"));
     if (rawTrigger && VALID_TRIGGERS.has(rawTrigger as ArbitrumTriggerType)) {
       const v = await getLatestByTrigger(rawTrigger as ArbitrumTriggerType);
+      if (v && Number.isFinite(maxAgeHours) && maxAgeHours > 0) {
+        const ageMs = Date.now() - new Date(v.created_at).getTime();
+        if (ageMs > maxAgeHours * 60 * 60 * 1000)
+          return c.json({
+            verdict: null,
+            expired: true,
+            max_age_hours: maxAgeHours,
+          });
+        return c.json({
+          verdict: v,
+          expired: false,
+          max_age_hours: maxAgeHours,
+          expires_at: new Date(
+            new Date(v.created_at).getTime() + maxAgeHours * 60 * 60 * 1000,
+          ).toISOString(),
+        });
+      }
       return c.json({ verdict: v });
     }
     const v = await getLatest();
