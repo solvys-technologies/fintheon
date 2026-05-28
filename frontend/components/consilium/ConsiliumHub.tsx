@@ -28,6 +28,7 @@ import { useSettings } from "../../contexts/SettingsContext";
 import { useConsiliumNav } from "../../lib/consilium-nav-store";
 import { AgentChattr } from "./AgentChattr";
 import { Sanctum } from "../narrative/Sanctum";
+import { loadSelectedArbitrumRunPresetIds } from "../arbitrum/run-presets";
 import { TimelinePanel } from "../narrative/TimelinePanel";
 import { DeskRail } from "../desk/DeskRail";
 import {
@@ -614,6 +615,7 @@ export function ConsiliumHub() {
                 : "Read the next session — full brief";
 
         const ns = narrativeState ?? { lanes: [], catalysts: [], ropes: [] };
+        const presetIds = loadSelectedArbitrumRunPresetIds();
         const contextLines: string[] = [];
         if (ns.lanes?.length)
           contextLines.push(
@@ -640,6 +642,7 @@ export function ConsiliumHub() {
             category: "session-read",
             context:
               contextLines.length > 0 ? contextLines.join("\n") : undefined,
+            preset_ids: presetIds,
           }),
         });
 

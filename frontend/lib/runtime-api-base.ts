@@ -2,10 +2,13 @@
 // Electron injects the active backend URL at runtime; it must beat Vite's
 // build-time VITE_API_URL so packaged Desktop can use local or Portless routes.
 
-interface RuntimeWindow extends Window {
+type RuntimeWindow = Window & {
   __FINTHEON_API_BASE__?: string;
   __FINTHEON_FETCH_BRIDGE_INSTALLED__?: boolean;
-}
+  electron?: {
+    apiBase?: string;
+  };
+};
 
 const LOCAL_API_BASES = ["http://localhost:8080", "http://127.0.0.1:8080"];
 
@@ -45,7 +48,7 @@ function readRuntimeApiBase(): string | null {
   if (typeof window === "undefined") return null;
 
   const runtimeWindow = window as RuntimeWindow;
-  const electronBase = window.electron?.apiBase;
+  const electronBase = runtimeWindow.electron?.apiBase;
   const raw = runtimeWindow.__FINTHEON_API_BASE__ || electronBase;
   if (!raw) return null;
 

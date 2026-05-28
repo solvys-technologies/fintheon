@@ -270,6 +270,7 @@ function prepareDeskBriefMarkdown(text: string) {
 
 function buildBriefOptions(briefs: TodayBrief[]): BriefOption[] {
   const byType = new Map(briefs.map((brief) => [brief.type, brief]));
+  const now = new Date();
   const options: BriefOption[] = [
     scheduledOption("MDB", "Morning Daily Brief", "06:30", Sun, byType, now),
     scheduledOption("ADB", "Afternoon Daily Brief", "10:45", Sun, byType, now),

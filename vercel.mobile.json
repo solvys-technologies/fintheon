@@ -1,0 +1,53 @@
+{
+  "buildCommand": "cd mobile && bun run build",
+  "outputDirectory": "mobile/dist",
+  "devCommand": "cd mobile && bun run dev",
+  "installCommand": "bun install && cd mobile && bun install",
+  "framework": "vite",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "missing": [
+        { "type": "query", "key": "surface" },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Android|webOS|iPhone|iPad|iPod|BlackBerry|BB10|IEMobile|Opera Mini|Mobile|Silk|Kindle|Tablet).*"
+        }
+      ],
+      "destination": "https://fintheon-alpha.vercel.app/:path*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/chat",
+      "destination": "https://fintheon.fly.dev/api/ai/chat"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://fintheon.fly.dev/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    }
+  ]
+}

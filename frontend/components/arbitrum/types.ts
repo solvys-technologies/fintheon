@@ -31,6 +31,15 @@ export interface ArbitrumDissent {
 
 export type ArbitrumPhase = "convening" | "running" | "complete";
 
+export type ArbitrumRunPresetId =
+  | "volatility-forecast"
+  | "roro"
+  | "looming-swans"
+  | "behavioral-policy-theme"
+  | "buy-dip-sell-rip"
+  | "fed-scout"
+  | "signal-check";
+
 export interface ArbitrumVerdict {
   id: string;
   created_at: string;

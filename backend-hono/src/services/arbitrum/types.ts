@@ -11,6 +11,15 @@ export type ArbitrumSeatId = "lead" | "forecaster" | "risk" | "quant" | "bear";
 
 export type ArbitrumTriggerType = "event" | "session" | "manual";
 
+export type ArbitrumRunPresetId =
+  | "volatility-forecast"
+  | "roro"
+  | "looming-swans"
+  | "behavioral-policy-theme"
+  | "buy-dip-sell-rip"
+  | "fed-scout"
+  | "signal-check";
+
 export interface ArbitrumSeatFallback {
   model: string;
   provider: ArbitrumProvider;
@@ -135,6 +144,7 @@ export interface ArbitrumTriggerSource {
   riskflow_item_id?: string | null;
   speaker?: string | null;
   iv_score?: number | null;
+  preset_ids?: ArbitrumRunPresetId[];
 }
 
 export interface ArbitrumVerdict {

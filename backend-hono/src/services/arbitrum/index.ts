@@ -23,6 +23,12 @@ export { synthesize, type SynthesisResult } from "./facilitator.js";
 export { computeGates, type GatesContext } from "./gates.js";
 export { seatChat } from "./adapters.js";
 export {
+  ARBITRUM_RUN_PRESETS,
+  buildArbitrumPresetContext,
+  normalizeArbitrumRunPresetIds,
+  type ArbitrumRunPreset,
+} from "./presets.js";
+export {
   runChamber,
   type RunChamberOptions,
   type RunChamberResult,
@@ -31,6 +37,7 @@ export { checkAndFire as checkAndFireArbitrumEvent } from "./event-trigger.js";
 export type {
   ArbitrumSeatId,
   ArbitrumSeatConfig,
+  ArbitrumRunPresetId,
   ArbitrumSeatRound,
   ArbitrumSeatTranscript,
   ArbitrumDeliberateInput,

@@ -35,12 +35,13 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-27T23:24:00-04:00",
     agent: "codex",
     summary:
-      "Desktop env/runtime hardening: added Portless registration scripts for Fintheon backend services, made Electron prefer a healthy fintheon.test API base with localhost fallback, and bridged stale build-time VITE_API_URL fetches back to the Electron runtime API base so Desktop can use local or Portless backend routing.",
+      "Desktop env/runtime hardening: added Portless registration scripts for Fintheon backend services, made Electron prefer a healthy fintheon.test API base with localhost fallback, bridged stale build-time VITE_API_URL fetches back to the Electron runtime API base, and added a root mobile Vercel config so the mobile surface can deploy with shared frontend imports present.",
     files: [
       "package.json",
       "bun.lock",
       ".vercelignore",
       "vercel.json",
+      "vercel.mobile.json",
       "fintheon.config.ts",
       "electron/main.cjs",
       "electron/preload.cjs",

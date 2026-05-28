@@ -13,6 +13,8 @@ import {
   saveSeatOverrides,
   resetSeatOverrides,
   runChamber,
+  buildArbitrumPresetContext,
+  normalizeArbitrumRunPresetIds,
   type ArbitrumTriggerType,
 } from "../../services/arbitrum/index.js";
 import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
@@ -161,6 +163,11 @@ export function createArbitrumRoutes(): Hono {
       typeof body.category === "string" ? body.category : "custom";
     const context = typeof body.context === "string" ? body.context : undefined;
     const rounds = typeof body.rounds === "number" ? body.rounds : undefined;
+    const presetIds = normalizeArbitrumRunPresetIds(body.preset_ids);
+    const presetContext = buildArbitrumPresetContext(presetIds);
+    const combinedContext = [presetContext, context]
+      .filter((part): part is string => Boolean(part?.trim()))
+      .join("\n\n");
 
     if (question.trim().length === 0) {
       return c.json({ error: "question is required" }, 400);
@@ -168,9 +175,17 @@ export function createArbitrumRoutes(): Hono {
 
     try {
       const result = await runChamber(
-        { question, category, context },
+        {
+          question,
+          category,
+          context: combinedContext || undefined,
+        },
         "manual",
-        { rounds },
+        {
+          rounds,
+          triggerSource:
+            presetIds.length > 0 ? { preset_ids: presetIds } : null,
+        },
       );
       return c.json({
         verdict_id: result.verdict.verdict_id,
@@ -179,6 +194,7 @@ export function createArbitrumRoutes(): Hono {
         confidence: result.verdict.confidence,
         dissent: result.verdict.dissent,
         digest_text: result.verdict.digest_text,
+        preset_ids: presetIds,
       });
     } catch (err) {
       log.error("runChamber failed on /deliberate", {
