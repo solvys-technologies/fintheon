@@ -1,9 +1,10 @@
 #!/bin/bash
-# [claude-code 2026-03-16] Distribution pipeline — builds frontend, backend, Mac DMG
+# [claude-code 2026-03-16] Local beta pipeline — builds frontend, backend, Mac DMG
 set -e
 
 VERSION=$(node -p "require('./package.json').version")
-echo "=== Building Fintheon v$VERSION ==="
+echo "=== Building local Fintheon beta v$VERSION ==="
+echo "Public updater releases use: bun run release:mac"
 
 echo "[0/3] Stopping running Fintheon app..."
 pkill -f "Fintheon.app/Contents/MacOS/Fintheon" 2>/dev/null || true
@@ -64,5 +65,5 @@ echo "=== Checksums ==="
 shasum -a 256 desktop-dist/Fintheon-* 2>/dev/null || echo "  No artifacts to checksum"
 
 echo ""
-echo "Done. Upload via:"
-echo "  gh release create v$VERSION desktop-dist/Fintheon-* --title 'Fintheon v$VERSION'"
+echo "Done. This ad-hoc artifact is for local/manual beta installs only."
+echo "For the public auto-updater path, run: bun run release:mac"

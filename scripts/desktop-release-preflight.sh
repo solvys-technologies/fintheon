@@ -5,18 +5,29 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
+EXPECTED_APP_ID="io.pricedinresearch.fintheon"
 DMG="$ROOT/desktop-dist/Fintheon-${VERSION}-arm64.dmg"
 APP="$ROOT/desktop-dist/mac-arm64/Fintheon.app"
 ALLOW_S100_UNSIGNED="${FINTHEON_ALLOW_S100_UNSIGNED:-0}"
+SKIP_DMG_BUILD=0
+if [[ "${1:-}" == "--skip-build" ]]; then
+  SKIP_DMG_BUILD=1
+fi
 
 step() { printf '\n[%s] %s\n' "$1" "$2"; }
 fail() { echo "FAIL: $1" >&2; exit 1; }
+bundle_id() {
+  plutil -extract CFBundleIdentifier raw -o - "$1/Contents/Info.plist" 2>/dev/null ||
+    /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$1/Contents/Info.plist"
+}
 
 step "1/10" "Checking version sync"
 BACKEND_VERSION="$(node -p "require('$ROOT/backend-hono/package.json').version")"
 MOBILE_VERSION="$(node -p "require('$ROOT/mobile/package.json').version")"
+PACKAGE_APP_ID="$(node -p "require('$ROOT/package.json').build.appId")"
 [[ "$BACKEND_VERSION" == "$VERSION" ]] || fail "backend-hono version $BACKEND_VERSION != $VERSION"
 [[ "$MOBILE_VERSION" == "$VERSION" ]] || fail "mobile version $MOBILE_VERSION != $VERSION"
+[[ "$PACKAGE_APP_ID" == "$EXPECTED_APP_ID" ]] || fail "package appId $PACKAGE_APP_ID != $EXPECTED_APP_ID"
 grep -q "RELEASE_REF=\"v${VERSION}\"" "$ROOT/scripts/fintheon-setup.sh" || fail "setup script release ref is stale"
 grep -q "UPDATE_VERSION=\"${VERSION}\"" "$ROOT/scripts/fintheon-update.sh" || fail "update script version is stale"
 
@@ -45,11 +56,20 @@ bash -n \
   "$ROOT/scripts/fintheon-cli.sh"
 
 step "7/10" "Building Mac DMG"
-rm -rf "$ROOT/desktop-dist"
-(cd "$ROOT" && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg)
+if [[ "$SKIP_DMG_BUILD" == "1" ]]; then
+  echo "Skipping DMG rebuild; validating existing desktop-dist artifacts"
+else
+  rm -rf "$ROOT/desktop-dist"
+  if [[ "$ALLOW_S100_UNSIGNED" == "1" ]]; then
+    (cd "$ROOT" && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg)
+  else
+    (cd "$ROOT" && FINTHEON_NOTARIZE_MAC=true bunx electron-builder --mac dmg)
+  fi
+fi
 [[ -f "$DMG" ]] || fail "DMG missing: $DMG"
 
-step "8/10" "Checking app seal, DMG contents, and Gatekeeper assessment"
+step "8/10" "Checking app identity, seal, DMG contents, and Gatekeeper assessment"
+[[ "$(bundle_id "$APP")" == "$EXPECTED_APP_ID" ]] || fail "app bundle id does not match $EXPECTED_APP_ID"
 codesign --verify --deep --strict --verbose=2 "$APP"
 
 MOUNT_DIR="$(mktemp -d)"
@@ -60,6 +80,7 @@ cleanup_mount() {
 trap cleanup_mount EXIT
 hdiutil attach "$DMG" -nobrowse -readonly -quiet -mountpoint "$MOUNT_DIR"
 [[ -d "$MOUNT_DIR/Fintheon.app" ]] || fail "DMG does not contain Fintheon.app"
+[[ "$(bundle_id "$MOUNT_DIR/Fintheon.app")" == "$EXPECTED_APP_ID" ]] || fail "DMG app bundle id does not match $EXPECTED_APP_ID"
 codesign --verify --deep --strict --verbose=2 "$MOUNT_DIR/Fintheon.app"
 cleanup_mount
 trap - EXIT

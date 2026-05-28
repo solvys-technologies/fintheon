@@ -25,6 +25,7 @@ export interface DesktopDownloadedUpdate {
   dmgPath?: string;
   sha256?: string | null;
   sha512?: string | null;
+  size?: number | null;
   releaseUrl?: string;
   reason?: string;
 }

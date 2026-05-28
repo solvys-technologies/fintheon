@@ -238,6 +238,7 @@ function createUpdateManager({
         dmgPath: paths.dmgPath,
         sha256: update.sha256 ?? null,
         sha512: update.sha512 ?? null,
+        size: update.size ?? null,
         releaseUrl: update.releaseUrl ?? releasesLatestUrl,
       };
     }
@@ -268,6 +269,11 @@ function createUpdateManager({
       fs.rmSync(paths.tempPath, { force: true });
       throw new Error("downloaded DMG is not usable");
     }
+    const downloadedSize = fs.statSync(paths.tempPath).size;
+    if (Number.isFinite(update.size) && downloadedSize !== update.size) {
+      fs.rmSync(paths.tempPath, { force: true });
+      throw new Error("downloaded DMG size mismatch");
+    }
     const downloadedHash = await hashFile(
       paths.tempPath,
       checksum.algorithm,
@@ -285,6 +291,7 @@ function createUpdateManager({
       dmgPath: paths.dmgPath,
       sha256: update.sha256 ?? null,
       sha512: update.sha512 ?? null,
+      size: update.size ?? downloadedSize,
       releaseUrl: update.releaseUrl ?? releasesLatestUrl,
     };
   }

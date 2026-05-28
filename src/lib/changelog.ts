@@ -9,6 +9,27 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T23:10:00-04:00",
+    agent: "codex",
+    summary:
+      "Desktop updater signing path: moved the macOS bundle ID to io.pricedinresearch.fintheon, added signed/notarized release hooks and a release script, required bundle-ID validation in release/download/install checks, and made the backend updater hydrate SHA512 metadata from latest-mac.yml when GitHub release assets omit a digest.",
+    files: [
+      "package.json",
+      "backend-hono/src/routes/desktop-update/index.ts",
+      "electron/update-manager.cjs",
+      "frontend/types/electron.d.ts",
+      "scripts/build-signed-mac-release.sh",
+      "scripts/notary-helpers.cjs",
+      "scripts/electron-after-sign.cjs",
+      "scripts/electron-after-all-artifact-build.cjs",
+      "scripts/desktop-release-preflight.sh",
+      "scripts/desktop-update-download-preflight.mjs",
+      "scripts/fintheon-install-update.sh",
+      "scripts/build-release.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T22:52:00-04:00",
     agent: "codex",
     summary:

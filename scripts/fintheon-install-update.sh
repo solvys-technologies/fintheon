@@ -9,6 +9,7 @@ DMG_LOCAL="${2:?usage: fintheon-install-update.sh <vTAG> <downloaded-dmg-path>}"
 USER_DATA="$HOME/Library/Application Support/Fintheon"
 MARKER="$USER_DATA/just-updated.json"
 LOG="/tmp/fintheon-install-update.log"
+EXPECTED_APP_ID="io.pricedinresearch.fintheon"
 
 mkdir -p "$USER_DATA"
 {
@@ -38,7 +39,18 @@ mkdir -p "$USER_DATA"
     echo "no mounted Fintheon volume found"
     exit 1
   fi
-  cp -R "$VOLUME/Fintheon.app" /Applications/
+  APP_IN_DMG="$VOLUME/Fintheon.app"
+  if [[ ! -d "$APP_IN_DMG" ]]; then
+    echo "mounted DMG does not contain Fintheon.app"
+    exit 1
+  fi
+  BUNDLE_ID="$(plutil -extract CFBundleIdentifier raw -o - "$APP_IN_DMG/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_IN_DMG/Contents/Info.plist")"
+  if [[ "$BUNDLE_ID" != "$EXPECTED_APP_ID" ]]; then
+    echo "unexpected bundle id: $BUNDLE_ID"
+    exit 1
+  fi
+  codesign --verify --deep --strict --verbose=2 "$APP_IN_DMG"
+  cp -R "$APP_IN_DMG" /Applications/
   hdiutil detach "$VOLUME" -quiet 2>/dev/null || true
   xattr -cr /Applications/Fintheon.app 2>/dev/null || true
 

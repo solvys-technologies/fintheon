@@ -35,6 +35,8 @@ interface DesktopRelease {
 }
 
 let cachedRelease: { release: DesktopRelease; fetchedAt: number } | null = null;
+let cachedManifest: { release: DesktopRelease; fetchedAt: number } | null =
+  null;
 
 function normalizeArch(value: string | undefined): "arm64" | "x64" {
   if (value === "x64" || value === "amd64") return "x64";
@@ -66,6 +68,10 @@ function readManifestFileValue(manifest: string, key: string): string | null {
 }
 
 async function fetchLatestFromManifest(): Promise<DesktopRelease | null> {
+  if (cachedManifest && Date.now() - cachedManifest.fetchedAt < CACHE_TTL_MS) {
+    return cachedManifest.release;
+  }
+
   const res = await fetch(GITHUB_LATEST_MANIFEST_URL, {
     headers: { "User-Agent": "Fintheon-Desktop-Updater" },
   });
@@ -83,7 +89,7 @@ async function fetchLatestFromManifest(): Promise<DesktopRelease | null> {
 
   const sizeText = readManifestFileValue(manifest, "size");
   const size = sizeText ? Number.parseInt(sizeText, 10) : null;
-  return {
+  const release = {
     version,
     tag: `v${version}`,
     assetName,
@@ -93,6 +99,29 @@ async function fetchLatestFromManifest(): Promise<DesktopRelease | null> {
     size: Number.isFinite(size) ? size : null,
     releaseUrl: `https://github.com/${REPO}/releases/latest`,
     publishedAt: readManifestValue(manifest, "releaseDate"),
+  };
+  cachedManifest = { release, fetchedAt: Date.now() };
+  return release;
+}
+
+function mergeReleaseAndManifest(
+  release: GitHubRelease,
+  asset: GitHubAsset,
+  version: string,
+  manifest: DesktopRelease | null,
+): DesktopRelease {
+  const manifestMatches =
+    manifest?.version === version && manifest.assetName === asset.name;
+  return {
+    version,
+    tag: release.tag_name,
+    assetName: asset.name,
+    downloadUrl: asset.browser_download_url,
+    sha256: readSha256(asset),
+    sha512: manifestMatches ? manifest.sha512 : null,
+    size: asset.size ?? (manifestMatches ? manifest.size : null),
+    releaseUrl: release.html_url,
+    publishedAt: release.published_at ?? manifest?.publishedAt ?? null,
   };
 }
 
@@ -122,17 +151,17 @@ async function fetchLatestRelease(): Promise<DesktopRelease | null> {
       (item) => item.name === `Fintheon-${version}-arm64.dmg`,
     );
     if (latest && version && asset) {
-      const release = {
-        version,
-        tag: latest.tag_name,
-        assetName: asset.name,
-        downloadUrl: asset.browser_download_url,
-        sha256: readSha256(asset),
-        sha512: null,
-        size: asset.size ?? null,
-        releaseUrl: latest.html_url,
-        publishedAt: latest.published_at ?? null,
-      };
+      const manifest = await fetchLatestFromManifest().catch(() => null);
+      const release = mergeReleaseAndManifest(latest, asset, version, manifest);
+      if (
+        !release.sha256 &&
+        !release.sha512 &&
+        manifest?.version === version &&
+        manifest.assetName === asset.name
+      ) {
+        cachedRelease = { release: manifest, fetchedAt: Date.now() };
+        return manifest;
+      }
       cachedRelease = { release, fetchedAt: Date.now() };
       return release;
     }

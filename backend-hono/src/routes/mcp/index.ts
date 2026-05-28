@@ -1,4 +1,5 @@
 // [claude-code 2026-04-03] MCP registry routes — read/write ~/.claude/mcp.json, toggle servers
+// [Codex 2026-05-27] Public.com market data is exposed as a read-only data connector.
 /**
  * MCP Routes
  * CRUD for MCP server configs backed by ~/.claude/mcp.json.
@@ -207,6 +208,21 @@ const INTERNAL_CONNECTORS: McpServerEntry[] = [
     requiresApiKey: false,
     hasApiKey: true,
     category: "internal",
+    locked: false,
+    source: "internal",
+  },
+  {
+    id: "public",
+    name: "Public",
+    description:
+      "Read-only Public.com market data: quotes, bars, option chains, and Greeks. Order placement is disabled.",
+    transport: "stdio",
+    enabled: true,
+    installed: true,
+    requiresApiKey: true,
+    apiKeyEnvVar: "PUBLIC_API_KEY",
+    hasApiKey: Boolean(process.env.PUBLIC_API_KEY),
+    category: "data",
     locked: false,
     source: "internal",
   },

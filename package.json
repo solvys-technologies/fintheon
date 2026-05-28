@@ -61,18 +61,19 @@
     "frontend:install": "cd frontend && bun install",
     "frontend:build": "cd frontend && bun run build",
     "desktop:build": "bun run frontend:build && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
+    "desktop:build:signed": "bun run frontend:build && FINTHEON_NOTARIZE_MAC=true bunx electron-builder --mac dmg",
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
-    "release:mac": "bun run frontend:build && cd backend-hono && bun run build && cd .. && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg --publish always",
+    "release:mac": "bash scripts/build-signed-mac-release.sh --publish",
     "release:preflight": "bash scripts/desktop-release-preflight.sh",
     "release:verify-dmg": "node scripts/desktop-update-download-preflight.mjs",
     "frontend:build:windows": "cd frontend && bun run build:windows",
     "release:win": "bun run frontend:build:windows && bunx electron-builder --win nsis --publish never",
-    "release": "bash scripts/build-release.sh",
+    "release": "bun run release:mac",
     "setup": "bun run scripts/setup.ts",
     "update": "bun run scripts/update.ts"
   },
   "build": {
-    "appId": "io.solvys.fintheon",
+    "appId": "io.pricedinresearch.fintheon",
     "productName": "Fintheon",
     "files": [
       "electron/**/*",
@@ -84,13 +85,17 @@
       "output": "desktop-dist"
     },
     "afterPack": "scripts/electron-after-pack.cjs",
+    "afterSign": "scripts/electron-after-sign.cjs",
+    "afterAllArtifactBuild": "scripts/electron-after-all-artifact-build.cjs",
     "mac": {
       "target": [
         "dmg",
         "zip"
       ],
       "icon": "electron/icons/icon.icns",
-      "category": "public.app-category.finance"
+      "category": "public.app-category.finance",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": [

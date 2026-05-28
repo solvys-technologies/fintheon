@@ -13,6 +13,7 @@ const endpoint =
   process.env.FINTHEON_UPDATE_CHECK_URL ||
   "https://fintheon.fly.dev/api/desktop/update/latest?platform=darwin&arch=arm64";
 const expectedVersion = process.env.FINTHEON_EXPECTED_VERSION || pkg.version;
+const expectedAppId = "io.pricedinresearch.fintheon";
 const expectedAsset = `Fintheon-${expectedVersion}-arm64.dmg`;
 
 function fail(message) {
@@ -37,6 +38,17 @@ function runQuiet(command, args) {
   });
 }
 
+function readBundleId(appPath) {
+  return runQuiet("plutil", [
+    "-extract",
+    "CFBundleIdentifier",
+    "raw",
+    "-o",
+    "-",
+    path.join(appPath, "Contents", "Info.plist"),
+  ]).trim();
+}
+
 function verifyDownloadedDmg(dmgPath) {
   const mountDir = fs.mkdtempSync(
     path.join(os.tmpdir(), "fintheon-dmg-mount-"),
@@ -58,6 +70,12 @@ function verifyDownloadedDmg(dmgPath) {
     const appPath = path.join(mountDir, "Fintheon.app");
     if (!fs.existsSync(appPath)) {
       throw new Error("downloaded DMG does not contain Fintheon.app");
+    }
+    const bundleId = readBundleId(appPath);
+    if (bundleId !== expectedAppId) {
+      throw new Error(
+        `downloaded app bundle id ${bundleId} != ${expectedAppId}`,
+      );
     }
 
     runQuiet("codesign", [
