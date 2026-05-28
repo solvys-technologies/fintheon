@@ -406,7 +406,7 @@ export function DayCard({
               planDate={plan?.date}
               window={currentWindow}
               loading={isLoading}
-              renderValue={picForecastText}
+              renderValue={forecastedActualText}
             />
             <GatedForecastRow
               label="Miss"
@@ -865,12 +865,15 @@ function scenarioPrintWithProbability(
   return `${scenarioPrint(forecast, side)} ${probability}%`;
 }
 
-function picForecastText(forecast: NonNullable<DayPlanWindow["econForecast"]>) {
-  const explicit = forecast.picInternalForecast?.trim();
-  if (explicit) return explicit.slice(0, 72);
-  const prediction = forecast.aiPrediction?.trim();
-  if (prediction) return prediction.slice(0, 72);
-  return "Internal read pending";
+function forecastedActualText(
+  forecast: NonNullable<DayPlanWindow["econForecast"]>,
+) {
+  return (
+    extractForecastedActual(forecast.forecast) ??
+    extractForecastedActual(forecast.picInternalForecast) ??
+    extractForecastedActual(forecast.calendarConsensus) ??
+    "Internal actual pending"
+  );
 }
 
 function buildMacroCycleDetail(
@@ -888,7 +891,12 @@ function buildMacroCycleDetail(
 function buildThesisDetail(
   forecast: NonNullable<DayPlanWindow["econForecast"]>,
 ) {
-  const base = forecast.aiPrediction?.trim() || "Awaiting agent forecast.";
+  const forecastNote = forecastTextNote(forecast);
+  const base =
+    [forecastNote, forecast.aiPrediction?.trim()]
+      .filter((item): item is string => Boolean(item))
+      .join(" ")
+      .trim() || "Awaiting agent forecast.";
   if (base.length >= 160) return base;
   const miss = forecast.miss?.description
     ? ` Miss path: ${forecast.miss.description}`
@@ -897,4 +905,37 @@ function buildThesisDetail(
     ? ` Beat path: ${forecast.beat.description}`
     : "";
   return `${base}${miss}${beat}`;
+}
+
+function extractForecastedActual(value?: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || /^(n\/?a|null|undefined|pending)$/i.test(trimmed)) {
+    return null;
+  }
+
+  const tone = trimmed.match(/\b(hawkish|dovish|none)\b/i)?.[1];
+  if (tone) return tone.toLowerCase();
+
+  const token = trimmed.match(
+    /[<>≤≥]?\s*[-+]?\d+(?:\.\d+)?\s*(?:%|k|m|b|bp|bps|mm|bn)?/i,
+  )?.[0];
+  if (!token) return null;
+  return token.replace(/\s+/g, "").slice(0, 18);
+}
+
+function forecastTextNote(
+  forecast: NonNullable<DayPlanWindow["econForecast"]>,
+): string | null {
+  const raw = forecast.picInternalForecast?.trim();
+  if (!raw) return null;
+  const actual = extractForecastedActual(raw);
+  const note = actual
+    ? raw
+        .replace(actual, "")
+        .replace(/^[-–—:,\s]+/, "")
+        .trim()
+    : raw;
+  if (!note || (note === raw && actual)) return null;
+  return /[a-z]{3}/i.test(note) ? note : null;
 }

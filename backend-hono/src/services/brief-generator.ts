@@ -88,14 +88,7 @@ function formatDeskThemeBlock(plan: DayPlan): string {
       lines.push(padRow("Catalyst", w.eventName));
     }
     if (w.econForecast) {
-      lines.push(
-        padRow(
-          "PIC Forecast",
-          w.econForecast.picInternalForecast ||
-            w.econForecast.aiPrediction ||
-            "pending",
-        ),
-      );
+      lines.push(padRow("PIC Forecast", forecastedActualText(w.econForecast)));
       lines.push(
         padRow(
           "Miss",
@@ -114,7 +107,7 @@ function formatDeskThemeBlock(plan: DayPlan): string {
       lines.push(
         padRow("2nd Order", w.econForecast.secondOrderRead ?? "pending"),
       );
-      lines.push(padRow("Thesis", w.econForecast.aiPrediction));
+      lines.push(padRow("Thesis", forecastThesisText(w.econForecast)));
     }
   }
   lines.push("```");
@@ -126,6 +119,59 @@ function briefScenarioPrint(
   side: "miss" | "beat",
 ): string {
   return forecast[side]?.agenticPrint || forecast[side]?.description || side;
+}
+
+function forecastedActualText(
+  forecast: NonNullable<DayPlan["windows"][number]["econForecast"]>,
+): string {
+  return (
+    extractForecastedActual(forecast.forecast) ??
+    extractForecastedActual(forecast.picInternalForecast) ??
+    extractForecastedActual(forecast.calendarConsensus) ??
+    "pending"
+  );
+}
+
+function forecastThesisText(
+  forecast: NonNullable<DayPlan["windows"][number]["econForecast"]>,
+): string {
+  const note = forecastTextNote(forecast);
+  return (
+    [note, forecast.aiPrediction?.trim()]
+      .filter((item): item is string => Boolean(item))
+      .join(" ")
+      .trim() || "pending"
+  );
+}
+
+function extractForecastedActual(value?: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || /^(n\/?a|null|undefined|pending)$/i.test(trimmed)) {
+    return null;
+  }
+  const tone = trimmed.match(/\b(hawkish|dovish|none)\b/i)?.[1];
+  if (tone) return tone.toLowerCase();
+  const token = trimmed.match(
+    /[<>≤≥]?\s*[-+]?\d+(?:\.\d+)?\s*(?:%|k|m|b|bp|bps|mm|bn)?/i,
+  )?.[0];
+  return token ? token.replace(/\s+/g, "").slice(0, 18) : null;
+}
+
+function forecastTextNote(
+  forecast: NonNullable<DayPlan["windows"][number]["econForecast"]>,
+): string | null {
+  const raw = forecast.picInternalForecast?.trim();
+  if (!raw) return null;
+  const actual = extractForecastedActual(raw);
+  const note = actual
+    ? raw
+        .replace(actual, "")
+        .replace(/^[-–—:,\s]+/, "")
+        .trim()
+    : raw;
+  if (!note || (note === raw && actual)) return null;
+  return /[a-z]{3}/i.test(note) ? note : null;
 }
 
 function padRow(label: string, value: string): string {

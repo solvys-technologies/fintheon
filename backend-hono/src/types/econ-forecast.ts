@@ -14,6 +14,7 @@ export interface EconForecastScenario {
 
 export interface EconForecast {
   calendarConsensus: string | null;
+  /** PIC forecasted actual value/tone only; thesis text belongs in aiPrediction. */
   picInternalForecast: string;
   missProbability: number;
   beatProbability: number;

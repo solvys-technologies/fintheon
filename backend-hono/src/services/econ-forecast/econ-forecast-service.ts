@@ -75,7 +75,7 @@ const ECON_SYSTEM_PROMPT = `You analyze scheduled economic data releases for tra
 Output strictly a JSON object with these fields:
 {
   "calendarConsensus": "the consensus number as a string, e.g. '0.3%' or '215K', or null",
-  "picInternalForecast": "PIC's internal forecast value or tone, e.g. '0.2% sticky disinflation' or '210K soft jobs'",
+  "picInternalForecast": "PIC's internal forecasted actual only, e.g. '0.2%' or '210K'",
   "forecast": "legacy mirror of picInternalForecast",
   "miss": { "description": "what print would classify as a miss and why", "isBullishForEquities": bool, "probability": number, "agenticPrint": "the desk's miss-side print forecast, e.g. '<0.3%' or '198K'" },
   "beat": { "description": "what print would classify as a beat and why", "isBullishForEquities": bool, "probability": number, "agenticPrint": "the desk's beat-side print forecast, e.g. '>0.3%' or '232K'" },
@@ -96,7 +96,7 @@ Output strictly a JSON object with these fields:
 
 Rules:
 - Calendar consensus is a baseline/obstacle only. It is never PIC's forecast.
-- picInternalForecast: produce the desk's internal forecast from data-cycle logic, recent prints, RiskFlow, rate futures/positioning context when available, and cross-asset reaction risk.
+- picInternalForecast: produce only the desk's forecasted actual value with unit. No prose, no thesis text, no rationale.
 - forecast: mirror picInternalForecast for legacy consumers only.
 - miss.agenticPrint and beat.agenticPrint are the Agentic Desk's deliberated scenario print for that path, not probability. Use only the print/value with unit or comparator. No prose.
 - If consensus is missing, infer a directional forecast from recent prints, RiskFlow headlines, and regime data. Do not answer with a generic passage.
@@ -109,7 +109,7 @@ Rules:
 - missProbability and beatProbability must sum to 100 and match miss/beat.probability.
 - confidenceScore is 0-100.
 - Include Wall Street pre-positioning, rate-sensitive equity rotation, and fractal time/correlation requirements when the context supports it.
-- aiPrediction: sharp, convicted, declarative. Cite the last 2-3 prints if available. Include what positioning implies.
+- aiPrediction: sharp, convicted, declarative. Put all forecast rationale, data-cycle logic, and positioning text here, not in picInternalForecast.
 - No emojis, no markdown. Plain JSON only.`;
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -327,10 +327,14 @@ function parseForecastResponse(
       cleanOptionalString(parsed.calendarConsensus) ??
       cleanOptionalString(input.forecast) ??
       cleanOptionalString(input.previous);
-    const picInternalForecast =
+    const rawPicForecast =
       cleanOptionalString(parsed.picInternalForecast) ??
-      cleanOptionalString(parsed.forecast) ??
-      "Internal forecast pending";
+      cleanOptionalString(parsed.forecast);
+    const picInternalForecast =
+      cleanForecastedActual(rawPicForecast, input.isSpeech) ??
+      cleanForecastedActual(input.forecast, input.isSpeech) ??
+      cleanForecastedActual(input.previous, input.isSpeech) ??
+      (input.isSpeech ? "none" : "Internal actual pending");
     const forecast = picInternalForecast;
     const miss: EconForecastScenario = {
       description: String(parsed.miss?.description ?? "Print below consensus"),
@@ -372,9 +376,14 @@ function parseForecastResponse(
       ? parsed.otherNotableEvents.map(String)
       : [];
 
-    const aiPrediction = String(
-      parsed.aiPrediction ?? "No prediction available.",
-    );
+    const forecastNote = forecastTextNote(rawPicForecast, picInternalForecast);
+    const aiPrediction = [
+      forecastNote,
+      String(parsed.aiPrediction ?? "No prediction available.").trim(),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
     return {
       calendarConsensus,
@@ -427,6 +436,42 @@ function cleanOptionalString(value: unknown): string | null {
   const trimmed = value.trim();
   if (!trimmed || /^(n\/?a|null|undefined)$/i.test(trimmed)) return null;
   return trimmed.slice(0, 320);
+}
+
+function cleanForecastedActual(
+  value: unknown,
+  isSpeech: boolean,
+): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || /^(n\/?a|null|undefined|pending)$/i.test(trimmed)) {
+    return null;
+  }
+
+  if (isSpeech) {
+    const tone = trimmed.match(/\b(hawkish|dovish|none)\b/i)?.[1];
+    return tone ? tone.toLowerCase() : null;
+  }
+
+  const token = trimmed.match(
+    /[<>≤≥]?\s*[-+]?\d+(?:\.\d+)?\s*(?:%|k|m|b|bp|bps|mm|bn)?/i,
+  )?.[0];
+  return token ? token.replace(/\s+/g, "").slice(0, 18) : null;
+}
+
+function forecastTextNote(
+  rawForecast: string | null,
+  actual: string,
+): string | null {
+  if (!rawForecast) return null;
+  const trimmed = rawForecast.trim();
+  if (!trimmed || trimmed === actual) return null;
+  const note = trimmed
+    .replace(actual, "")
+    .replace(/^[-–—:,\s]+/, "")
+    .trim();
+  const text = note && note !== trimmed ? note : trimmed;
+  return /[a-z]{3}/i.test(text) ? text.slice(0, 220) : null;
 }
 
 function cleanStringList(value: unknown): string[] {

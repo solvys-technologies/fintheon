@@ -52,7 +52,7 @@ export async function redeliberateEconForecast({
         REDELIBERATION_TIMEOUT_MS,
       );
       const parsed = parseRedeliberation(result.text);
-      current = applyRedeliberation(current, parsed, i);
+      current = applyRedeliberation(current, parsed, i, input.isSpeech);
     } catch (err) {
       current = {
         ...current,
@@ -76,6 +76,7 @@ function applyRedeliberation(
   forecast: EconForecast,
   parsed: RedeliberationResult | null,
   pass: number,
+  isSpeech: boolean,
 ): EconForecast {
   if (!parsed) {
     return {
@@ -101,16 +102,27 @@ function applyRedeliberation(
   const total = missProbability + beatProbability;
   const normalizedMiss =
     total > 0 ? Math.round((missProbability / total) * 100) : 50;
+  const correctedForecast = cleanForecastedActual(
+    parsed.picInternalForecast,
+    isSpeech,
+  );
+  const forecastNote = forecastTextNote(
+    parsed.picInternalForecast,
+    correctedForecast ?? forecast.picInternalForecast,
+  );
+  const aiPrediction = [
+    forecastNote,
+    parsed.aiPrediction ?? forecast.aiPrediction,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   return {
     ...forecast,
-    picInternalForecast:
-      cleanAgenticPrint(parsed.picInternalForecast) ??
-      forecast.picInternalForecast,
+    picInternalForecast: correctedForecast ?? forecast.picInternalForecast,
     forecast:
-      cleanAgenticPrint(parsed.picInternalForecast) ??
-      forecast.picInternalForecast ??
-      forecast.forecast,
+      correctedForecast ?? forecast.picInternalForecast ?? forecast.forecast,
     missProbability: normalizedMiss,
     beatProbability: 100 - normalizedMiss,
     confidenceScore: clampProbability(
@@ -133,7 +145,7 @@ function applyRedeliberation(
         cleanAgenticPrint(parsed.beatAgenticPrint) ??
         forecast.beat.agenticPrint,
     },
-    aiPrediction: parsed.aiPrediction ?? forecast.aiPrediction,
+    aiPrediction,
     validationChecks: [
       ...(forecast.validationChecks ?? []),
       {
@@ -222,12 +234,43 @@ function cleanAgenticPrint(value: unknown): string | undefined {
   return trimmed.slice(0, 48);
 }
 
+function cleanForecastedActual(
+  value: unknown,
+  isSpeech: boolean,
+): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || /^(n\/?a|null|undefined|pending)$/i.test(trimmed)) {
+    return undefined;
+  }
+  if (isSpeech) {
+    const tone = trimmed.match(/\b(hawkish|dovish|none)\b/i)?.[1];
+    return tone ? tone.toLowerCase() : undefined;
+  }
+  const token = trimmed.match(
+    /[<>≤≥]?\s*[-+]?\d+(?:\.\d+)?\s*(?:%|k|m|b|bp|bps|mm|bn)?/i,
+  )?.[0];
+  return token ? token.replace(/\s+/g, "").slice(0, 18) : undefined;
+}
+
+function forecastTextNote(rawForecast: unknown, actual: string): string | null {
+  if (typeof rawForecast !== "string") return null;
+  const trimmed = rawForecast.trim();
+  if (!trimmed || trimmed === actual) return null;
+  const note = trimmed
+    .replace(actual, "")
+    .replace(/^[-–—:,\s]+/, "")
+    .trim();
+  const text = note && note !== trimmed ? note : trimmed;
+  return /[a-z]{3}/i.test(text) ? text.slice(0, 220) : null;
+}
+
 const REDELIBERATION_SYSTEM_PROMPT = `You are the second-pass validation desk for Fintheon economic forecasts.
 Return strict JSON only:
 {
   "verdict": "pass" | "adjust",
   "rationale": "one concise sentence",
-  "picInternalForecast": "optional corrected PIC internal forecast only",
+  "picInternalForecast": "optional corrected PIC forecasted actual only",
   "missProbability": number,
   "beatProbability": number,
   "confidenceScore": number,
@@ -243,6 +286,7 @@ Rules:
 - Run a skeptical validity check against event type, consensus, previous, and macro logic.
 - Calendar consensus is not PIC's forecast.
 - Do not invent actual print data.
+- picInternalForecast must be only a forecasted actual value/tone with no prose. Put all rationale in aiPrediction.
 - Probabilities must represent miss vs beat odds and sum to roughly 100.
 - Only return missAgenticPrint or beatAgenticPrint when the current print values are concretely wrong. Values must be terse print/tone strings, not prose.
 - Prefer "pass" unless there is a concrete inconsistency.`;

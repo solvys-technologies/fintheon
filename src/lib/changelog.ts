@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T00:31:00-04:00",
+    agent: "codex",
+    summary:
+      "Desk Plan forecast hygiene: PIC Forecast rows now render only the internal forecasted actual value/tone, leaked prose is moved into the Thesis detail, and econ forecast prompts/parsers now keep rationale out of picInternalForecast.",
+    files: [
+      "frontend/components/narrative/DayCard.tsx",
+      "frontend/types/day-plan.ts",
+      "backend-hono/src/services/econ-forecast/econ-forecast-service.ts",
+      "backend-hono/src/services/econ-forecast/econ-forecast-redeliberation.ts",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/types/day-plan.ts",
+      "backend-hono/src/types/econ-forecast.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T00:08:00-04:00",
     agent: "codex",
     summary:
