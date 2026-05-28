@@ -3,7 +3,6 @@ import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { BookOpen, Lock, LockOpen, Moon, Sun } from "lucide-react";
 import { useLockout, type BriefingAnchor } from "../../hooks/useLockout";
-import { useSettings } from "../../contexts/SettingsContext";
 import { useToast } from "../../contexts/ToastContext";
 
 const BRIEF_OPTIONS: Array<{
@@ -18,14 +17,8 @@ const BRIEF_OPTIONS: Array<{
 ];
 
 export function HeaderLockButton() {
-  const {
-    state,
-    unlock,
-    lockUntilBriefing,
-    lockUntilDeskSession,
-    requestPermission,
-  } = useLockout();
-  const { lockoutPermission } = useSettings();
+  const { state, unlock, lockUntilBriefing, lockUntilDeskSession } =
+    useLockout();
   const { addToast } = useToast();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -63,19 +56,6 @@ export function HeaderLockButton() {
       document.removeEventListener("mousedown", handleClick);
     };
   }, [open, refreshPosition]);
-
-  const handlePermission = async () => {
-    setBusy("permission");
-    try {
-      const granted = await requestPermission();
-      addToast(
-        granted ? "Lock gate approved" : "Lock gate not approved",
-        granted ? "success" : "error",
-      );
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const handleBriefLock = async (anchor: BriefingAnchor) => {
     setBusy(anchor);
@@ -161,15 +141,6 @@ export function HeaderLockButton() {
                   busy={busy === "unlock"}
                   onClick={handleUnlock}
                   icon={LockOpen}
-                />
-              )}
-              {lockoutPermission !== "granted" && (
-                <MenuButton
-                  label="Approve Lock Gate"
-                  detail="One-time macOS gate"
-                  busy={busy === "permission"}
-                  onClick={handlePermission}
-                  icon={Lock}
                 />
               )}
               {BRIEF_OPTIONS.map((option) => (

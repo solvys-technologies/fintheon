@@ -46,8 +46,9 @@ export function DeskDailyBriefingPanel() {
       const response = await fetch(`${apiBase}/api/data/briefs/today`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = (await response.json()) as { briefs?: TodayBrief[] };
-      const briefs = (data.briefs ?? []).filter((brief) =>
-        isUsableBrief(brief.content),
+      const now = new Date();
+      const briefs = (data.briefs ?? []).filter(
+        (brief) => isUsableBrief(brief.content) && isBriefVisible(brief, now),
       );
       setTodayBriefs(briefs);
       setSelectedId((current) =>
@@ -269,21 +270,20 @@ function prepareDeskBriefMarkdown(text: string) {
 
 function buildBriefOptions(briefs: TodayBrief[]): BriefOption[] {
   const byType = new Map(briefs.map((brief) => [brief.type, brief]));
-  const now = new Date();
   const options: BriefOption[] = [
     scheduledOption("MDB", "Morning Daily Brief", "06:30", Sun, byType, now),
     scheduledOption("ADB", "Afternoon Daily Brief", "10:45", Sun, byType, now),
     scheduledOption(
       "PMDB",
       "Post-Market Daily Brief",
-      "16:15",
+      "17:15",
       Moon,
       byType,
       now,
     ),
   ];
   const weekly = byType.get("TWT");
-  if (weekly && isWeeklyVisible(weekly.createdAt, now)) {
+  if (weekly) {
     options.push({
       id: weekly.id,
       type: "TWT",
@@ -292,7 +292,7 @@ function buildBriefOptions(briefs: TodayBrief[]): BriefOption[] {
       disabled: false,
       Icon: Newspaper,
       timeLabel: formatBriefTime(weekly.createdAt),
-      countdown: `${formatDurationUntil(addHours(new Date(weekly.createdAt), 48), now)} left`,
+      countdown: null,
     });
   }
   return options;
@@ -308,6 +308,7 @@ function scheduledOption(
 ): BriefOption {
   const brief = byType.get(type) ?? null;
   const scheduledAt = scheduledToday(clock);
+  const isPending = !brief && now.getTime() >= scheduledAt.getTime();
   return {
     id: brief?.id ?? `${type}-upcoming`,
     type,
@@ -318,7 +319,11 @@ function scheduledOption(
     timeLabel: brief
       ? formatBriefTime(brief.createdAt)
       : formatClockLabel(clock),
-    countdown: brief ? null : `${formatDurationUntil(scheduledAt, now)} until`,
+    countdown: brief
+      ? null
+      : isPending
+        ? "Awaiting publish"
+        : `${formatDurationUntil(scheduledAt, now)} until`,
   };
 }
 
@@ -346,14 +351,16 @@ function formatDurationUntil(target: Date, now: Date) {
   return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
 }
 
-function addHours(date: Date, hours: number) {
-  const next = new Date(date);
-  next.setHours(next.getHours() + hours);
-  return next;
+function isBriefVisible(brief: TodayBrief, now: Date) {
+  if (brief.type === "TWT") return true;
+  return now.getTime() < dailyBriefExpiresAt(brief.createdAt).getTime();
 }
 
-function isWeeklyVisible(createdAt: string, now: Date) {
+function dailyBriefExpiresAt(createdAt: string) {
   const created = new Date(createdAt);
-  if (!Number.isFinite(created.getTime())) return false;
-  return now.getTime() - created.getTime() <= 48 * 60 * 60 * 1000;
+  if (!Number.isFinite(created.getTime())) return new Date(0);
+  const expires = new Date(created);
+  expires.setDate(created.getDate() + 1);
+  expires.setHours(7, 45, 0, 0);
+  return expires;
 }

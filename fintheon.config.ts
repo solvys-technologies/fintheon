@@ -1,8 +1,6 @@
-// [claude-code 2026-04-19] S27-T7 (W2d): portless-style hostname config.
-// Consumed by a local portless daemon to resolve stable `.fintheon.test`
-// hostnames regardless of which worktree is serving which port. Agent MCP
-// configs + local scripts reference the named URL so a port flip between
-// worktrees doesn't break anything.
+// [claude-code 2026-04-19] S27-T7 (W2d): Portless hostname config.
+// scripts/portless-desktop-services.mjs registers these static aliases with a
+// local Portless proxy started on the IANA-reserved `.test` TLD.
 
 export interface LocalAppConfig {
   name: string;
@@ -11,16 +9,16 @@ export interface LocalAppConfig {
 }
 
 export interface FintheonPortlessConfig {
-  tld: "fintheon.test";
+  tld: "test";
   apps: LocalAppConfig[];
 }
 
 const config: FintheonPortlessConfig = {
-  tld: "fintheon.test",
+  tld: "test",
   apps: [
     { name: "fintheon", port: 8080 }, // fintheon.test → backend-hono
-    { name: "hermes", port: 8318, subdomain: "hermes" }, // hermes.fintheon.test
-    { name: "news", port: 8082, subdomain: "news" }, // news.fintheon.test
+    { name: "hermes.fintheon", port: 8318, subdomain: "hermes" },
+    { name: "news.fintheon", port: 8082, subdomain: "news" },
   ],
 };
 

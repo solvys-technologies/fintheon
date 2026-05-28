@@ -48,6 +48,7 @@
     "electron-builder": "^25.1.8",
     "lightningcss": "^1.29.2",
     "playwright": "^1.58.2",
+    "portless": "0.13.1",
     "tw-animate-css": "^1.3.4",
     "typescript": "^5.8.3",
     "vite": "^6.2.5"
@@ -63,6 +64,9 @@
     "desktop:build": "bun run frontend:build && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
     "desktop:build:signed": "bun run frontend:build && FINTHEON_NOTARIZE_MAC=true bunx electron-builder --mac dmg",
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
+    "portless:desktop": "node scripts/portless-desktop-services.mjs sync",
+    "portless:desktop:status": "node scripts/portless-desktop-services.mjs status",
+    "portless:desktop:install": "portless service install --no-tls --tld test",
     "release:mac": "bash scripts/build-signed-mac-release.sh --publish",
     "release:preflight": "bash scripts/desktop-release-preflight.sh",
     "release:verify-dmg": "node scripts/desktop-update-download-preflight.mjs",

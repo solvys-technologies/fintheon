@@ -158,6 +158,8 @@ contextBridge.exposeInMainWorld("electron", {
     disableFast: () => ipcRenderer.invoke("blocker:disable-fast"),
     disable: () => ipcRenderer.invoke("blocker:disable"),
     getStatus: () => ipcRenderer.invoke("blocker:status"),
+    getHelperStatus: () => ipcRenderer.invoke("blocker:helper-status"),
+    installHelper: () => ipcRenderer.invoke("blocker:install-helper"),
     getDomains: () => ipcRenderer.invoke("blocker:get-domains"),
     setDomains: (domains) => ipcRenderer.invoke("blocker:set-domains", domains),
   },
@@ -231,8 +233,9 @@ contextBridge.exposeInMainWorld("systemPermissions", {
 });
 
 // [claude-code 2026-04-23] Runtime API-base global — matches AutopilotDashboard's
-// existing __FINTHEON_API_BASE__ convention. Build-time VITE_API_URL is authoritative;
-// this is a belt-and-suspenders fallback for any code that reads at runtime.
+// existing __FINTHEON_API_BASE__ convention. Electron's runtime API base is
+// authoritative for Desktop; the renderer bridges stale build-time VITE_API_URL
+// values back to this URL.
 contextBridge.exposeInMainWorld("__FINTHEON_API_BASE__", API_BASE);
 
 // S38-T1: Cmd+K menu shortcut bridge — renderer can unregister/re-register the

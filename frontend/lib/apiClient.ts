@@ -8,12 +8,9 @@
  */
 
 import { emitApiError } from "./errorBus";
+import { getRuntimeApiBase } from "./runtime-api-base";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL !== undefined &&
-  import.meta.env.VITE_API_URL !== null
-    ? import.meta.env.VITE_API_URL
-    : "http://localhost:8080";
+const API_BASE_URL = getRuntimeApiBase();
 
 // Global auth failure state - stops all polling when auth fails
 let authFailed = false;

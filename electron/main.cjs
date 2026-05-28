@@ -31,6 +31,16 @@ const {
 const { installVoiceChromeHook } = require("./window-chrome-voice.cjs");
 const { createUpdateManager } = require("./update-manager.cjs");
 const {
+  DEFAULT_LOCAL_API_BASE,
+  resolveDesktopApiBase,
+} = require("./portless-services.cjs");
+const {
+  installBlockerHelper,
+  getBlockerHelperStatus,
+  enableBlockerWithHelper,
+  disableBlockerWithHelper,
+} = require("./blocker-helper-client.cjs");
+const {
   installDeskCalendarClickCapture,
 } = require("./desk-calendar-click-capture.cjs");
 const path = require("path");
@@ -137,7 +147,7 @@ let riskflowPollInterval = null;
 // [claude-code 2026-04-16] Track whether WE spawned the backend or found it already running
 let backendOwnedByApp = false;
 const BACKEND_LABEL = "io.solvys.fintheon-backend";
-const BACKEND_HEALTH_URL = "http://localhost:8080/health";
+const BACKEND_HEALTH_URL = `${DEFAULT_LOCAL_API_BASE}/health`;
 const BACKEND_LOGS_PATH = "/tmp/fintheon-backend.log";
 const BACKEND_PLIST_PATH = path.join(
   require("os").homedir(),
@@ -996,7 +1006,7 @@ function createWindow(apiBase) {
   // behavior of unconditionally pinning Mac to localhost left the chat UI
   // hanging on "Model inference · 121ms" whenever launchd was down.
   const resolvedApiBase =
-    apiBase || (IS_WIN ? REMOTE_BACKEND_URL : "http://localhost:8080");
+    apiBase || (IS_WIN ? REMOTE_BACKEND_URL : DEFAULT_LOCAL_API_BASE);
   currentApiBase = resolvedApiBase;
 
   const win = new BrowserWindow({
@@ -1107,7 +1117,8 @@ function createWindow(apiBase) {
       electronSession.defaultSession,
       electronSession.fromPartition("persist:fintheon"),
     ];
-    const apiBase = process.env.FINTHEON_API_BASE || "http://127.0.0.1:8080";
+    const apiBase =
+      process.env.FINTHEON_API_BASE || currentApiBase || resolvedApiBase;
     for (const sess of targets) {
       sess.on("will-download", (_evt, item) => {
         let host = "";
@@ -1402,13 +1413,15 @@ app.whenReady().then(async () => {
     localBackendHealthy = await isBackendAlive();
   }
 
-  const apiBase = IS_WIN
-    ? REMOTE_BACKEND_URL
-    : localBackendHealthy
-      ? "http://localhost:8080"
-      : REMOTE_BACKEND_URL;
+  const apiBaseResult = await resolveDesktopApiBase({
+    isMac: IS_MAC,
+    localBackendHealthy,
+    localBackendUrl: DEFAULT_LOCAL_API_BASE,
+    remoteBackendUrl: REMOTE_BACKEND_URL,
+  });
+  const apiBase = IS_WIN ? REMOTE_BACKEND_URL : apiBaseResult.apiBase;
   console.log(
-    `[Electron] Renderer api-base resolved to ${apiBase} (local healthy: ${localBackendHealthy})`,
+    `[Electron] Renderer api-base resolved to ${apiBase} (${apiBaseResult.source}; local healthy: ${localBackendHealthy})`,
   );
   createWindow(apiBase);
   installBackendTray();
@@ -1579,11 +1592,13 @@ app.whenReady().then(async () => {
       } else {
         localHealthy = await isBackendAlive();
       }
-      const apiBase = IS_WIN
-        ? REMOTE_BACKEND_URL
-        : localHealthy
-          ? "http://localhost:8080"
-          : REMOTE_BACKEND_URL;
+      const apiBaseResult = await resolveDesktopApiBase({
+        isMac: IS_MAC,
+        localBackendHealthy: localHealthy,
+        localBackendUrl: DEFAULT_LOCAL_API_BASE,
+        remoteBackendUrl: REMOTE_BACKEND_URL,
+      });
+      const apiBase = IS_WIN ? REMOTE_BACKEND_URL : apiBaseResult.apiBase;
       createWindow(apiBase);
     }
   });
@@ -2158,36 +2173,29 @@ function readResolverBlocked() {
  * The resolver files force macOS to use 127.0.0.1 for DNS on just these domains,
  * which takes priority over system-wide custom resolvers (Control D, NextDNS, etc.).
  */
-function enableBlocking() {
+async function enableBlocking() {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
   const domains = loadBlockedDomains();
   if (domains.length === 0)
     return { ok: false, reason: "no domains configured" };
 
-  // Layer 1: /etc/hosts
-  const hadHostsBlock = readHostsBlocked();
-  const entries = buildHostsBlockEntries(domains);
-  const current = fs.readFileSync("/etc/hosts", "utf8");
-  const updated = stripHostsBlock(current) + "\n\n" + entries + "\n";
-  const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-  sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
-  const hostsResult = hadHostsBlock ? "updated" : "written";
-
-  // Layer 2: /etc/resolver/ per-domain overrides
-  let resolverResult = "noop";
-  const etld = getEtldPlusOne(domains);
-  const commands = [`mkdir -p ${RESOLVER_DIR}`];
-  for (const domain of etld) {
-    commands.push(`echo 'nameserver 127.0.0.1' > ${RESOLVER_DIR}/${domain}`);
+  const helperResult = await enableBlockerWithHelper(domains);
+  if (!helperResult.ok) {
+    return {
+      ok: false,
+      requiresInstall: true,
+      reason:
+        helperResult.reason ??
+        "Approve the system blocker once in Settings > Trading.",
+    };
   }
-  sudoRun(commands.join(" && "));
-  resolverResult = "written";
 
   flushDns();
   return {
     ok: true,
-    hosts: hostsResult,
-    resolver: resolverResult,
+    hosts: "helper",
+    resolver: "helper",
+    mode: "helper",
     domainCount: domains.length,
   };
 }
@@ -2195,37 +2203,25 @@ function enableBlocking() {
 /**
  * Disable blocking: removes /etc/hosts entries AND removes /etc/resolver/ overrides.
  */
-function disableBlocking() {
+async function disableBlocking() {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
+  const domains = loadBlockedDomains();
 
-  // Layer 1: /etc/hosts
-  let hostsResult = "noop";
-  if (readHostsBlocked()) {
-    const current = fs.readFileSync("/etc/hosts", "utf8");
-    const updated = stripHostsBlock(current) + "\n";
-    const escaped = updated.replace(/"/g, '\\"').replace(/\n/g, "\\n");
-    sudoRun(`printf '%b' '${escaped}' > /etc/hosts`);
-    hostsResult = "removed";
+  if (readHostsBlocked() || readResolverBlocked()) {
+    const helperResult = await disableBlockerWithHelper(domains);
+    if (!helperResult.ok) {
+      return {
+        ok: false,
+        requiresInstall: true,
+        reason:
+          helperResult.reason ??
+          "Approve the system blocker once in Settings > Trading.",
+      };
+    }
   }
 
-  // Layer 2: /etc/resolver/ removals — remove only files for the active block list.
-  let resolverResult = "noop";
-  try {
-    if (fs.existsSync(RESOLVER_DIR)) {
-      const resolverDomains = getEtldPlusOne(loadBlockedDomains());
-      const files = fs
-        .readdirSync(RESOLVER_DIR)
-        .filter((file) => resolverDomains.includes(file));
-      if (files.length > 0) {
-        const removeCmds = files.map((f) => `rm -f ${RESOLVER_DIR}/${f}`);
-        sudoRun(removeCmds.join(" && "));
-      }
-    }
-    resolverResult = "removed";
-  } catch {}
-
   flushDns();
-  return { ok: true, hosts: hostsResult, resolver: resolverResult };
+  return { ok: true, hosts: "removed", resolver: "removed", mode: "helper" };
 }
 
 ipcMain.handle("blocker:status", async () => {
@@ -2234,6 +2230,7 @@ ipcMain.handle("blocker:status", async () => {
   try {
     const hostsBlocked = readHostsBlocked();
     const resolverBlocked = readResolverBlocked();
+    const helperStatus = await getBlockerHelperStatus();
     const blocked = hostsBlocked || resolverBlocked || fastBlockerEnabled;
     const domains = loadBlockedDomains();
     return {
@@ -2243,7 +2240,9 @@ ipcMain.handle("blocker:status", async () => {
         hosts: hostsBlocked,
         resolver: resolverBlocked,
         runtime: fastBlockerEnabled,
+        helper: helperStatus.running,
       },
+      helper: helperStatus,
       domains,
     };
   } catch (err) {
@@ -2291,9 +2290,40 @@ ipcMain.handle("blocker:set-domains", async (_event, domains) => {
 ipcMain.handle("blocker:enable", async () => {
   if (IS_WIN) return { ok: false, reason: "blocker is macOS-only" };
   try {
-    return enableBlocking();
+    return await enableBlocking();
   } catch (err) {
     return { ok: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:helper-status", async () => {
+  if (IS_WIN)
+    return { ok: true, installed: false, running: false, blocked: false };
+  try {
+    return await getBlockerHelperStatus();
+  } catch (err) {
+    return { ok: false, installed: false, running: false, reason: err.message };
+  }
+});
+
+ipcMain.handle("blocker:install-helper", async () => {
+  if (IS_WIN)
+    return {
+      ok: false,
+      installed: false,
+      running: false,
+      reason: "macOS-only",
+    };
+  try {
+    const result = await installBlockerHelper(app);
+    if (result.running) {
+      await disableBlockerWithHelper(loadBlockedDomains()).catch(() => null);
+      fastBlockerEnabled = false;
+      return await getBlockerHelperStatus();
+    }
+    return result;
+  } catch (err) {
+    return { ok: false, installed: false, running: false, reason: err.message };
   }
 });
 
@@ -2314,7 +2344,7 @@ ipcMain.handle("blocker:disable", async () => {
     if (!readHostsBlocked() && !readResolverBlocked()) {
       return { ok: true, hosts: "noop", resolver: "noop", mode: "runtime" };
     }
-    return disableBlocking();
+    return await disableBlocking();
   } catch (err) {
     return { ok: false, reason: err.message };
   }

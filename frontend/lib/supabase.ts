@@ -1,5 +1,6 @@
 // [claude-code 2026-03-24] Supabase client + Google OAuth for Electron deep link flow
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getRuntimeApiBase } from "./runtime-api-base";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -30,7 +31,7 @@ export async function signInWithGoogle() {
     );
   // Redirect to backend callback page which will relay the auth code
   // back to the Electron app via fintheon:// deep link
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+  const API_BASE = getRuntimeApiBase();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {

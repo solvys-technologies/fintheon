@@ -20,20 +20,33 @@ import {
   mergeDomainLists,
   notifyBlockerStateUpdated,
   normalizeDomain,
+  type BlockerHelperStatus,
   type BlockerQuickTarget,
 } from "../../lib/platform-blocker";
 import { SettingsActionStatus } from "./SettingsActionStatus";
 
-interface LockoutElectron {
-  checkAccessibility: () => Promise<{ granted: boolean }>;
-  requestAccessibility: () => Promise<{ granted: boolean }>;
-}
-
 interface BlockerState {
   blocked: boolean;
-  layers: { hosts: boolean; resolver: boolean; runtime?: boolean };
+  layers: {
+    hosts: boolean;
+    resolver: boolean;
+    runtime?: boolean;
+    helper?: boolean;
+  };
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY_HELPER_STATUS: BlockerHelperStatus = {
+  ok: true,
+  installed: false,
+  running: false,
+};
+
+function blockerFailure(result: unknown, fallback: string): string | null {
+  if (!result || typeof result !== "object" || !("ok" in result)) return null;
+  const typed = result as { ok?: boolean; reason?: string };
+  return typed.ok === false ? (typed.reason ?? fallback) : null;
 }
 
 export function BlockerTab() {
@@ -50,6 +63,8 @@ export function BlockerTab() {
   } = useSettings();
   const [accessibilityCheckLoading, setAccessibilityCheckLoading] =
     useState(false);
+  const [helperStatus, setHelperStatus] =
+    useState<BlockerHelperStatus>(EMPTY_HELPER_STATUS);
   const [state, setState] = useState<BlockerState>({
     blocked: false,
     layers: { hosts: false, resolver: false },
@@ -85,6 +100,13 @@ export function BlockerTab() {
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       const statusResult = await api.getStatus();
+      const helper =
+        statusResult.helper ??
+        (api.getHelperStatus ? await api.getHelperStatus() : null);
+      if (helper) {
+        setHelperStatus(helper);
+        setLockoutPermission(helper.running ? "granted" : "prompt");
+      }
       setState({
         blocked: statusResult.blocked,
         layers: statusResult.layers ?? { hosts: false, resolver: false },
@@ -100,7 +122,7 @@ export function BlockerTab() {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [blockerCustomDomains]);
+  }, [blockerCustomDomains, setLockoutPermission]);
 
   useEffect(() => {
     setDomains(blockerCustomDomains);
@@ -239,17 +261,55 @@ export function BlockerTab() {
     }
   };
 
+  const handleApproveSystemGate = async () => {
+    const api = getBlockerApi();
+    if (!api?.installHelper) return;
+    setAccessibilityCheckLoading(true);
+    setState((prev) => ({ ...prev, error: null }));
+    try {
+      const result = await api.installHelper();
+      setHelperStatus(result);
+      setLockoutPermission(result.running ? "granted" : "denied");
+      if (!result.running) {
+        setState((prev) => ({
+          ...prev,
+          error: result.reason ?? "System blocker helper did not start.",
+        }));
+      }
+      await loadAll();
+    } catch (err) {
+      setLockoutPermission("denied");
+      setState((prev) => ({
+        ...prev,
+        error:
+          err instanceof Error ? err.message : "System blocker approval failed",
+      }));
+    } finally {
+      setAccessibilityCheckLoading(false);
+    }
+  };
+
   const handleToggle = async () => {
     const api = getBlockerApi();
     if (!api) return;
     setToggling(true);
     try {
       if (state.blocked) {
-        await api.disable();
+        const result = await api.disable();
+        const reason = blockerFailure(result, "Failed to disable blocker");
+        if (reason) throw new Error(reason);
       } else {
         setBlockerCustomDomains(domains);
-        await api.setDomains(combinedDomains);
-        await api.enable();
+        const domainResult = await api.setDomains(combinedDomains);
+        if (!domainResult.ok) {
+          throw new Error(domainResult.reason ?? "Failed to save domains");
+        }
+        const result = await api.enable();
+        const reason = blockerFailure(
+          result,
+          "Approve System Blocker before blocking system-wide",
+        );
+        if (reason) throw new Error(reason);
       }
       notifyBlockerStateUpdated();
       await loadAll();
@@ -400,55 +460,49 @@ export function BlockerTab() {
         )}
       </div>
 
-      {/* Lockout Accessibility Permission */}
+      {/* System blocker helper approval */}
       <div className="rounded-lg border border-[var(--fintheon-accent)]/10 p-5 bg-[rgba(10,10,0,0.4)]">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="text-[13px] font-semibold text-white">
-              Lock Permission Gate
+              System Blocker Gate
             </div>
             <p className="text-[11px] text-gray-500 mt-1 leading-relaxed max-w-md">
-              Approve once so header and Desk Plan locks can activate the
-              blocker without re-opening the permission flow.
+              Approve once so header and Desk Plan locks can block selected
+              trading domains system-wide without another password prompt.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 text-right">
             <button
-              onClick={async () => {
-                setAccessibilityCheckLoading(true);
-                try {
-                  const el = (window as any).electron;
-                  const result = el?.lockout?.requestAccessibility
-                    ? await el.lockout.requestAccessibility()
-                    : el?.lockout?.checkAccessibility
-                      ? await el.lockout.checkAccessibility()
-                      : null;
-                  if (result && typeof result.granted === "boolean") {
-                    setLockoutPermission(result.granted ? "granted" : "denied");
-                  }
-                } catch {
-                } finally {
-                  setAccessibilityCheckLoading(false);
-                }
-              }}
+              onClick={handleApproveSystemGate}
               disabled={accessibilityCheckLoading}
               className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[var(--fintheon-accent)]/15 text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/25 border border-[var(--fintheon-accent)]/20 disabled:opacity-40 transition-all"
             >
-              {accessibilityCheckLoading ? "Checking..." : "Approve Gate"}
+              {accessibilityCheckLoading
+                ? "Approving..."
+                : helperStatus.running
+                  ? "Repair Gate"
+                  : "Approve Gate"}
             </button>
             <SettingsActionStatus
               label={
-                lockoutPermission === "granted"
-                  ? "Granted"
-                  : lockoutPermission === "denied"
-                    ? "Not Granted"
-                    : "Not Required"
+                helperStatus.running
+                  ? "Approved"
+                  : helperStatus.installed
+                    ? "Needs Repair"
+                    : lockoutPermission === "denied"
+                      ? "Not Approved"
+                      : "Not Approved"
               }
-              detail="Accessibility status"
+              detail={
+                helperStatus.running
+                  ? "Passwordless system blocking"
+                  : (helperStatus.reason ?? "One admin approval required")
+              }
               tone={
-                lockoutPermission === "granted"
+                helperStatus.running
                   ? "success"
-                  : lockoutPermission === "denied"
+                  : lockoutPermission === "denied" || helperStatus.installed
                     ? "error"
                     : "muted"
               }
@@ -485,7 +539,9 @@ export function BlockerTab() {
                   ? runtimeOnlyBlocked
                     ? `${combinedDomains.length} domain${combinedDomains.length === 1 ? "" : "s"} blocked in Fintheon runtime.`
                     : `${combinedDomains.length} domain${combinedDomains.length === 1 ? "" : "s"} blocked system-wide. No browser, PWA, or app can reach them.`
-                  : "Blocking is limited to the selected platform and any custom domains below."}
+                  : helperStatus.running
+                    ? "System gate is approved. Locks can block the selected platform and custom domains without another password prompt."
+                    : "Approve the System Blocker Gate once to make this system-wide. Locks still block inside Fintheon without it."}
               </p>
               {state.error && (
                 <p className="text-[11px] text-red-400 mt-2">{state.error}</p>
@@ -750,8 +806,9 @@ export function BlockerTab() {
               6.
             </span>
             <span>
-              Requires macOS admin password (one-time system dialog). All three
-              layers activate and deactivate together.
+              Approve the System Blocker Gate once. After that, lock and unlock
+              actions activate or deactivate system blocking without another
+              password prompt.
             </span>
           </li>
         </ul>

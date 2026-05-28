@@ -115,6 +115,8 @@ export interface SystemPermissionsAPI {
 
 declare global {
   interface Window {
+    __FINTHEON_API_BASE__?: string;
+    __FINTHEON_FETCH_BRIDGE_INSTALLED__?: boolean;
     electron?: ElectronAPI;
     systemPermissions?: SystemPermissionsAPI;
   }

@@ -284,15 +284,14 @@ export function createDataRoutes(): Hono {
     }
   });
 
-  // GET /api/data/briefs/today — all briefs generated today (for dropdown selector)
+  // GET /api/data/briefs/today — active briefs for the selector.
+  // Daily visibility is enforced by the client until next-day 7:45 system time;
+  // TWT is active until the next weekly publish replaces it.
   app.get("/briefs/today", async (c) => {
     try {
       const all = await readBriefs(undefined, 20);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayBriefs = all.filter((b) => new Date(b.created_at) >= today);
       return c.json({
-        briefs: todayBriefs.map((b) => ({
+        briefs: all.map((b) => ({
           id: b.id,
           type: b.brief_type,
           label: BRIEF_LABELS[b.brief_type] ?? b.brief_type,

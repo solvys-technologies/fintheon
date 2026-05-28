@@ -1,0 +1,13 @@
+.env
+.env.*
+**/.env
+**/.env.*
+**/.vercel
+**/node_modules
+**/dist
+desktop-dist
+.runtime
+backend-hono/logs
+*.log
+*.sqlite
+*.db

@@ -15,8 +15,22 @@ export interface BlockerSettings {
 
 export interface BlockerStatus {
   blocked: boolean;
-  layers: { hosts: boolean; resolver: boolean; runtime?: boolean };
+  layers: {
+    hosts: boolean;
+    resolver: boolean;
+    runtime?: boolean;
+    helper?: boolean;
+  };
+  helper?: BlockerHelperStatus;
   domains?: string[];
+}
+
+export interface BlockerHelperStatus {
+  ok: boolean;
+  installed: boolean;
+  running: boolean;
+  blocked?: boolean;
+  reason?: string;
 }
 
 export interface BlockerApi {
@@ -25,6 +39,8 @@ export interface BlockerApi {
   disable: () => Promise<unknown>;
   disableFast?: () => Promise<unknown>;
   getStatus: () => Promise<BlockerStatus>;
+  getHelperStatus?: () => Promise<BlockerHelperStatus>;
+  installHelper?: () => Promise<BlockerHelperStatus>;
   getDomains: () => Promise<{ domains: string[] }>;
   setDomains: (
     domains: string[],

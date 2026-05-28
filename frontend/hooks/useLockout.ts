@@ -7,6 +7,7 @@ import {
   mergeDomainLists,
   notifyBlockerStateUpdated,
   resolveBlockerTarget,
+  type BlockerHelperStatus,
   type BlockerStatus,
 } from "../lib/platform-blocker";
 
@@ -32,6 +33,8 @@ interface BlockerApi {
   disable: () => Promise<unknown>;
   disableFast?: () => Promise<unknown>;
   getStatus?: () => Promise<BlockerStatus>;
+  getHelperStatus?: () => Promise<BlockerHelperStatus>;
+  installHelper?: () => Promise<BlockerHelperStatus>;
   setDomains: (
     domains: string[],
   ) => Promise<{ ok: boolean; domains?: string[]; reason?: string }>;
@@ -208,33 +211,60 @@ export function useLockout(pollMs = 5000) {
       const hasSystemLayer =
         !!status?.layers?.hosts || !!status?.layers?.resolver;
       if (hasSystemLayer) await api.disable();
-      else if (api.disableFast) await api.disableFast();
-      else await api.disable();
+      if (api.disableFast) await api.disableFast();
+      else if (!hasSystemLayer) await api.disable();
       notifyBlockerStateUpdated();
     } catch {
       // Lockout state is server-owned; blocker release is best effort.
     }
   }, []);
 
-  const ensureAccessibilityPermission = useCallback(async () => {
+  const hasSystemBlockerGate = useCallback(async () => {
+    const api = getBlockerApi();
+    if (!api?.getHelperStatus) return false;
+    try {
+      const status = await api.getHelperStatus();
+      if (status.running && lockoutPermission !== "granted") {
+        setLockoutPermission("granted");
+      }
+      return !!status.running;
+    } catch {
+      return false;
+    }
+  }, [lockoutPermission, setLockoutPermission]);
+
+  const requestSystemPermission = useCallback(async () => {
+    const blockerApi = getBlockerApi();
+    if (blockerApi?.installHelper) {
+      try {
+        const helper = await blockerApi.installHelper();
+        if (helper.running) {
+          setLockoutPermission("granted");
+          return true;
+        }
+      } catch {
+        // Accessibility fallback below is still useful for lock overlay control.
+      }
+    }
+
     const api = getLockoutApi();
-    if (!api?.checkAccessibility) return true;
+    if (!api?.checkAccessibility) return false;
     try {
       const current = await api.checkAccessibility();
       if (current?.granted) {
-        if (lockoutPermission !== "granted") setLockoutPermission("granted");
-        return true;
+        setLockoutPermission("prompt");
+        return false;
       }
       const requested = api.requestAccessibility
         ? await api.requestAccessibility()
         : current;
       const granted = !!requested?.granted;
-      setLockoutPermission(granted ? "granted" : "denied");
-      return granted;
+      setLockoutPermission(granted ? "prompt" : "denied");
+      return false;
     } catch {
       return false;
     }
-  }, [lockoutPermission, setLockoutPermission]);
+  }, [setLockoutPermission]);
 
   const refresh = useCallback(async () => {
     const s = await fetchLockout();
@@ -283,7 +313,7 @@ export function useLockout(pollMs = 5000) {
 
   const lock = useCallback(
     async (durationMinutes?: number, windowStartTime?: string) => {
-      const hasSystemGate = await ensureAccessibilityPermission();
+      const hasSystemGate = await hasSystemBlockerGate();
       const ok = await toggleLockout(true, durationMinutes, windowStartTime);
       if (ok) {
         await ensureSelectedPlatformBlocked({
@@ -293,7 +323,7 @@ export function useLockout(pollMs = 5000) {
       }
       return ok;
     },
-    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
+    [hasSystemBlockerGate, ensureSelectedPlatformBlocked, refresh],
   );
 
   const unlock = useCallback(async () => {
@@ -308,7 +338,7 @@ export function useLockout(pollMs = 5000) {
   const lockUntilBriefing = useCallback(
     async (briefingAnchor: BriefingAnchor): Promise<LockoutState> => {
       try {
-        const hasSystemGate = await ensureAccessibilityPermission();
+        const hasSystemGate = await hasSystemBlockerGate();
         const res = await fetch(`${API_BASE}/api/lockout/toggle`, {
           method: "POST",
           credentials: "include",
@@ -333,7 +363,7 @@ export function useLockout(pollMs = 5000) {
         return { locked: false, until: null, remaining: null };
       }
     },
-    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
+    [hasSystemBlockerGate, ensureSelectedPlatformBlocked, refresh],
   );
 
   /**
@@ -343,7 +373,7 @@ export function useLockout(pollMs = 5000) {
   const scheduleLock = useCallback(
     async (durationMinutes: number, windowStartTime?: string) => {
       try {
-        const hasSystemGate = await ensureAccessibilityPermission();
+        const hasSystemGate = await hasSystemBlockerGate();
         const body: Record<string, unknown> = { durationMinutes };
         if (windowStartTime) body.windowStartTime = windowStartTime;
         const res = await fetch(`${API_BASE}/api/lockout/schedule`, {
@@ -364,7 +394,7 @@ export function useLockout(pollMs = 5000) {
         return false;
       }
     },
-    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
+    [hasSystemBlockerGate, ensureSelectedPlatformBlocked, refresh],
   );
 
   /**
@@ -373,7 +403,7 @@ export function useLockout(pollMs = 5000) {
   const lockUntil = useCallback(
     async (isoTimestamp: string) => {
       try {
-        const hasSystemGate = await ensureAccessibilityPermission();
+        const hasSystemGate = await hasSystemBlockerGate();
         const res = await fetch(`${API_BASE}/api/lockout/schedule`, {
           method: "POST",
           credentials: "include",
@@ -392,7 +422,7 @@ export function useLockout(pollMs = 5000) {
         return false;
       }
     },
-    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
+    [hasSystemBlockerGate, ensureSelectedPlatformBlocked, refresh],
   );
 
   /**
@@ -400,7 +430,7 @@ export function useLockout(pollMs = 5000) {
    */
   const lockUntilDeskSession = useCallback(async (): Promise<LockoutState> => {
     try {
-      const hasSystemGate = await ensureAccessibilityPermission();
+      const hasSystemGate = await hasSystemBlockerGate();
       const res = await fetch(
         `${API_BASE}/api/lockout/lock-until-desk-session`,
         {
@@ -426,7 +456,7 @@ export function useLockout(pollMs = 5000) {
     } catch {
       return { locked: false, until: null, remaining: null };
     }
-  }, [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh]);
+  }, [hasSystemBlockerGate, ensureSelectedPlatformBlocked, refresh]);
 
   /**
    * Fetch next scheduled window info.
@@ -446,6 +476,6 @@ export function useLockout(pollMs = 5000) {
     lockUntilBriefing,
     lockUntilDeskSession,
     getNextWindow,
-    requestPermission: ensureAccessibilityPermission,
+    requestPermission: requestSystemPermission,
   };
 }

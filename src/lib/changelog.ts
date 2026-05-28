@@ -9,6 +9,53 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-27T23:48:00-04:00",
+    agent: "codex",
+    summary:
+      "Blocker and briefing UX repair: added a packaged privileged blocker helper with a one-time Trading settings approval path, removed lock-gate approval from the header dropdown, stopped lock actions from invoking per-click osascript admin prompts, kept runtime blocking as the no-prompt fallback, and changed Dawn Dispatch availability so daily briefs remain readable until next-day 7:45 system time while Weekly Tribune stays available until replaced.",
+    files: [
+      "electron/privileged-helper/fintheon-blocker-helper.c",
+      "electron/privileged-helper/io.pricedinresearch.fintheon.blocker-helper.plist",
+      "electron/blocker-helper-client.cjs",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "scripts/build-privileged-helper.cjs",
+      "scripts/electron-after-pack.cjs",
+      "frontend/hooks/useLockout.ts",
+      "frontend/lib/platform-blocker.ts",
+      "frontend/types/electron.d.ts",
+      "frontend/components/layout/HeaderLockButton.tsx",
+      "frontend/components/settings/BlockerTab.tsx",
+      "frontend/components/desk/DeskDailyBriefingPanel.tsx",
+      "backend-hono/src/routes/data/index.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-27T23:24:00-04:00",
+    agent: "codex",
+    summary:
+      "Desktop env/runtime hardening: added Portless registration scripts for Fintheon backend services, made Electron prefer a healthy fintheon.test API base with localhost fallback, and bridged stale build-time VITE_API_URL fetches back to the Electron runtime API base so Desktop can use local or Portless backend routing.",
+    files: [
+      "package.json",
+      "bun.lock",
+      ".vercelignore",
+      "vercel.json",
+      "fintheon.config.ts",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/portless-services.cjs",
+      "frontend/main.tsx",
+      "frontend/lib/apiClient.ts",
+      "frontend/lib/runtime-api-base.ts",
+      "frontend/lib/supabase.ts",
+      "frontend/types/electron.d.ts",
+      "types/electron.d.ts",
+      "scripts/portless-desktop-services.mjs",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T23:10:00-04:00",
     agent: "codex",
     summary:

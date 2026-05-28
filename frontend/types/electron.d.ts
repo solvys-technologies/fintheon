@@ -30,6 +30,14 @@ export interface DesktopDownloadedUpdate {
   reason?: string;
 }
 
+export interface BlockerHelperStatus {
+  ok: boolean;
+  installed: boolean;
+  running: boolean;
+  blocked?: boolean;
+  reason?: string;
+}
+
 export interface StartupConfig {
   backendAutostart: boolean;
   launchOnLogin: boolean;
@@ -141,6 +149,32 @@ export interface ElectronAPI {
     getStatus: () => Promise<{ running: boolean; sessions?: string }>;
   };
 
+  blocker: {
+    enable: () => Promise<{ ok: boolean; reason?: string }>;
+    enableFast: () => Promise<{ ok: boolean; reason?: string }>;
+    disable: () => Promise<{ ok: boolean; reason?: string }>;
+    disableFast?: () => Promise<{ ok: boolean; reason?: string }>;
+    getStatus: () => Promise<{
+      ok: boolean;
+      blocked: boolean;
+      layers: {
+        hosts: boolean;
+        resolver: boolean;
+        runtime?: boolean;
+        helper?: boolean;
+      };
+      helper?: BlockerHelperStatus;
+      domains?: string[];
+      reason?: string;
+    }>;
+    getHelperStatus?: () => Promise<BlockerHelperStatus>;
+    installHelper?: () => Promise<BlockerHelperStatus>;
+    getDomains: () => Promise<{ ok: boolean; domains: string[] }>;
+    setDomains: (
+      domains: string[],
+    ) => Promise<{ ok: boolean; domains?: string[]; reason?: string }>;
+  };
+
   // [claude-code 2026-04-27] S46.4 Desk Calendar — silent .ics ingest events
   // emitted by main.cjs when Electron intercepts a TV iframe .ics download.
   deskCalendar: {
@@ -207,6 +241,8 @@ export interface ElectronAPI {
 
 declare global {
   interface Window {
+    __FINTHEON_API_BASE__?: string;
+    __FINTHEON_FETCH_BRIDGE_INSTALLED__?: boolean;
     electron?: ElectronAPI;
   }
 }
