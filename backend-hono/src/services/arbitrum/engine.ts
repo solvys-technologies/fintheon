@@ -12,6 +12,7 @@ import { ARBITRUM_SEATS, invokeMoA } from "./seats.js";
 import { synthesize } from "./facilitator.js";
 import { computeGates } from "./gates.js";
 import { saveVerdict } from "./verdict-store.js";
+import { hasUsableSeatRead } from "./degraded-verdict.js";
 import { loadArbitrumEconContext } from "./econ-context.js";
 import { loadArbitrumCommentaryContext } from "./commentary-context.js";
 import { loadArbitrumRiskContext } from "./risk-context.js";
@@ -146,6 +147,7 @@ export async function runChamber(
 
   const synthesis = synthesize(transcripts, enrichedInput);
   const gates = computeGates(transcripts, enrichedInput.category);
+  const hasUsableRead = hasUsableSeatRead(transcripts);
 
   const verdict: ArbitrumVerdict = {
     verdict_id: randomUUID(),
@@ -164,6 +166,22 @@ export async function runChamber(
     risk_context,
     latency_ms: Date.now() - t0,
   };
+
+  if (!hasUsableRead) {
+    const unavailableVerdict: ArbitrumVerdict = {
+      ...verdict,
+      consensus_probability: 0,
+      confidence: 0,
+      dissent: null,
+      digest_text:
+        "## Chamber unavailable\nAll seats failed to return a model response. No macro read was produced; retry after provider health recovers.",
+    };
+    log.warn("Chamber run discarded — no usable seat reads", {
+      verdict_id: verdict.verdict_id,
+      trigger_type: triggerType,
+    });
+    return { verdict: unavailableVerdict, persisted: false };
+  }
 
   const persisted = await saveVerdict(verdict);
   if (!persisted) {

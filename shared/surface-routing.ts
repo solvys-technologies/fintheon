@@ -30,18 +30,17 @@ export function detectPreferredSurface(
   snapshot: ClientSnapshot,
 ): SurfaceTarget {
   if (snapshot.isElectron) return SURFACE_TARGETS.desktop;
-  if (MOBILE_USER_AGENT.test(snapshot.userAgent))
-    return SURFACE_TARGETS.desktop;
+  if (MOBILE_USER_AGENT.test(snapshot.userAgent)) return SURFACE_TARGETS.mobile;
 
   const isIpadDesktopUa =
     /Macintosh/i.test(snapshot.userAgent) && snapshot.maxTouchPoints > 1;
-  if (isIpadDesktopUa) return SURFACE_TARGETS.desktop;
+  if (isIpadDesktopUa) return SURFACE_TARGETS.mobile;
 
   const shortestSide = Math.min(
     ...[snapshot.screenWidth, snapshot.screenHeight].filter((n) => n > 0),
   );
   if (snapshot.hasCoarsePointer && shortestSide > 0 && shortestSide <= 1024) {
-    return SURFACE_TARGETS.desktop;
+    return SURFACE_TARGETS.mobile;
   }
 
   return SURFACE_TARGETS.desktop;
@@ -133,7 +132,7 @@ function readSurfaceOverride(params: URLSearchParams): SurfaceTarget | null {
     return SURFACE_TARGETS.desktop;
   }
   if (["mobile", "compact", "mobile-pwa"].includes(value)) {
-    return SURFACE_TARGETS.desktop;
+    return SURFACE_TARGETS.mobile;
   }
   if (["legacy-mobile", "old-mobile"].includes(value)) {
     return SURFACE_TARGETS.mobile;

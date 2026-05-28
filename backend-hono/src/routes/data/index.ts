@@ -27,6 +27,7 @@ import {
   generateBrief,
   BRIEF_LABELS,
 } from "../../services/brief-generator.js";
+import { isUsableBriefContent } from "../../services/brief-validation.js";
 import { startPrediction } from "../../services/agent-desk/agent-desk-service.js";
 
 function triggerPostBriefArbitrum(): void {
@@ -267,7 +268,7 @@ export function createDataRoutes(): Hono {
       if (typeParam) {
         // Explicit type requested — fetch that specific brief
         const brief = await readLatestBrief(typeParam);
-        if (brief) {
+        if (brief && isUsableBriefContent(brief.content)) {
           return c.json({
             items: [{ title: `${typeParam} — Brief`, detail: brief.content }],
             briefType: typeParam,
@@ -275,11 +276,13 @@ export function createDataRoutes(): Hono {
         }
       } else {
         // No type specified — return the most recent brief regardless of type
-        const latest = await readBriefs(undefined, 1);
-        if (latest.length > 0) {
-          const bt = latest[0].brief_type;
+        const latest = (await readBriefs(undefined, 10)).find((brief) =>
+          isUsableBriefContent(brief.content),
+        );
+        if (latest) {
+          const bt = latest.brief_type;
           return c.json({
-            items: [{ title: `${bt} — Brief`, detail: latest[0].content }],
+            items: [{ title: `${bt} — Brief`, detail: latest.content }],
             briefType: bt,
           });
         }
@@ -296,13 +299,14 @@ export function createDataRoutes(): Hono {
   });
 
   // GET /api/data/briefs/today — active briefs for the selector.
-  // Daily visibility is enforced by the client until next-day 7:45 system time;
+  // Daily visibility is enforced by the client until next-day 7:50 system time;
   // TWT is active until the next weekly publish replaces it.
   app.get("/briefs/today", async (c) => {
     try {
       const all = await readBriefs(undefined, 20);
+      const usable = all.filter((b) => isUsableBriefContent(b.content));
       return c.json({
-        briefs: all.map((b) => ({
+        briefs: usable.map((b) => ({
           id: b.id,
           type: b.brief_type,
           label: BRIEF_LABELS[b.brief_type] ?? b.brief_type,
@@ -357,7 +361,11 @@ export function createDataRoutes(): Hono {
     try {
       const briefType = getCurrentBriefType();
       const latest = await readLatestBrief(briefType);
-      if (isBriefCurrentForWindow(latest, briefType)) {
+      if (
+        latest &&
+        isUsableBriefContent(latest.content) &&
+        isBriefCurrentForWindow(latest, briefType)
+      ) {
         return c.json({
           content: latest?.content ?? "",
           briefType,

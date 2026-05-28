@@ -7,6 +7,7 @@ import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
 import { DigitGroup } from "../shared/DigitGroup";
 import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";
 import { DissentBadge } from "./DissentBadge";
+import { cleanArbitrumDigestText } from "./digest-text";
 
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
@@ -53,6 +54,7 @@ export function ArbitrumPeek() {
     digest_text,
     created_at,
   } = verdict;
+  const cleanedDigest = cleanArbitrumDigestText(digest_text);
 
   return (
     <div className="border-t border-[var(--fintheon-accent)]/20 pt-2 mt-3 text-xs">
@@ -73,7 +75,7 @@ export function ArbitrumPeek() {
         {dissent && <DissentBadge dissent={dissent} />}
       </div>
       <p className="mt-1 text-[var(--fintheon-text)]/80 line-clamp-2">
-        {digest_text}
+        {cleanedDigest}
       </p>
       <div className="mt-1 text-[var(--fintheon-text)]/40 text-[10px]">
         {new Date(created_at).toLocaleTimeString([], {

@@ -244,7 +244,11 @@ function isUsableBrief(content: string) {
   return (
     normalized.length > 0 &&
     !normalized.startsWith("api call failed") &&
-    !normalized.includes("insufficient balance")
+    !normalized.startsWith("error:") &&
+    !normalized.startsWith("failed to") &&
+    !normalized.includes("insufficient balance") &&
+    !normalized.includes("http 402") &&
+    !normalized.includes("ai chain exhausted")
   );
 }
 
@@ -362,6 +366,6 @@ function dailyBriefExpiresAt(createdAt: string) {
   if (!Number.isFinite(created.getTime())) return new Date(0);
   const expires = new Date(created);
   expires.setDate(created.getDate() + 1);
-  expires.setHours(7, 45, 0, 0);
+  expires.setHours(7, 50, 0, 0);
   return expires;
 }

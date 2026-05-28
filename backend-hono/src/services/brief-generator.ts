@@ -7,6 +7,10 @@
 // [claude-code 2026-03-26] S2-T2: Add regime classification to MDB prompt + auto-parse after generation
 import { readDayPlan } from "./day-plan/day-plan-service.js";
 import { generateViaChain } from "./ai/provider-chain.js";
+import {
+  assertUsableBriefContent,
+  isUsableBriefContent,
+} from "./brief-validation.js";
 import type { DayPlan } from "../types/day-plan.js";
 import {
   writeBrief,
@@ -471,6 +475,7 @@ ${
   });
   const text = result.response;
   const usedProvider = result.provider;
+  assertUsableBriefContent(text, briefType);
   log.info(`Brief provider chain generated ${text.length} chars`, {
     provider: usedProvider,
   });
@@ -596,5 +601,9 @@ export async function wasBriefGeneratedToday(
   type: BriefType,
 ): Promise<boolean> {
   const latest = await readLatestBrief(type);
-  return isBriefCurrentForWindow(latest, type);
+  return (
+    latest !== null &&
+    isUsableBriefContent(latest.content) &&
+    isBriefCurrentForWindow(latest, type)
+  );
 }

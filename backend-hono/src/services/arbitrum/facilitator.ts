@@ -85,7 +85,8 @@ function buildDigest(
   dissent: ArbitrumDissent | null,
 ): string {
   const lines: string[] = [];
-  lines.push(`**Chamber reads ${pctFmt(weightedProb)}** on: ${input.question}`);
+  lines.push("## Chamber Read");
+  lines.push(`**Consensus:** ${pctFmt(weightedProb)}.`);
   lines.push(
     `Weighted confidence **${pctFmt(weightedConf)}** across ${finals.length} seats (category: ${input.category}).`,
   );
@@ -160,7 +161,7 @@ export function synthesize(
       confidence: 0,
       dissent: null,
       digest_text:
-        "Chamber produced no seat reads this cycle — all providers unreachable or drafts empty.",
+        "## Chamber unavailable\nNo seat reads were produced this cycle. Provider output was unreachable or empty.",
     };
   }
 

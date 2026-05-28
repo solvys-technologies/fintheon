@@ -56,7 +56,7 @@ interface CatalystInput {
 
 interface SanctumProps {
   data: SanctumData | null;
-  onRun: (preset?: SanctumPreset) => Promise<void>;
+  onRun: (preset?: SanctumPreset, options?: SanctumRunOptions) => Promise<void>;
   catalysts: CatalystInput[];
   riskflowItems?: RiskFlowCatalyst[];
   macroContext?: SimulationContext | null;
@@ -70,6 +70,10 @@ interface SanctumProps {
   revisionStatus?: string | null;
   /** Whether a revision check is in progress. */
   revisionChecking?: boolean;
+}
+
+interface SanctumRunOptions {
+  forceRun?: boolean;
 }
 
 export function Sanctum({
@@ -100,6 +104,8 @@ export function Sanctum({
 
   const status = data?.status ?? "idle";
   const isLoading = running || status === "running";
+  const hasData = !!data && data.compositeIV > 0;
+  const [hasPendingPresetRun, setHasPendingPresetRun] = useState(false);
 
   // Stable ref for onRun to avoid stale closure in mount effect
   const onRunRef = useRef(onRun);
@@ -112,17 +118,28 @@ export function Sanctum({
   // Manual runs still available via the Simulate button in SanctumHeader.
 
   const handleRun = useCallback(
-    async (p?: SanctumPreset) => {
+    async (p?: SanctumPreset, options?: SanctumRunOptions) => {
       if (running) return;
       setRunning(true);
       try {
-        await onRun(p ?? preset);
+        await onRun(p ?? preset, options);
+        setHasPendingPresetRun(false);
       } finally {
         setRunning(false);
       }
     },
     [onRun, preset, running],
   );
+
+  useEffect(() => {
+    const handler = () => setHasPendingPresetRun(true);
+    window.addEventListener("fintheon:arbitrum-run-presets-changed", handler);
+    return () =>
+      window.removeEventListener(
+        "fintheon:arbitrum-run-presets-changed",
+        handler,
+      );
+  }, []);
 
   const scrollToPage = useCallback((idx: number) => {
     setActivePage(idx);
@@ -166,9 +183,9 @@ export function Sanctum({
               ? 2
               : 0; // 3 pages: 0=Command, 1=Econ, 2=Risk&Narratives
       scrollToPage(focusPage);
-      handleRun(p);
+      setHasPendingPresetRun(true);
     },
-    [handleRun, scrollToPage],
+    [scrollToPage],
   );
 
   const handleScroll = useCallback(() => {
@@ -211,10 +228,13 @@ export function Sanctum({
       <SanctumHeader
         preset={preset}
         onPresetChange={handlePresetChange}
-        onRun={() => handleRun()}
+        onRun={() =>
+          handleRun(undefined, { forceRun: hasPendingPresetRun || !hasData })
+        }
         isLoading={isLoading}
         status={status}
-        hasData={!!data && data.compositeIV > 0}
+        hasData={hasData}
+        hasPendingRun={hasPendingPresetRun}
       />
 
       <div className="flex flex-1 min-h-0">

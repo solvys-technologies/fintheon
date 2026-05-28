@@ -40,6 +40,11 @@ export function ArbitrumPresetPanel({
   const handleSave = () => {
     if (saveState !== "idle") return;
     const saved = saveSelectedArbitrumRunPresetIds(selectedIds);
+    window.dispatchEvent(
+      new CustomEvent("fintheon:arbitrum-run-presets-changed", {
+        detail: { presetIds: saved },
+      }),
+    );
     setSelectedIds(saved);
     setSaveState("saving");
     window.setTimeout(() => setSaveState("saved"), 360);

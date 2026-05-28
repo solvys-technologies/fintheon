@@ -46,6 +46,19 @@ export async function handleDeliberate(c: Context) {
         triggerSource: presetIds.length > 0 ? { preset_ids: presetIds } : null,
       },
     );
+    if (
+      !result.persisted &&
+      result.verdict.digest_text.toLowerCase().includes("chamber unavailable")
+    ) {
+      return c.json(
+        {
+          error: "chamber unavailable",
+          digest_text: result.verdict.digest_text,
+          preset_ids: presetIds,
+        },
+        503,
+      );
+    }
     return c.json({
       verdict_id: result.verdict.verdict_id,
       persisted: result.persisted,

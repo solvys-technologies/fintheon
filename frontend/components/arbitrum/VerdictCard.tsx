@@ -8,6 +8,7 @@ import { FadingRuler } from "../shared/FadingRuler";
 import { AgenticFeedbackControls } from "../shared/AgenticFeedbackControls";
 import { DissentBadge } from "./DissentBadge";
 import { StreamdownChat } from "../chat/slots";
+import { cleanArbitrumDigestText } from "./digest-text";
 import type { ArbitrumVerdict } from "./types";
 
 interface VerdictCardProps {
@@ -15,16 +16,6 @@ interface VerdictCardProps {
   compact?: boolean;
   embedded?: boolean;
   className?: string;
-}
-
-function cleanDigestText(text: string): string {
-  return text
-    .replace(
-      /\s*,?\s*conf\s+\d+(?:\.\d+)?%?(?:\s*(?:\/|out of)\s*\d+(?:\.\d+)?%?)?/gi,
-      "",
-    )
-    .replace(/\s{2,}/g, " ")
-    .trim();
 }
 
 export function VerdictCard({
@@ -43,7 +34,7 @@ export function VerdictCard({
   } = verdict;
   const consensusScore = Math.max(0, Math.min(10, consensus_probability * 10));
   const confidenceScore = Math.max(0, Math.min(10, confidence * 10));
-  const cleanedDigest = cleanDigestText(digest_text);
+  const cleanedDigest = cleanArbitrumDigestText(digest_text);
   const surfaceClass = embedded
     ? "bg-transparent py-2"
     : `bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/30 ${
@@ -99,7 +90,10 @@ export function VerdictCard({
           ${compact ? "text-[11px]" : "text-sm"}
           ${embedded ? "max-h-[18rem] overflow-y-auto pr-2" : ""}`}
       >
-        <StreamdownChat content={cleanedDigest} />
+        <StreamdownChat
+          content={cleanedDigest}
+          className={`${compact ? "text-[12px]" : "text-[13px]"} leading-[1.6]`}
+        />
       </div>
 
       <div className="mt-3 flex items-center justify-between text-[10px] text-[var(--fintheon-text)]/40">

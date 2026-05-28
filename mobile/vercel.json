@@ -4,21 +4,6 @@
   "devCommand": "bun run dev",
   "installCommand": "bun install",
   "framework": "vite",
-  "redirects": [
-    {
-      "source": "/:path*",
-      "missing": [
-        { "type": "query", "key": "surface" },
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(Android|webOS|iPhone|iPad|iPod|BlackBerry|BB10|IEMobile|Opera Mini|Mobile|Silk|Kindle|Tablet).*"
-        }
-      ],
-      "destination": "https://fintheon-alpha.vercel.app/:path*",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/chat",

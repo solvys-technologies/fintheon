@@ -115,17 +115,18 @@ function SanctumWithNarratives(
   // Wrap onRun to inject real narrative state from NarrativeContext
   const { onRun, ...restProps } = props;
   const wrappedOnRun = useCallback(
-    async (preset?: SanctumPreset) => {
+    async (preset?: SanctumPreset, options?: { forceRun?: boolean }) => {
       return (
         onRun as (
           preset?: SanctumPreset,
+          options?: { forceRun?: boolean },
           narrativeState?: {
             lanes: typeof state.lanes;
             catalysts: typeof state.catalysts;
             ropes: typeof state.ropes;
           },
         ) => Promise<void>
-      )(preset, {
+      )(preset, options, {
         lanes: state.lanes,
         catalysts: state.catalysts,
         ropes: state.ropes,
@@ -557,35 +558,44 @@ export function ConsiliumHub() {
   const handleRunAgentDesk = useCallback(
     async (
       preset?: SanctumPreset,
+      options?: { forceRun?: boolean },
       narrativeState?: { lanes: any[]; catalysts: any[]; ropes: any[] },
     ) => {
-      // Quick revision check first — scan recent RiskFlow items
-      setRevisionChecking(true);
-      setRevisionStatus(null);
-      try {
-        const revRes = await fetch(`${API_BASE}/api/arbitrum/revision-check`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
-        if (revRes.ok) {
-          const rev = (await revRes.json()) as {
-            hasChanges: boolean;
-            statusMessage: string;
-            planUpdated?: boolean;
-          };
-          if (!rev.hasChanges) {
+      const shouldForceRun = options?.forceRun === true;
+      if (!shouldForceRun) {
+        // Quick revision check first — scan recent RiskFlow items
+        setRevisionChecking(true);
+        setRevisionStatus(null);
+        try {
+          const revRes = await fetch(
+            `${API_BASE}/api/arbitrum/revision-check`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            },
+          );
+          if (revRes.ok) {
+            const rev = (await revRes.json()) as {
+              hasChanges: boolean;
+              statusMessage: string;
+              planUpdated?: boolean;
+            };
+            if (!rev.hasChanges) {
+              setRevisionStatus(rev.statusMessage);
+              setRevisionChecking(false);
+              return;
+            }
+            // Notable items found — status message will show after deliberation
             setRevisionStatus(rev.statusMessage);
-            setRevisionChecking(false);
-            return;
           }
-          // Notable items found — status message will show after deliberation
-          setRevisionStatus(rev.statusMessage);
+        } catch {
+          // Non-blocking — proceed with deliberation even if check fails
+        } finally {
+          setRevisionChecking(false);
         }
-      } catch {
-        // Non-blocking — proceed with deliberation even if check fails
-      } finally {
-        setRevisionChecking(false);
+      } else {
+        setRevisionStatus(null);
       }
 
       setAgentDeskData((prev) =>

@@ -4,6 +4,8 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { Streamdown } from "streamdown";
+import { cleanArbitrumDigestText } from "@frontend/components/arbitrum/digest-text";
 import { DotMatrixLoader } from "@frontend/components/icon-bank/DotMatrixLoader";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
@@ -263,7 +265,7 @@ export function ArbitrumChamber() {
   const caoSeat = seats.find((s) => s.role === "Lead") ?? null;
   const hasVerdict = Boolean(verdict);
   const hasRealSeats = (verdict?.seats?.length ?? 0) > 0;
-  const chamberSummary = verdict?.digest_text ?? "";
+  const chamberSummary = cleanArbitrumDigestText(verdict?.digest_text ?? "");
 
   const instrumentOptions = [
     "/NQ",
@@ -506,7 +508,7 @@ export function ArbitrumChamber() {
             )}
           </button>
           {digestOpen && chamberSummary && (
-            <p
+            <div
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 12,
@@ -515,8 +517,8 @@ export function ArbitrumChamber() {
                 margin: 0,
               }}
             >
-              {chamberSummary}
-            </p>
+              <Streamdown>{chamberSummary}</Streamdown>
+            </div>
           )}
           {verdict && (
             <div

@@ -3,7 +3,7 @@
 // [claude-code 2026-03-23] Persistent Sanctum header — presets, run button, status, rolling period
 // [claude-code 2026-03-25] Theme-sensitive fonts — use var(--font-heading) and var(--font-body)
 // [claude-code 2026-04-25] S38: ArbitrumChamber → Arbitrum UI surface rename. Header lockup bumped, "shark tank" subtitle removed.
-import { RefreshCw, Loader2 } from "lucide-react";
+import { Loader2, Play, RefreshCw } from "lucide-react";
 import type { SanctumPreset } from "../../types/agent-desk";
 import { SanctumPresets } from "./SanctumPresets";
 import { SanctumOpsChips } from "./SanctumOpsChips";
@@ -15,6 +15,7 @@ interface SanctumHeaderProps {
   isLoading: boolean;
   status: "idle" | "running" | "complete" | "error";
   hasData: boolean;
+  hasPendingRun: boolean;
 }
 
 export function SanctumHeader({
@@ -24,7 +25,9 @@ export function SanctumHeader({
   isLoading,
   status,
   hasData,
+  hasPendingRun,
 }: SanctumHeaderProps) {
+  const shouldRun = hasPendingRun || !hasData;
   return (
     <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[var(--fintheon-border)]/10">
       <div className="flex items-center gap-3">
@@ -65,10 +68,18 @@ export function SanctumHeader({
         >
           {isLoading ? (
             <Loader2 className="w-3 h-3 animate-spin" />
+          ) : shouldRun ? (
+            <Play className="w-3 h-3" />
           ) : (
             <RefreshCw className="w-3 h-3" />
           )}
-          {isLoading ? "Updating..." : hasData ? "Update" : "Run"}
+          {isLoading
+            ? shouldRun
+              ? "Running..."
+              : "Updating..."
+            : shouldRun
+              ? "Run"
+              : "Update"}
         </button>
       </div>
     </div>

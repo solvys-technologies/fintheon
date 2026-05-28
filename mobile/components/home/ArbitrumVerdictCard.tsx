@@ -4,6 +4,8 @@
 
 import { useSettings } from "../../contexts/SettingsContext";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
+import { Streamdown } from "streamdown";
+import { cleanArbitrumDigestText } from "@frontend/components/arbitrum/digest-text";
 import { DotMatrixLoader } from "@frontend/components/icon-bank/DotMatrixLoader";
 import { DigitGroup } from "../shared/DigitGroup";
 import { FadingRuler } from "../shared/FadingRuler";
@@ -217,6 +219,7 @@ export function ArbitrumVerdictCard() {
   const { verdict, isLoading, error } = useArbitrumLatest(
     settings.selectedInstrument,
   );
+  const cleanedDigest = cleanArbitrumDigestText(verdict?.digest_text ?? "");
 
   return (
     <div
@@ -273,10 +276,10 @@ export function ArbitrumVerdictCard() {
             dissent={verdict.dissent}
           />
 
-          {verdict.digest_text && (
+          {cleanedDigest && (
             <>
               <FadingRuler style={{ margin: "10px 0" }} />
-              <p
+              <div
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 13,
@@ -285,8 +288,8 @@ export function ArbitrumVerdictCard() {
                   margin: 0,
                 }}
               >
-                {verdict.digest_text}
-              </p>
+                <Streamdown>{cleanedDigest}</Streamdown>
+              </div>
             </>
           )}
 
@@ -294,9 +297,9 @@ export function ArbitrumVerdictCard() {
             <SeatStrip seats={verdict.seats} />
           )}
 
-          {!verdict.digest_text &&
-            verdict.seats &&
-            verdict.seats.length > 0 && <SeatStrip seats={verdict.seats} />}
+          {!cleanedDigest && verdict.seats && verdict.seats.length > 0 && (
+            <SeatStrip seats={verdict.seats} />
+          )}
 
           <div
             style={{

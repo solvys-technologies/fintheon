@@ -28,6 +28,7 @@ interface RawSeat {
     probability?: number;
     confidence?: number;
     rationale?: string;
+    risks?: string[];
   }>;
   dissented?: boolean;
 }
@@ -92,6 +93,28 @@ function normalizeVerdict(raw: RawVerdict): ArbitrumVerdict {
   };
 }
 
+function isDegradedVerdict(raw: RawVerdict): boolean {
+  const digest = (raw.digest_text ?? "").toLowerCase();
+  if (
+    digest.includes("chamber unavailable") ||
+    digest.includes("chamber produced no seat reads")
+  )
+    return true;
+
+  const seats = raw.seats ?? [];
+  if (seats.length === 0) return false;
+  return seats.every((seat) => {
+    const last = seat.rounds?.[seat.rounds.length - 1];
+    const rationale = last?.rationale?.toLowerCase() ?? "";
+    const risks = last?.risks?.map((risk) => risk.toLowerCase()) ?? [];
+    return (
+      (last?.confidence ?? 1) <= 0.11 &&
+      (rationale.includes("unavailable this round") ||
+        risks.includes("model-unavailable"))
+    );
+  });
+}
+
 interface ArbitrumLatestState {
   verdict: ArbitrumVerdict | null;
   isLoading: boolean;
@@ -136,7 +159,7 @@ export function useArbitrumLatest(instrument?: string): ArbitrumLatestState {
         body && typeof body === "object" && "verdict" in body
           ? (body.verdict as RawVerdict | null)
           : ((body as RawVerdict | null) ?? null);
-      setVerdict(raw ? normalizeVerdict(raw) : null);
+      setVerdict(raw && !isDegradedVerdict(raw) ? normalizeVerdict(raw) : null);
       setError(null);
     } catch (err) {
       if (!mountedRef.current) return;

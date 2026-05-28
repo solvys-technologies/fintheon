@@ -8,6 +8,7 @@
 
 import { createLogger } from "../../lib/logger.js";
 import { getSupabaseClient } from "../../config/supabase.js";
+import { isStoredVerdictDegraded } from "./degraded-verdict.js";
 import type { ArbitrumTriggerType, ArbitrumVerdict } from "./types.js";
 
 const log = createLogger("ArbitrumVerdictStore");
@@ -69,6 +70,12 @@ function fromRow(row: Record<string, unknown>): ArbitrumVerdict {
   };
 }
 
+function latestUsableRow(
+  rows: Record<string, unknown>[] | null,
+): Record<string, unknown> | null {
+  return (rows ?? []).find((row) => !isStoredVerdictDegraded(row)) ?? null;
+}
+
 export async function saveVerdict(v: ArbitrumVerdict): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb) {
@@ -124,8 +131,7 @@ export async function getLatestByTrigger(
     .select("*")
     .eq("trigger_type", trigger_type)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
   if (error) {
     log.error("getLatestByTrigger failed", {
       trigger_type,
@@ -133,8 +139,8 @@ export async function getLatestByTrigger(
     });
     return null;
   }
-  if (!data) return null;
-  return fromRow(data as Record<string, unknown>);
+  const row = latestUsableRow(data as Record<string, unknown>[]);
+  return row ? fromRow(row) : null;
 }
 
 export async function getLatest(): Promise<ArbitrumVerdict | null> {
@@ -144,14 +150,13 @@ export async function getLatest(): Promise<ArbitrumVerdict | null> {
     .from(TABLE)
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(20);
   if (error) {
     log.error("getLatest failed", { error: error.message });
     return null;
   }
-  if (!data) return null;
-  return fromRow(data as Record<string, unknown>);
+  const row = latestUsableRow(data as Record<string, unknown>[]);
+  return row ? fromRow(row) : null;
 }
 
 function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
@@ -219,17 +224,17 @@ export async function getLatestChamberRead(): Promise<string | null> {
   const sessionWindowStart = getNewYorkNoonIso();
   const { data, error } = await sb
     .from(TABLE)
-    .select("digest_text, created_at")
+    .select("digest_text, created_at, seats")
     .eq("trigger_type", "session")
     .gte("created_at", sessionWindowStart)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(10);
   if (error) {
     log.error("getLatestChamberRead failed", { error: error.message });
     return null;
   }
-  return data?.digest_text ?? null;
+  const row = latestUsableRow(data as Record<string, unknown>[]);
+  return row ? String(row.digest_text ?? "") : null;
 }
 
 /**
