@@ -8,12 +8,13 @@ export type SurfaceNavTab =
   | "apparatus"
   | "performance"
   | "proposals"
+  | "desk-ops"
   | "settings";
 
 export type SurfaceRuntime = "electron-desktop" | "web-pwa";
 export type SurfaceFormFactor = "desktop" | "tablet" | "mobile";
 export type ConsiliumMode = "full" | "chat-arbitrum";
-export type NavigationMode = "sidebar" | "floating";
+export type NavigationMode = "sidebar" | "underlay-drawer";
 export type DeskSecondPageMode = "all" | "feed-only";
 
 export interface SurfaceCapabilities {
@@ -23,6 +24,11 @@ export interface SurfaceCapabilities {
   isMobile: boolean;
   allowCustomIframes: boolean;
   allowPerformance: boolean;
+  allowVoiceAssistant: boolean;
+  allowPsychAssist: boolean;
+  allowStrategium: boolean;
+  allowFooterToolbar: boolean;
+  allowDesktopRail: boolean;
   consiliumMode: ConsiliumMode;
   navigationMode: NavigationMode;
   deskSecondPageMode: DeskSecondPageMode;
@@ -50,6 +56,7 @@ const MOBILE_TABS: readonly SurfaceNavTab[] = [
   "riskflow",
   "econ",
   "analysis",
+  "desk-ops",
   "settings",
 ];
 
@@ -73,6 +80,11 @@ export function buildSurfaceCapabilities(
       isMobile,
       allowCustomIframes: true,
       allowPerformance: true,
+      allowVoiceAssistant: true,
+      allowPsychAssist: true,
+      allowStrategium: true,
+      allowFooterToolbar: true,
+      allowDesktopRail: true,
       consiliumMode: "full",
       navigationMode: "sidebar",
       deskSecondPageMode: "all",
@@ -88,8 +100,13 @@ export function buildSurfaceCapabilities(
     isMobile,
     allowCustomIframes: false,
     allowPerformance: false,
+    allowVoiceAssistant: !isMobile,
+    allowPsychAssist: !isMobile,
+    allowStrategium: !isMobile,
+    allowFooterToolbar: !isMobile,
+    allowDesktopRail: !isMobile,
     consiliumMode: "chat-arbitrum",
-    navigationMode: isMobile ? "floating" : "sidebar",
+    navigationMode: isMobile ? "underlay-drawer" : "sidebar",
     deskSecondPageMode: isMobile ? "feed-only" : "all",
     allowedTabs: isMobile ? MOBILE_TABS : WEB_DESKTOP_TABS,
     identityScope: "supabase-user",
@@ -102,6 +119,7 @@ export function resolveSurfaceTab(
 ): SurfaceNavTab {
   if (capabilities.allowedTabs.includes(tab)) return tab;
   if (tab === "performance") return "dashboard";
+  if (tab === "proposals") return "dashboard";
   if (capabilities.isMobile) return "dashboard";
   return "dashboard";
 }

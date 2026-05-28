@@ -29,6 +29,7 @@ interface StickyBulletinProps {
   open: boolean;
   onClose: () => void;
   anchorRef: React.RefObject<HTMLButtonElement | null>;
+  variant?: "desktop-popover" | "mobile-dropdown";
 }
 
 const SECTIONS = [
@@ -43,8 +44,10 @@ export function StickyBulletin({
   open,
   onClose,
   anchorRef,
+  variant = "desktop-popover",
 }: StickyBulletinProps) {
   const b = useStickyBulletin(open, anchorRef);
+  const isMobileDropdown = variant === "mobile-dropdown";
   const [manualPos, setManualPos] = useState<{
     top: number;
     right: number;
@@ -63,24 +66,32 @@ export function StickyBulletin({
     }
   }, [open]);
 
-  const panelPosition = manualPos ?? b.popupPos;
+  const panelPosition = (isMobileDropdown ? null : manualPos) ?? b.popupPos;
   if (!open || !panelPosition) return null;
 
-  const posStyle = {
-    position: "fixed" as const,
-    top: panelPosition.top,
-    right: panelPosition.right,
-    zIndex: 9998,
-  };
+  const posStyle = isMobileDropdown
+    ? {
+        position: "fixed" as const,
+        top: Math.max(58, panelPosition.top),
+        left: 12,
+        right: 12,
+        zIndex: 9998,
+      }
+    : {
+        position: "fixed" as const,
+        top: panelPosition.top,
+        right: panelPosition.right,
+        zIndex: 9998,
+      };
 
   return createPortal(
     <div
       ref={b.panelRef}
       data-bulletin-panel
       style={posStyle}
-      className="w-[360px] animate-in fade-in slide-in-from-top-2 duration-200"
+      className={`${isMobileDropdown ? "w-auto" : "w-[360px]"} animate-in fade-in slide-in-from-top-2 duration-200`}
       onMouseMove={(event) => {
-        if (!drag) return;
+        if (isMobileDropdown || !drag) return;
         setManualPos({
           top: Math.max(12, drag.top + event.clientY - drag.y),
           right: Math.max(12, drag.right - (event.clientX - drag.x)),
@@ -104,31 +115,34 @@ export function StickyBulletin({
       >
         {/* Header */}
         <div
-          className="flex cursor-move items-center justify-between px-4 py-3"
+          className={`flex items-center justify-between px-4 py-3 ${isMobileDropdown ? "cursor-default" : "cursor-move"}`}
           style={{
             borderBottom:
               "1px solid color-mix(in srgb, var(--fintheon-accent) 12%, transparent)",
           }}
-          onMouseDown={(event) =>
+          onMouseDown={(event) => {
+            if (isMobileDropdown) return;
             setDrag({
               x: event.clientX,
               y: event.clientY,
               top: panelPosition.top,
               right: panelPosition.right,
-            })
-          }
+            });
+          }}
         >
           <div className="flex items-center gap-2">
-            <button
-              className="cursor-grab active:cursor-grabbing touch-none p-0.5"
-              title="Drag"
-              aria-label="Drag bulletin"
-            >
-              <GripVertical
-                className="w-3.5 h-3.5"
-                style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
-              />
-            </button>
+            {!isMobileDropdown && (
+              <button
+                className="cursor-grab active:cursor-grabbing touch-none p-0.5"
+                title="Drag"
+                aria-label="Drag bulletin"
+              >
+                <GripVertical
+                  className="w-3.5 h-3.5"
+                  style={{ color: "var(--fintheon-accent)", opacity: 0.4 }}
+                />
+              </button>
+            )}
             <ClipboardList
               className="w-4 h-4"
               style={{ color: "var(--fintheon-accent)" }}
@@ -175,35 +189,62 @@ export function StickyBulletin({
 
         {/* Section tabs */}
         <div
-          className="flex px-2 py-1.5 gap-0.5"
+          className={
+            isMobileDropdown ? "px-3 py-2" : "flex px-2 py-1.5 gap-0.5"
+          }
           style={{
             borderBottom:
               "1px solid color-mix(in srgb, var(--fintheon-accent) 8%, transparent)",
           }}
         >
-          {SECTIONS.map((s) => {
-            const isActive = b.activeSection === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => b.setActiveSection(s.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all duration-200"
-                style={{
-                  color: isActive
-                    ? "var(--fintheon-accent)"
-                    : "var(--fintheon-muted)",
-                  background: "transparent",
-                }}
-              >
-                <s.icon className="w-3 h-3" />
-                <span className="hidden sm:inline">{s.label}</span>
-              </button>
-            );
-          })}
+          {isMobileDropdown ? (
+            <select
+              aria-label="Bulletin section"
+              value={b.activeSection}
+              onChange={(event) =>
+                b.setActiveSection(event.target.value as typeof b.activeSection)
+              }
+              className="h-9 w-full rounded-lg border bg-[var(--fintheon-bg)] px-3 text-[11px] uppercase tracking-[0.14em] text-[var(--fintheon-accent)] outline-none"
+              style={{
+                borderColor:
+                  "color-mix(in srgb, var(--fintheon-accent) 18%, transparent)",
+              }}
+            >
+              {SECTIONS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            SECTIONS.map((s) => {
+              const isActive = b.activeSection === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => b.setActiveSection(s.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] tracking-wide uppercase transition-all duration-200"
+                  style={{
+                    color: isActive
+                      ? "var(--fintheon-accent)"
+                      : "var(--fintheon-muted)",
+                    background: "transparent",
+                  }}
+                >
+                  <s.icon className="w-3 h-3" />
+                  <span className="hidden sm:inline">{s.label}</span>
+                </button>
+              );
+            })
+          )}
         </div>
 
         {/* Content area */}
-        <div className="p-3 min-h-[200px] max-h-[420px] overflow-y-auto custom-scrollbar">
+        <div
+          className={`p-3 min-h-[200px] overflow-y-auto custom-scrollbar ${
+            isMobileDropdown ? "max-h-[calc(100dvh-164px)]" : "max-h-[420px]"
+          }`}
+        >
           {/* ═══ Section 1: Desk Plan ═══ */}
           {b.activeSection === "desk" && <BulletinDeskPlanTab />}
 

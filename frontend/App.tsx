@@ -1,7 +1,13 @@
 // [claude-code 2026-04-23] S32-T4 Consul Control pixelation corners mounted above modals.
 // [claude-code 2026-04-23] Rollback: remove GitHub OAuth callback + update banner mounts
 // [claude-code 2026-03-24] Auth gate with init screen, cloud migration, and soft fade-in
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import {
   migrateLocalStorageToCloud,
@@ -38,6 +44,7 @@ import { LoadingBootScreen } from "./components/loading/LoadingBootScreen";
 import { ConsulControlCorners } from "./components/consul-control/ConsulControlCorners";
 import { ProjectXSyncProvider } from "./components/projectx/ProjectXSyncProvider";
 import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
+import { buildSurfaceCapabilities } from "./lib/surface-capabilities";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -138,9 +145,23 @@ function ConsulControlLayer() {
 function AuthGate() {
   const { isAuthenticated, isLoading, signIn } = useAuth();
   const [initComplete, setInitComplete] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1600 : window.innerWidth,
+  );
   const [showSplash] = useState(() => isColdStart());
   const authBypass = import.meta.env.VITE_BYPASS_AUTH === "true";
   const canEnterApp = isAuthenticated || authBypass;
+  const surfaceCapabilities = useMemo(
+    () => buildSurfaceCapabilities(viewportWidth),
+    [viewportWidth],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const handleInitReady = useCallback(() => {
     setInitComplete(true);
@@ -175,7 +196,9 @@ function AuthGate() {
                             <ProxVoiceProvider>
                               <ERProvider>
                                 <div className="dark">
-                                  <VoiceRimFrame />
+                                  {surfaceCapabilities.allowVoiceAssistant && (
+                                    <VoiceRimFrame />
+                                  )}
                                   <style>{`
                   * {
                     scrollbar-width: thin;
@@ -217,7 +240,9 @@ function AuthGate() {
                                   <ProjectXSyncProvider />
                                   <VersionChecker />
                                   <MainLayout />
-                                  <ConsulControlLayer />
+                                  {surfaceCapabilities.allowVoiceAssistant && (
+                                    <ConsulControlLayer />
+                                  )}
                                   <NotificationContainer />
                                   <ToastContainer />
                                   <PreMarketReminder />

@@ -33,6 +33,7 @@ type NavTab =
   | "apparatus"
   | "performance"
   | "proposals"
+  | "desk-ops"
   | "settings";
 
 interface NavSidebarProps {

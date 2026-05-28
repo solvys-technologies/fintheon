@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Menu,
   Monitor,
   MessageCircle,
   PictureInPicture2,
@@ -45,6 +46,7 @@ import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
 import { ToolbarDnD } from "./ToolbarDnD";
 import { HeaderLockButton } from "./HeaderLockButton";
+import type { SurfaceCapabilities } from "../../lib/surface-capabilities";
 
 type NavTab =
   | "feed"
@@ -55,6 +57,7 @@ type NavTab =
   | "narrative"
   | "performance"
   | "proposals"
+  | "desk-ops"
   | "apparatus"
   | "settings";
 
@@ -68,6 +71,7 @@ const TAB_LABELS: Record<NavTab, string> = {
   econ: "Econ Calendar",
   narrative: "DeskMap",
   performance: "Performance",
+  "desk-ops": "Desk Ops",
   settings: "Settings",
 };
 
@@ -102,6 +106,9 @@ interface TopHeaderProps {
   toolbarEditMode?: boolean;
   compactLevel?: 0 | 1 | 2;
   allowCustomIframes?: boolean;
+  surfaceCapabilities?: SurfaceCapabilities;
+  mobileDrawerOpen?: boolean;
+  onMobileDrawerToggle?: () => void;
 }
 
 export function TopHeader({
@@ -126,6 +133,9 @@ export function TopHeader({
   toolbarEditMode = false,
   compactLevel = 0,
   allowCustomIframes = true,
+  surfaceCapabilities,
+  mobileDrawerOpen = false,
+  onMobileDrawerToggle,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -161,10 +171,13 @@ export function TopHeader({
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
   const showIframeControls = allowCustomIframes;
-  const shouldShowLeftPanelToggle = !topStepXEnabled && compactLevel < 2;
-  const shouldShowRightPanelToggle = !(
-    topStepXEnabled && layoutOption === "tickers-only"
-  );
+  const isMobileSurface =
+    surfaceCapabilities?.navigationMode === "underlay-drawer";
+  const allowVoiceAssistant = surfaceCapabilities?.allowVoiceAssistant ?? true;
+  const shouldShowLeftPanelToggle =
+    !isMobileSurface && !topStepXEnabled && compactLevel < 2;
+  const shouldShowRightPanelToggle =
+    !(topStepXEnabled && layoutOption === "tickers-only") && !isMobileSurface;
   const handleQuickClock = useCallback(async () => {
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -420,12 +433,42 @@ export function TopHeader({
     >
       <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
         <div className="flex items-center gap-3">
+          {isMobileSurface && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onMobileDrawerToggle}
+                aria-label={
+                  mobileDrawerOpen ? "Close mobile menu" : "Open mobile menu"
+                }
+                aria-expanded={mobileDrawerOpen}
+                className={`grid h-9 w-9 place-items-center rounded-full border transition-[border-color,background,color,transform] active:scale-95 ${
+                  mobileDrawerOpen
+                    ? "border-[var(--fintheon-accent)]/45 bg-[var(--fintheon-accent)] text-black"
+                    : "border-[var(--fintheon-accent)]/28 bg-[var(--fintheon-bg)] text-[var(--fintheon-accent)]"
+                }`}
+                title={mobileDrawerOpen ? "Close menu" : "Open menu"}
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onBack}
+                disabled={historyIndex <= 0}
+                aria-label="Back"
+                className="grid h-9 w-9 place-items-center rounded-full border border-[var(--fintheon-accent)]/18 bg-[var(--fintheon-bg)] text-[var(--fintheon-accent)]/75 transition-colors disabled:border-[var(--fintheon-accent)]/8 disabled:text-[var(--fintheon-muted)]/35"
+                title="Back"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           {shouldShowLeftPanelToggle && (
             <PanelToggleButton side="left" label="left panel" />
           )}
 
           {/* Breadcrumb navigation — back/forward + section name */}
-          {!topStepXEnabled && compactLevel < 2 && (
+          {!isMobileSurface && !topStepXEnabled && compactLevel < 2 && (
             <div className="flex items-center gap-1">
               <button
                 onClick={onBack}
@@ -475,7 +518,9 @@ export function TopHeader({
           )}
           {(compactLevel < 2 || topStepXEnabled) && (
             <div className={TOOLBAR_PILL_CLASS}>
-              {compactLevel < 1 && <ProxVoiceHeaderControl />}
+              {allowVoiceAssistant && compactLevel < 1 && (
+                <ProxVoiceHeaderControl />
+              )}
               {compactLevel < 1 && topStepXEnabled && (
                 <FadingRuler orientation="vertical" className="mx-0.5" />
               )}
@@ -737,9 +782,12 @@ export function TopHeader({
               open={showBulletin}
               onClose={() => setShowBulletin(false)}
               anchorRef={bulletinBtnRef}
+              variant={isMobileSurface ? "mobile-dropdown" : "desktop-popover"}
             />
-            <FadingRuler orientation="vertical" className="mx-0.5" />
-            {onChatToggle && (
+            {(!isMobileSurface || allowVoiceAssistant) && (
+              <FadingRuler orientation="vertical" className="mx-0.5" />
+            )}
+            {!isMobileSurface && onChatToggle && (
               <button
                 onClick={onChatToggle}
                 className={`toolbar-icon-btn ${chatOpen ? "toolbar-active" : ""}`}
@@ -750,12 +798,14 @@ export function TopHeader({
                 />
               </button>
             )}
-            {onChatToggle && (
+            {!isMobileSurface && onChatToggle && (
               <FadingRuler orientation="vertical" className="mx-0.5" />
             )}
-            <HeaderVoiceControl
-              compact={topStepXEnabled && layoutOption === "tickers-only"}
-            />
+            {allowVoiceAssistant && (
+              <HeaderVoiceControl
+                compact={topStepXEnabled && layoutOption === "tickers-only"}
+              />
+            )}
           </div>
           {shouldShowRightPanelToggle && (
             <PanelToggleButton side="right" label="right panel" />

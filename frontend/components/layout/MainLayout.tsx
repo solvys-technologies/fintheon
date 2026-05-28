@@ -69,7 +69,7 @@ import { TabRenderer } from "./TabRenderer";
 import { MissionControlContent } from "./MissionControlContent";
 import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
-import { MobileFloatingNav } from "./MobileFloatingNav";
+import { MobileUnderlayDrawer } from "./MobileUnderlayDrawer";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
 // Voice lives in the app-native ProxVoice surface.
@@ -104,6 +104,7 @@ type NavTab =
   | "apparatus"
   | "performance"
   | "proposals"
+  | "desk-ops"
   | "settings";
 type LayoutOption = "tickers-only" | "combined";
 
@@ -121,6 +122,7 @@ const VALID_TABS: ReadonlySet<NavTab> = new Set<NavTab>([
   "apparatus",
   "performance",
   "proposals",
+  "desk-ops",
   "settings",
 ]);
 
@@ -210,7 +212,6 @@ function MainLayoutInner() {
     () => buildSurfaceCapabilities(viewportWidth),
     [viewportWidth],
   );
-
   const {
     topStepXEnabled,
     browserTransitioning,
@@ -226,6 +227,17 @@ function MainLayoutInner() {
   } = useBrowserTransition({ defaultPlatform });
   const iframeModeActive =
     surfaceCapabilities.allowCustomIframes && topStepXEnabled;
+  const mobileDrawerMode =
+    surfaceCapabilities.navigationMode === "underlay-drawer" &&
+    !iframeModeActive;
+
+  useEffect(() => {
+    if (!mobileDrawerMode) setMobileDrawerOpen(false);
+  }, [mobileDrawerMode]);
+
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [activeTab]);
 
   const {
     layoutEditMode,
@@ -256,6 +268,8 @@ function MainLayoutInner() {
   });
 
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const mobileEdgeSwipeRef = useRef<{ x: number; y: number } | null>(null);
   const [showRefinement, setShowRefinement] = useState(false);
   const [timelineOverlayOpen, setTimelineOverlayOpen] = useState(false);
   const refinementEnabled =
@@ -488,6 +502,36 @@ function MainLayoutInner() {
       setActiveTab(tabHistory[newIdx]);
     }
   };
+
+  const handleShellTouchStart = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      if (!mobileDrawerMode || mobileDrawerOpen || historyIndex <= 0) {
+        mobileEdgeSwipeRef.current = null;
+        return;
+      }
+      const touch = event.touches[0];
+      if (!touch || touch.clientX > 24) {
+        mobileEdgeSwipeRef.current = null;
+        return;
+      }
+      mobileEdgeSwipeRef.current = { x: touch.clientX, y: touch.clientY };
+    },
+    [historyIndex, mobileDrawerMode, mobileDrawerOpen],
+  );
+
+  const handleShellTouchEnd = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const start = mobileEdgeSwipeRef.current;
+      mobileEdgeSwipeRef.current = null;
+      if (!start || !mobileDrawerMode || mobileDrawerOpen) return;
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - start.x;
+      const deltaY = Math.abs(touch.clientY - start.y);
+      if (deltaX > 58 && deltaY < 42) goBack();
+    },
+    [mobileDrawerMode, mobileDrawerOpen, goBack],
+  );
 
   const backend = useBackend();
   const { alerts: riskFlowAlerts, isSeen, freshAlertId } = useRiskFlow();
@@ -794,7 +838,7 @@ function MainLayoutInner() {
   );
 
   // When TopStepX is enabled, render panels based on layout option
-  if (iframeModeActive) {
+  if (surfaceCapabilities.allowStrategium && iframeModeActive) {
     if (layoutOption === "combined") {
       // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
       rightPanels.push(
@@ -859,7 +903,7 @@ function MainLayoutInner() {
       );
     }
     // For 'tickers-only', no panels are shown (only floating widget)
-  } else {
+  } else if (surfaceCapabilities.allowStrategium) {
     // When TopStepX is disabled: right stack = Mission Control + collapsible RiskFlow
     const hideRightPanel =
       showRefinement ||
@@ -967,6 +1011,18 @@ function MainLayoutInner() {
     }
   }
 
+  const mobileContentStyle: React.CSSProperties | undefined = mobileDrawerMode
+    ? {
+        transform: mobileDrawerOpen
+          ? "translateX(min(292px, calc(100vw - 72px)))"
+          : "translateX(0)",
+        filter: mobileDrawerOpen ? "brightness(0.68)" : "none",
+        transition:
+          "transform 330ms cubic-bezier(0.32, 0.72, 0, 1), filter 330ms cubic-bezier(0.32, 0.72, 0, 1)",
+        willChange: "transform, filter",
+      }
+    : undefined;
+
   return (
     <ScheduleProvider>
       <YouTubeMiniplayerProvider>
@@ -978,7 +1034,7 @@ function MainLayoutInner() {
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
             voice (when speaking). The previous draggable COACH popup is gone. */}
-          <AgentVoiceWaveform />
+          {surfaceCapabilities.allowVoiceAssistant && <AgentVoiceWaveform />}
           <TopHeader
             topStepXEnabled={iframeModeActive}
             onTopStepXToggle={
@@ -1013,6 +1069,7 @@ function MainLayoutInner() {
             hideBranding={iframeModeActive && sidebarOverlayVisible}
             toolbarEditMode={layoutEditMode}
             psychAssistHeadingWidget={
+              surfaceCapabilities.allowPsychAssist &&
               iframeModeActive &&
               layoutOption === "tickers-only" &&
               psychAssistTarget === "header" &&
@@ -1036,217 +1093,245 @@ function MainLayoutInner() {
             }
             compactLevel={compactLevel}
             allowCustomIframes={surfaceCapabilities.allowCustomIframes}
+            surfaceCapabilities={surfaceCapabilities}
+            mobileDrawerOpen={mobileDrawerOpen}
+            onMobileDrawerToggle={() => setMobileDrawerOpen((v) => !v)}
             /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
              the only voice trigger now. */
           />
 
           {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
-          <div className="flex-1 flex overflow-hidden relative bg-[var(--fintheon-surface)]">
-            <div
-              className={
-                iframeModeActive ||
-                surfaceCapabilities.navigationMode === "floating"
-                  ? "hidden"
-                  : "relative shrink-0 transition-[width] duration-300 ease-in-out"
-              }
-            >
-              <NavSidebar
+          <div
+            className="flex-1 overflow-hidden relative bg-[var(--fintheon-surface)]"
+            onTouchStart={handleShellTouchStart}
+            onTouchEnd={handleShellTouchEnd}
+          >
+            {mobileDrawerMode && (
+              <MobileUnderlayDrawer
+                open={mobileDrawerOpen}
                 activeTab={activeTab}
+                onClose={() => setMobileDrawerOpen(false)}
                 onTabChange={(tab) => {
                   setShowRefinement(false);
-                  handleTabChange(tab);
+                  handleTabChange(tab as NavTab);
                 }}
-                onLogout={handleLogout}
-                topStepXEnabled={iframeModeActive}
-                onOverlayVisibilityChange={setSidebarOverlayVisible}
-                editMode={layoutEditMode}
-                onEditModeChange={setLayoutEditMode}
+                onConsiliumView={(view) => {
+                  setShowRefinement(false);
+                  navigateTab("analysis");
+                  window.setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent("fintheon:consilium-lite-view", {
+                        detail: { view },
+                      }),
+                    );
+                  }, 30);
+                }}
                 onNotificationCenterToggle={() =>
                   setNotificationCenterOpen((v) => !v)
                 }
-                onRefinementClick={() => setShowRefinement((v) => !v)}
-                refinementEnabled={refinementEnabled}
-                refinementActive={showRefinement}
-                capabilities={surfaceCapabilities}
+                onLogout={handleLogout}
               />
-            </div>
-            <NotificationCenter
-              open={notificationCenterOpen}
-              onClose={() => setNotificationCenterOpen(false)}
-            />
-            {!iframeModeActive &&
-              surfaceCapabilities.navigationMode === "floating" && (
-                <MobileFloatingNav
+            )}
+            <div
+              className="relative flex h-full w-full overflow-hidden"
+              style={mobileContentStyle}
+            >
+              <div
+                className={
+                  iframeModeActive || mobileDrawerMode
+                    ? "hidden"
+                    : "relative shrink-0 transition-[width] duration-300 ease-in-out"
+                }
+              >
+                <NavSidebar
                   activeTab={activeTab}
                   onTabChange={(tab) => {
                     setShowRefinement(false);
-                    handleTabChange(tab as NavTab);
+                    handleTabChange(tab);
                   }}
-                  onConsiliumView={(view) => {
-                    setShowRefinement(false);
-                    navigateTab("analysis");
-                    window.setTimeout(() => {
-                      window.dispatchEvent(
-                        new CustomEvent("fintheon:consilium-lite-view", {
-                          detail: { view },
-                        }),
-                      );
-                    }, 30);
-                  }}
+                  onLogout={handleLogout}
+                  topStepXEnabled={iframeModeActive}
+                  onOverlayVisibilityChange={setSidebarOverlayVisible}
+                  editMode={layoutEditMode}
+                  onEditModeChange={setLayoutEditMode}
                   onNotificationCenterToggle={() =>
                     setNotificationCenterOpen((v) => !v)
                   }
-                  onLogout={handleLogout}
-                />
-              )}
-
-            {/* Left Panels */}
-            {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
-
-            {/* Center Content - TopStepX or Main Content with crossfade.
-                Full 4-sided gold hairline border + rounded corners so the main
-                content floats above both the left sidebar and the right Strategium
-                (which use bg-surface, lighter than the main content's bg-bg). */}
-            <div className="fintheon-main-surface z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
-              {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
-              <TimelineOverlay
-                open={timelineOverlayOpen}
-                onClose={() => setTimelineOverlayOpen(false)}
-              />
-              {iframeModeActive && !timelineOverlayOpen && (
-                <TimelineToggleButton
-                  onClick={() => setTimelineOverlayOpen(true)}
-                />
-              )}
-
-              {/* Browser layer */}
-              {iframeModeActive && (
-                <div
-                  className={`absolute inset-0 z-10 ${isStone ? "bg-black" : ""} ${browserVisible ? "animate-browser-in" : "animate-browser-out"}`}
-                >
-                  <TradingBrowser
-                    primaryPlatform={selectedPlatform}
-                    onPrimaryPlatformChange={setSelectedPlatform}
-                    secondaryPlatform={secondaryPlatform}
-                    onSecondaryPlatformChange={setSecondaryPlatform}
-                    splitViewEnabled={splitBrowserView}
-                    onSplitViewEnabledChange={setSplitBrowserView}
-                    allowSplitView={iframeModeActive}
-                  />
-                </div>
-              )}
-
-              {/* Main content layer */}
-              <div
-                className={`h-full relative flex-1 flex flex-col ${iframeModeActive ? "pointer-events-none" : ""}`}
-                style={{
-                  opacity: iframeModeActive ? 0 : 1,
-                  transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-              >
-                <TabRenderer
-                  activeTab={activeTab}
-                  tabTransitioning={tabTransitioning}
-                  prevTab={prevTab}
-                  showRefinement={showRefinement}
-                  navigateTab={navigateTab}
-                  onChatAlert={handleChatAlert}
+                  onRefinementClick={() => setShowRefinement((v) => !v)}
+                  refinementEnabled={refinementEnabled}
+                  refinementActive={showRefinement}
                   capabilities={surfaceCapabilities}
                 />
               </div>
-            </div>
-
-            {/* Right Panels */}
-            {rightPanels.length > 0 && (
-              <div className="flex">{rightPanels}</div>
-            )}
-
-            {/* Floating Widget */}
-            {showFloatingWidget && (
-              <FloatingWidget
-                ivData={ivData}
-                ivLoading={ivLoading}
-                layoutOption={layoutOption}
-                onClose={() => {}}
+              <NotificationCenter
+                open={notificationCenterOpen}
+                onClose={() => setNotificationCenterOpen(false)}
               />
-            )}
 
-            {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
-            {iframeModeActive &&
-              layoutOption === "tickers-only" &&
-              psychAssistTarget === "floating" && (
-                <PsychAssistDockable
-                  target="floating"
-                  onDockToHeader={() => setPsychAssistTarget("header")}
-                  onUndockToFloating={() => setPsychAssistTarget("floating")}
+              {/* Left Panels */}
+              {leftPanels.length > 0 && (
+                <div className="flex">{leftPanels}</div>
+              )}
+
+              {/* Center Content - TopStepX or Main Content with crossfade.
+                Full 4-sided gold hairline border + rounded corners so the main
+                content floats above both the left sidebar and the right Strategium
+                (which use bg-surface, lighter than the main content's bg-bg). */}
+              <div className="fintheon-main-surface z-10 flex-1 overflow-hidden relative min-w-0 flex flex-col border-t border-b border-l border-r border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-2xl">
+                {/* Timeline overlay — slides over browser, does not affect iframe sizing */}
+                <TimelineOverlay
+                  open={timelineOverlayOpen}
+                  onClose={() => setTimelineOverlayOpen(false)}
+                />
+                {iframeModeActive && !timelineOverlayOpen && (
+                  <TimelineToggleButton
+                    onClick={() => setTimelineOverlayOpen(true)}
+                  />
+                )}
+
+                {/* Browser layer */}
+                {iframeModeActive && (
+                  <div
+                    className={`absolute inset-0 z-10 ${isStone ? "bg-black" : ""} ${browserVisible ? "animate-browser-in" : "animate-browser-out"}`}
+                  >
+                    <TradingBrowser
+                      primaryPlatform={selectedPlatform}
+                      onPrimaryPlatformChange={setSelectedPlatform}
+                      secondaryPlatform={secondaryPlatform}
+                      onSecondaryPlatformChange={setSecondaryPlatform}
+                      splitViewEnabled={splitBrowserView}
+                      onSplitViewEnabledChange={setSplitBrowserView}
+                      allowSplitView={iframeModeActive}
+                    />
+                  </div>
+                )}
+
+                {/* Main content layer */}
+                <div
+                  className={`h-full relative flex-1 flex flex-col ${iframeModeActive ? "pointer-events-none" : ""}`}
+                  style={{
+                    opacity: iframeModeActive ? 0 : 1,
+                    transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                >
+                  <TabRenderer
+                    activeTab={activeTab}
+                    tabTransitioning={tabTransitioning}
+                    prevTab={prevTab}
+                    showRefinement={showRefinement}
+                    navigateTab={navigateTab}
+                    onChatAlert={handleChatAlert}
+                    capabilities={surfaceCapabilities}
+                  />
+                </div>
+              </div>
+
+              {/* Right Panels */}
+              {rightPanels.length > 0 && (
+                <div className="flex">{rightPanels}</div>
+              )}
+
+              {/* Floating Widget */}
+              {showFloatingWidget && surfaceCapabilities.allowStrategium && (
+                <FloatingWidget
+                  ivData={ivData}
+                  ivLoading={ivLoading}
+                  layoutOption={layoutOption}
+                  onClose={() => {}}
                 />
               )}
 
-            {/* Panel Notification Widgets */}
-            {showMissionControlNotification && (
-              <PanelNotificationWidget
-                panelName="Mission Control"
-                position={zenModeActive ? "bottom-right" : "top-right"}
-                onRestore={() => {
-                  setMissionControlPosition("right");
-                  setShowMissionControlNotification(false);
-                }}
-                onDismiss={() => setShowMissionControlNotification(false)}
-              />
-            )}
-            {showTapeNotification && (
-              <PanelNotificationWidget
-                panelName="RiskFlow"
-                position={zenModeActive ? "bottom-right" : "top-right"}
-                onRestore={() => {
-                  setTapePosition("right");
-                  setShowTapeNotification(false);
-                }}
-                onDismiss={() => setShowTapeNotification(false)}
-              />
-            )}
+              {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
+              {iframeModeActive &&
+                surfaceCapabilities.allowPsychAssist &&
+                layoutOption === "tickers-only" &&
+                psychAssistTarget === "floating" && (
+                  <PsychAssistDockable
+                    target="floating"
+                    onDockToHeader={() => setPsychAssistTarget("header")}
+                    onUndockToFloating={() => setPsychAssistTarget("floating")}
+                  />
+                )}
 
-            {/* YouTube floating miniplayer — persists independent of TradingBrowser */}
-            {showYouTubeMiniplayer && (
-              <YouTubeMiniplayer
-                onClose={() => {
-                  setShowYouTubeMiniplayer(false);
-                  try {
-                    localStorage.setItem(
-                      "fintheon:yt-miniplayer-open",
-                      "false",
-                    );
-                  } catch {
-                    /* ignore */
-                  }
-                }}
-              />
-            )}
+              {/* Panel Notification Widgets */}
+              {surfaceCapabilities.allowStrategium &&
+                showMissionControlNotification && (
+                  <PanelNotificationWidget
+                    panelName="Mission Control"
+                    position={zenModeActive ? "bottom-right" : "top-right"}
+                    onRestore={() => {
+                      setMissionControlPosition("right");
+                      setShowMissionControlNotification(false);
+                    }}
+                    onDismiss={() => setShowMissionControlNotification(false)}
+                  />
+                )}
+              {surfaceCapabilities.allowStrategium && showTapeNotification && (
+                <PanelNotificationWidget
+                  panelName="RiskFlow"
+                  position={zenModeActive ? "bottom-right" : "top-right"}
+                  onRestore={() => {
+                    setTapePosition("right");
+                    setShowTapeNotification(false);
+                  }}
+                  onDismiss={() => setShowTapeNotification(false)}
+                />
+              )}
 
-            {/* Global chat panel — slide in/out from right */}
-            <ChatPanel
-              showChat={showChat}
-              onClose={() => setShowChat(false)}
-              navigateTab={(tab) => navigateTab(tab as NavTab)}
-            />
+              {/* YouTube floating miniplayer — persists independent of TradingBrowser */}
+              {showYouTubeMiniplayer && (
+                <YouTubeMiniplayer
+                  onClose={() => {
+                    setShowYouTubeMiniplayer(false);
+                    try {
+                      localStorage.setItem(
+                        "fintheon:yt-miniplayer-open",
+                        "false",
+                      );
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                />
+              )}
+
+              {/* Global chat panel — slide in/out from right */}
+              {!surfaceCapabilities.isMobile && (
+                <ChatPanel
+                  showChat={showChat}
+                  onClose={() => setShowChat(false)}
+                  navigateTab={(tab) => navigateTab(tab as NavTab)}
+                />
+              )}
+              {mobileDrawerMode && mobileDrawerOpen && (
+                <button
+                  type="button"
+                  aria-label="Close mobile menu"
+                  className="absolute inset-0 z-[80] cursor-default bg-transparent"
+                  onClick={() => setMobileDrawerOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
-          <SessionCountdownWidget />
+          {surfaceCapabilities.allowFooterToolbar && <SessionCountdownWidget />}
 
-          <FooterToolbar
-            compactLevel={compactLevel}
-            topStepXEnabled={iframeModeActive}
-            primaryPlatform={selectedPlatform}
-            onPrimaryPlatformChange={setSelectedPlatform}
-            secondaryPlatform={secondaryPlatform}
-            onSecondaryPlatformChange={setSecondaryPlatform}
-            splitViewEnabled={splitBrowserView}
-            onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
-            allowSplitView={iframeModeActive}
-            onPowerOff={handleBrowserToggle}
-            allowCustomIframes={surfaceCapabilities.allowCustomIframes}
-          />
+          {surfaceCapabilities.allowFooterToolbar && (
+            <FooterToolbar
+              compactLevel={compactLevel}
+              topStepXEnabled={iframeModeActive}
+              primaryPlatform={selectedPlatform}
+              onPrimaryPlatformChange={setSelectedPlatform}
+              secondaryPlatform={secondaryPlatform}
+              onSecondaryPlatformChange={setSecondaryPlatform}
+              splitViewEnabled={splitBrowserView}
+              onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
+              allowSplitView={iframeModeActive}
+              onPowerOff={handleBrowserToggle}
+              allowCustomIframes={surfaceCapabilities.allowCustomIframes}
+            />
+          )}
 
           {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
           {surfaceCapabilities.allowCustomIframes && !iframeModeActive && (

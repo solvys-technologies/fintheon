@@ -23,6 +23,7 @@ import { AdminShell } from "../admin/AdminShell";
 import { SettingsPage } from "../SettingsPanel";
 import { ConsiliumLite } from "../consilium/ConsiliumLite";
 import type { SurfaceCapabilities } from "../../lib/surface-capabilities";
+import { DeskOpsPage } from "./DeskOpsPage";
 
 type NavTab =
   | "feed"
@@ -34,6 +35,7 @@ type NavTab =
   | "apparatus"
   | "performance"
   | "proposals"
+  | "desk-ops"
   | "settings";
 
 interface TabRendererProps {
@@ -150,7 +152,14 @@ export function TabRenderer({
           data-tour-target="desk-rail"
           className={`h-full w-full ${animClass}`}
         >
-          <DeskRail />
+          {capabilities.allowDesktopRail ? (
+            <DeskRail />
+          ) : (
+            <MainDashboard
+              onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+              deskSecondPageMode={capabilities.deskSecondPageMode}
+            />
+          )}
         </div>
       )}
       {!showRefinement && activeTab === "performance" && (
@@ -173,6 +182,11 @@ export function TabRenderer({
       {!showRefinement && activeTab === "settings" && (
         <div key="settings" className={`h-full w-full ${animClass}`}>
           <SettingsPage capabilities={capabilities} />
+        </div>
+      )}
+      {!showRefinement && activeTab === "desk-ops" && (
+        <div key="desk-ops" className={`h-full w-full ${animClass}`}>
+          <DeskOpsPage />
         </div>
       )}
     </div>
