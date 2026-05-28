@@ -13,11 +13,10 @@ import {
   saveSeatOverrides,
   resetSeatOverrides,
   runChamber,
-  buildArbitrumPresetContext,
-  normalizeArbitrumRunPresetIds,
   type ArbitrumTriggerType,
 } from "../../services/arbitrum/index.js";
 import { checkDeepSeekDirectHealth } from "../../services/strands/provider.js";
+import { handleDeliberate } from "./deliberate.js";
 
 const log = createLogger("ArbitrumRoutes");
 
@@ -150,59 +149,7 @@ export function createArbitrumRoutes(): Hono {
     return c.json({ verdict: v });
   });
 
-  app.post("/deliberate", async (c) => {
-    let body: Record<string, unknown>;
-    try {
-      body = (await c.req.json()) as Record<string, unknown>;
-    } catch {
-      return c.json({ error: "invalid JSON body" }, 400);
-    }
-
-    const question = typeof body.question === "string" ? body.question : "";
-    const category =
-      typeof body.category === "string" ? body.category : "custom";
-    const context = typeof body.context === "string" ? body.context : undefined;
-    const rounds = typeof body.rounds === "number" ? body.rounds : undefined;
-    const presetIds = normalizeArbitrumRunPresetIds(body.preset_ids);
-    const presetContext = buildArbitrumPresetContext(presetIds);
-    const combinedContext = [presetContext, context]
-      .filter((part): part is string => Boolean(part?.trim()))
-      .join("\n\n");
-
-    if (question.trim().length === 0) {
-      return c.json({ error: "question is required" }, 400);
-    }
-
-    try {
-      const result = await runChamber(
-        {
-          question,
-          category,
-          context: combinedContext || undefined,
-        },
-        "manual",
-        {
-          rounds,
-          triggerSource:
-            presetIds.length > 0 ? { preset_ids: presetIds } : null,
-        },
-      );
-      return c.json({
-        verdict_id: result.verdict.verdict_id,
-        persisted: result.persisted,
-        consensus_probability: result.verdict.consensus_probability,
-        confidence: result.verdict.confidence,
-        dissent: result.verdict.dissent,
-        digest_text: result.verdict.digest_text,
-        preset_ids: presetIds,
-      });
-    } catch (err) {
-      log.error("runChamber failed on /deliberate", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      return c.json({ error: "chamber invocation failed" }, 500);
-    }
-  });
+  app.post("/deliberate", handleDeliberate);
 
   // ── revision-check: light check if new material warrants refresh ──
   app.post("/revision-check", async (c) => {
