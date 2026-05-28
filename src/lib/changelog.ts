@@ -12,7 +12,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-28T09:20:00-04:00",
     agent: "codex",
     summary:
-      "RiskFlow real-time feed repair: fresh FinancialJuice RSS rows now take priority in the central scorer queue, the missing riskflow_worker_heartbeats table is restored for worker diagnostics, heartbeat upsert errors are logged instead of silently disappearing, and FinancialJuice polling backs off after rate-limit responses.",
+      "RiskFlow real-time feed repair: fresh FinancialJuice RSS rows now take priority in the central scorer queue, the missing riskflow_worker_heartbeats table is restored for worker diagnostics, heartbeat upsert errors are logged instead of silently disappearing, and FinancialJuice polling uses a 2-minute base interval with 5-minute rate-limit backoff.",
     files: [
       "backend-hono/src/services/supabase-service.ts",
       "backend-hono/src/routes/diagnostics/index.ts",

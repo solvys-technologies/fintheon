@@ -32,9 +32,9 @@ import { isAfterHours } from "../../services/riskflow/market-hours.js";
 const UNIFIED_INTERVAL_RTH_MS = 60_000; // 60s between X cycles during regular trading hours
 const UNIFIED_INTERVAL_AH_MS = 600_000; // 10m between X cycles during after-hours
 const FINANCIALJUICE_INTERVAL_MS =
-  Number(process.env.FINANCIALJUICE_INTERVAL_MS) || 30_000;
+  Number(process.env.FINANCIALJUICE_INTERVAL_MS) || 120_000;
 const FINANCIALJUICE_BACKOFF_MS =
-  Number(process.env.FINANCIALJUICE_BACKOFF_MS) || 120_000;
+  Number(process.env.FINANCIALJUICE_BACKOFF_MS) || 300_000;
 const STANDARD_INTERVAL_MS = 300_000; // 5m between non-X sweeps when active
 
 function getUnifiedIntervalMs(): number {
