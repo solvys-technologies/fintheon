@@ -38,6 +38,7 @@ import {
 import { SkillBadge } from "../chat/SkillBadge";
 import { UsageRing } from "../chat/UsageRing";
 import { ReasoningLevelSelector } from "../chat/ReasoningLevelSelector";
+import { ComposerSafetyNotice } from "../chat/ComposerSafetyNotice";
 import type { ReasoningLevel } from "../chat/reasoning";
 import {
   HeadlineChips,
@@ -893,6 +894,7 @@ export function PromptBox({
             </div>
           </div>
         </div>
+        <ComposerSafetyNotice compact={compact} />
       </RepoChatComposer>
 
       {/* Full-size image dialog (native <dialog>) */}

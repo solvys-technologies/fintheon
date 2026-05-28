@@ -9,6 +9,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T01:08:00-04:00",
+    agent: "codex",
+    summary:
+      "Added a compact AI fallibility notice beneath the shared PromptBox composer, covering CAO chat and NarrativeFlow composers with a clear double-check reminder for App Review.",
+    files: [
+      "frontend/components/chat/ComposerSafetyNotice.tsx",
+      "frontend/components/ui/chatgpt-prompt-input.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T00:50:00-04:00",
     agent: "codex",
     summary:
