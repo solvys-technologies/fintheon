@@ -24,6 +24,15 @@ import {
   PREFERENCES_API_PATH,
   type UserPreferences,
 } from "../lib/user-preferences";
+import {
+  coerceBlockerCustomDomains,
+  coerceBlockerQuickTarget,
+  loadBlockerCustomDomains,
+  loadBlockerQuickTarget,
+  saveBlockerCustomDomains,
+  saveBlockerQuickTarget,
+  type BlockerQuickTarget,
+} from "../lib/platform-blocker";
 
 export interface APIKeys {
   openai?: string;
@@ -165,6 +174,12 @@ interface SettingsContextType {
   /** Proposer iFrame sources list (built-in + custom) */
   proposerIframeSources: ProposerIframeSource[];
   setProposerIframeSources: (sources: ProposerIframeSource[]) => void;
+  /** Backend-synced blocker platform target. */
+  blockerQuickTarget: BlockerQuickTarget;
+  setBlockerQuickTarget: (target: BlockerQuickTarget) => void;
+  /** Backend-synced custom blocker domains. */
+  blockerCustomDomains: string[];
+  setBlockerCustomDomains: (domains: string[]) => void;
   /** ID of the default proposer iFrame source */
   proposerDefaultIframe: string;
   setProposerDefaultIframe: (id: string) => void;
@@ -545,6 +560,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (Array.isArray(stored) && stored.length > 0) return stored;
     return BUILTIN_PROPOSER_SOURCES;
   });
+  const [blockerQuickTargetValue, setBlockerQuickTargetValue] =
+    useState<BlockerQuickTarget>(() =>
+      coerceBlockerQuickTarget(
+        loadFromStorage("blockerQuickTarget", loadBlockerQuickTarget()),
+      ),
+    );
+  const [blockerCustomDomainsValue, setBlockerCustomDomainsValue] = useState<
+    string[]
+  >(() =>
+    coerceBlockerCustomDomains(
+      loadFromStorage("blockerCustomDomains", loadBlockerCustomDomains()),
+    ),
+  );
   const [proposerDefaultIframe, setProposerDefaultIframe] = useState<string>(
     () => loadFromStorage("proposerDefaultIframe", "tradingview"),
   );
@@ -596,6 +624,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  const setBlockerQuickTarget = useCallback((target: BlockerQuickTarget) => {
+    const next = coerceBlockerQuickTarget(target);
+    setBlockerQuickTargetValue(next);
+    saveBlockerQuickTarget(next);
+  }, []);
+
+  const setBlockerCustomDomains = useCallback((domains: string[]) => {
+    const next = coerceBlockerCustomDomains(domains);
+    setBlockerCustomDomainsValue(next);
+    saveBlockerCustomDomains(next);
+  }, []);
 
   const INSTRUMENT_STORAGE_KEY = "fintheon:selected-instrument";
 
@@ -779,6 +819,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             setProposerIframeSources(remoteSources);
           }
         }
+        if (remote.blockerQuickTarget) {
+          const next = coerceBlockerQuickTarget(remote.blockerQuickTarget);
+          setBlockerQuickTargetValue(next);
+          saveBlockerQuickTarget(next);
+        }
+        if (remote.blockerCustomDomains) {
+          const next = coerceBlockerCustomDomains(remote.blockerCustomDomains);
+          setBlockerCustomDomainsValue(next);
+          saveBlockerCustomDomains(next);
+        }
         if (remote.proposerDefaultIframe)
           setProposerDefaultIframe(remote.proposerDefaultIframe as string);
         if (remote.caoName) setCaoName(remote.caoName as string);
@@ -841,6 +891,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       defaultPlatform,
       bulletinVoteThreshold,
       proposerIframeSources,
+      blockerQuickTarget: blockerQuickTargetValue,
+      blockerCustomDomains: blockerCustomDomainsValue,
       proposerDefaultIframe,
       caoName,
       defaultChatProvider,
@@ -889,6 +941,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     defaultPlatform,
     bulletinVoteThreshold,
     proposerIframeSources,
+    blockerQuickTargetValue,
+    blockerCustomDomainsValue,
     proposerDefaultIframe,
     caoName,
     defaultChatProvider,
@@ -986,6 +1040,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setBulletinVoteThreshold,
         proposerIframeSources,
         setProposerIframeSources,
+        blockerQuickTarget: blockerQuickTargetValue,
+        setBlockerQuickTarget,
+        blockerCustomDomains: blockerCustomDomainsValue,
+        setBlockerCustomDomains,
         proposerDefaultIframe,
         setProposerDefaultIframe,
         caoName,

@@ -17,12 +17,9 @@ import {
   domainsFromUrl,
   getBlockerApi,
   loadBlockerCustomDomains,
-  loadBlockerQuickTarget,
   mergeDomainLists,
   notifyBlockerStateUpdated,
   normalizeDomain,
-  saveBlockerQuickTarget,
-  saveBlockerCustomDomains,
   type BlockerQuickTarget,
 } from "../../lib/platform-blocker";
 import { SettingsActionStatus } from "./SettingsActionStatus";
@@ -46,6 +43,10 @@ export function BlockerTab() {
     lockoutPermission,
     setLockoutPermission,
     proposerIframeSources,
+    blockerQuickTarget,
+    setBlockerQuickTarget,
+    blockerCustomDomains,
+    setBlockerCustomDomains,
   } = useSettings();
   const [accessibilityCheckLoading, setAccessibilityCheckLoading] =
     useState(false);
@@ -56,20 +57,16 @@ export function BlockerTab() {
     error: null,
   });
   const [domains, setDomains] = useState<string[]>(() =>
-    loadBlockerCustomDomains(),
+    blockerCustomDomains.length > 0
+      ? blockerCustomDomains
+      : loadBlockerCustomDomains(),
   );
   const [toggling, setToggling] = useState(false);
   const [newDomain, setNewDomain] = useState("");
   const [domainError, setDomainError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget>(() => {
-    return (
-      loadBlockerQuickTarget() ?? {
-        mode: "platform",
-        platformId: DEFAULT_BLOCKER_PLATFORM_ID,
-        url: "",
-      }
-    );
+    return blockerQuickTarget;
   });
   const [quickTargetSaving, setQuickTargetSaving] = useState(false);
   const [quickTargetError, setQuickTargetError] = useState<string | null>(null);
@@ -94,7 +91,7 @@ export function BlockerTab() {
         isLoading: false,
         error: null,
       });
-      setDomains(loadBlockerCustomDomains());
+      setDomains(blockerCustomDomains);
     } catch (err) {
       setState({
         blocked: false,
@@ -103,7 +100,15 @@ export function BlockerTab() {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-  }, []);
+  }, [blockerCustomDomains]);
+
+  useEffect(() => {
+    setDomains(blockerCustomDomains);
+  }, [blockerCustomDomains]);
+
+  useEffect(() => {
+    setQuickTarget(blockerQuickTarget);
+  }, [blockerQuickTarget]);
 
   useEffect(() => {
     loadAll();
@@ -139,7 +144,7 @@ export function BlockerTab() {
         quickTargetDomains,
         customDomains,
       );
-      saveBlockerCustomDomains(customDomains);
+      setBlockerCustomDomains(customDomains);
       setDomains(customDomains);
       const result = await api.setDomains(nextCombinedDomains);
       if (!result.ok) {
@@ -183,7 +188,7 @@ export function BlockerTab() {
       setQuickTargetError("Choose a platform with a valid URL.");
       return null;
     }
-    saveBlockerQuickTarget(targetToSave);
+    setBlockerQuickTarget(targetToSave);
     setQuickTarget(targetToSave);
     return { target: targetToSave, domains: nextCombinedDomains };
   };
@@ -194,7 +199,7 @@ export function BlockerTab() {
     if (!saved || !api || !state.blocked) return;
     setQuickTargetSaving(true);
     try {
-      saveBlockerCustomDomains(domains);
+      setBlockerCustomDomains(domains);
       const result = await api.setDomains(saved.domains);
       if (!result.ok) {
         setQuickTargetError(
@@ -216,7 +221,7 @@ export function BlockerTab() {
     if (!saved) return;
     setQuickTargetSaving(true);
     try {
-      saveBlockerCustomDomains(domains);
+      setBlockerCustomDomains(domains);
       const result = await api.setDomains(saved.domains);
       if (!result.ok) {
         setQuickTargetError(result.reason ?? "Failed to save target domains");
@@ -242,7 +247,7 @@ export function BlockerTab() {
       if (state.blocked) {
         await api.disable();
       } else {
-        saveBlockerCustomDomains(domains);
+        setBlockerCustomDomains(domains);
         await api.setDomains(combinedDomains);
         await api.enable();
       }

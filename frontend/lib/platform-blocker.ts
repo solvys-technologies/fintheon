@@ -8,6 +8,11 @@ export interface BlockerQuickTarget {
   url: string;
 }
 
+export interface BlockerSettings {
+  quickTarget: BlockerQuickTarget;
+  customDomains: string[];
+}
+
 export interface BlockerStatus {
   blocked: boolean;
   layers: { hosts: boolean; resolver: boolean; runtime?: boolean };
@@ -46,6 +51,23 @@ export function createDefaultBlockerQuickTarget(): BlockerQuickTarget {
     platformId: DEFAULT_BLOCKER_PLATFORM_ID,
     url: "",
   };
+}
+
+export function coerceBlockerQuickTarget(value: unknown): BlockerQuickTarget {
+  const fallback = createDefaultBlockerQuickTarget();
+  if (!value || typeof value !== "object") return fallback;
+  const parsed = value as Partial<BlockerQuickTarget>;
+  if (parsed.mode !== "platform") return fallback;
+  const platformId =
+    typeof parsed.platformId === "string" && parsed.platformId.trim()
+      ? parsed.platformId
+      : DEFAULT_BLOCKER_PLATFORM_ID;
+  return { mode: "platform", platformId, url: "" };
+}
+
+export function coerceBlockerCustomDomains(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return mergeDomainLists(value.filter((item) => typeof item === "string"));
 }
 
 export function getBlockerApi(): BlockerApi | null {
@@ -115,17 +137,7 @@ export function loadBlockerQuickTarget(): BlockerQuickTarget | null {
   try {
     const raw = localStorage.getItem(BLOCKER_QUICK_TARGET_STORAGE_KEY);
     if (!raw) return createDefaultBlockerQuickTarget();
-    const parsed = JSON.parse(raw) as Partial<BlockerQuickTarget>;
-    if (parsed.mode !== "platform") return createDefaultBlockerQuickTarget();
-    const platformId =
-      typeof parsed.platformId === "string" && parsed.platformId.trim()
-        ? parsed.platformId
-        : DEFAULT_BLOCKER_PLATFORM_ID;
-    return {
-      mode: "platform",
-      platformId,
-      url: "",
-    };
+    return coerceBlockerQuickTarget(JSON.parse(raw));
   } catch {
     return createDefaultBlockerQuickTarget();
   }

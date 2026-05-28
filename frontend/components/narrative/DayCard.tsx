@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 PIC forecast band between Trading Window and Thesis.
 // [claude-code 2026-05-15] Econ forecast: replaced price rows (Prices of Interest,
 //   Invalidation Point, Profit Target, Expected Move) with econ forecast rows
 //   (Forecast, Miss, Beat, Notable Events, AI Prediction). Speeches show
@@ -401,18 +402,18 @@ export function DayCard({
               showControls={!hasExternalWindowControls}
             />
             <GatedForecastRow
-              label="Forecast"
+              label="PIC Forecast"
               planDate={plan?.date}
               window={currentWindow}
               loading={isLoading}
-              renderValue={(f) => f.forecast}
+              renderValue={picForecastText}
             />
             <GatedForecastRow
               label="Miss"
               planDate={plan?.date}
               window={currentWindow}
               loading={isLoading}
-              renderValue={(f) => scenarioPrint(f, "miss")}
+              renderValue={(f) => scenarioPrintWithProbability(f, "miss")}
               scenario={currentWindow?.econForecast?.miss}
               expanded={expandedRows.has("miss")}
               onToggle={() => toggleExpandedRow("miss")}
@@ -423,22 +424,31 @@ export function DayCard({
               planDate={plan?.date}
               window={currentWindow}
               loading={isLoading}
-              renderValue={(f) => scenarioPrint(f, "beat")}
+              renderValue={(f) => scenarioPrintWithProbability(f, "beat")}
               scenario={currentWindow?.econForecast?.beat}
               expanded={expandedRows.has("beat")}
               onToggle={() => toggleExpandedRow("beat")}
               detail={(f) => f.beat.description}
             />
-            {currentWindow?.econForecast?.otherNotableEvents &&
-              currentWindow.econForecast.otherNotableEvents.length > 0 && (
-                <Row
-                  label="Notable"
-                  value={currentWindow.econForecast.otherNotableEvents.join(
-                    ", ",
-                  )}
-                  loading={false}
-                />
-              )}
+            <GatedForecastRow
+              label="Confidence"
+              planDate={plan?.date}
+              window={currentWindow}
+              loading={isLoading}
+              renderValue={(f) => `${f.confidenceScore ?? 35}%`}
+            />
+            <GatedForecastRow
+              label="Cycle"
+              planDate={plan?.date}
+              window={currentWindow}
+              loading={isLoading}
+              renderValue={(f) =>
+                (f.dataCycleStage ?? "View 2nd order").slice(0, 44)
+              }
+              expanded={expandedRows.has("cycle")}
+              onToggle={() => toggleExpandedRow("cycle")}
+              detail={buildMacroCycleDetail}
+            />
             <GatedForecastRow
               label="Thesis"
               planDate={plan?.date}
@@ -831,8 +841,8 @@ function scenarioPrint(
   const explicit = forecast[side]?.agenticPrint?.trim();
   if (explicit) return explicit;
 
-  const clean = forecast.forecast?.trim();
-  if (!clean || /^(n\/?a|null|undefined)$/i.test(clean)) return "\u2014";
+  const clean = forecast.calendarConsensus?.trim();
+  if (!clean || /^(n\/?a|null|undefined)$/i.test(clean)) return side;
 
   const lower = clean.toLowerCase();
   if (lower === "hawkish" || lower === "dovish" || lower === "none") {
@@ -842,6 +852,37 @@ function scenarioPrint(
 
   if (/^[<>≤≥]/.test(clean)) return clean;
   return `${side === "miss" ? "<" : ">"}${clean}`;
+}
+
+function scenarioPrintWithProbability(
+  forecast: NonNullable<DayPlanWindow["econForecast"]>,
+  side: "miss" | "beat",
+) {
+  const probability =
+    side === "miss"
+      ? (forecast.missProbability ?? forecast.miss.probability)
+      : (forecast.beatProbability ?? forecast.beat.probability);
+  return `${scenarioPrint(forecast, side)} ${probability}%`;
+}
+
+function picForecastText(forecast: NonNullable<DayPlanWindow["econForecast"]>) {
+  const explicit = forecast.picInternalForecast?.trim();
+  if (explicit) return explicit.slice(0, 72);
+  const prediction = forecast.aiPrediction?.trim();
+  if (prediction) return prediction.slice(0, 72);
+  return "Internal read pending";
+}
+
+function buildMacroCycleDetail(
+  forecast: NonNullable<DayPlanWindow["econForecast"]>,
+) {
+  return [
+    `Fed: ${forecast.fedMilestoneAnchor ?? "pending"}`,
+    `2nd: ${forecast.secondOrderRead ?? "pending"}`,
+    `X-asset: ${forecast.crossAssetTransmission ?? "pending"}`,
+    `Confirms: ${forecast.whatConfirms ?? "pending"}`,
+    `Invalidates: ${forecast.whatInvalidates ?? "pending"}`,
+  ].join(" | ");
 }
 
 function buildThesisDetail(

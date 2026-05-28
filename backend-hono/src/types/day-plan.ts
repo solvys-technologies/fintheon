@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 PIC macro event-risk forecast contract.
 // [claude-code 2026-05-15] S66-T1: added planVariant field for multi-plan-per-day support
 // [claude-code 2026-05-15] Econ forecast: replaced price fields (invalidation/profitTarget/entries/
 //   pricesOfInterest/expectedMovePct) with econForecast containing miss/beat scenarios,
@@ -23,6 +24,19 @@ export interface EconForecastScenario {
 }
 
 export interface EconForecast {
+  calendarConsensus: string | null;
+  picInternalForecast: string;
+  missProbability: number;
+  beatProbability: number;
+  confidenceScore: number;
+  forecastDeltaVsConsensus: string;
+  dataCycleStage: string;
+  fedMilestoneAnchor: string;
+  secondOrderRead: string;
+  crossAssetTransmission: string;
+  whatConfirms: string;
+  whatInvalidates: string;
+  commandmentChecks: string[];
   forecast: string;
   miss: EconForecastScenario;
   beat: EconForecastScenario;

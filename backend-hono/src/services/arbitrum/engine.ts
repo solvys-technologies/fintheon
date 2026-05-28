@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 loads mandatory seven-day macro risk context.
 // [claude-code 2026-04-24] S35-T1/T12 Phase B: Arbitrum chamber orchestrator.
 // Glues ARBITRUM_SEATS → invokeMoA → synthesize → computeGates → saveVerdict.
 // No execution side-effects: the verdict is signal-only, digest text surfaced
@@ -13,6 +14,7 @@ import { computeGates } from "./gates.js";
 import { saveVerdict } from "./verdict-store.js";
 import { loadArbitrumEconContext } from "./econ-context.js";
 import { loadArbitrumCommentaryContext } from "./commentary-context.js";
+import { loadArbitrumRiskContext } from "./risk-context.js";
 import type {
   ArbitrumDeliberateInput,
   ArbitrumSeatRound,
@@ -71,7 +73,7 @@ export async function runChamber(
 
   // Load recent econ prints + upcoming releases so every seat reasons over the
   // same data the ArbitrumChamber event-card surfaces. Caller-supplied context wins.
-  const [econ_context, commentary_context] = await Promise.all([
+  const [econ_context, commentary_context, risk_context] = await Promise.all([
     input.econ_context !== undefined
       ? Promise.resolve(input.econ_context)
       : loadArbitrumEconContext().catch((err) => {
@@ -88,11 +90,20 @@ export async function runChamber(
           });
           return null;
         }),
+    input.risk_context !== undefined
+      ? Promise.resolve(input.risk_context)
+      : loadArbitrumRiskContext().catch((err) => {
+          log.warn("Risk context load failed — proceeding with empty gates", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return null;
+        }),
   ]);
   const enrichedInput: ArbitrumDeliberateInput = {
     ...input,
     econ_context,
     commentary_context,
+    risk_context,
   };
 
   const transcripts: ArbitrumSeatTranscript[] = ARBITRUM_SEATS.map((seat) => ({
@@ -150,6 +161,7 @@ export async function runChamber(
     digest_text: synthesis.digest_text,
     iv_simulation: input.iv_simulation ?? null,
     trigger_source: opts.triggerSource ?? null,
+    risk_context,
     latency_ms: Date.now() - t0,
   };
 

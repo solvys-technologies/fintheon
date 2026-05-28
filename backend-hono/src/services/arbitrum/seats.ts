@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 chamber prompts require macro event-risk cognition.
 // [claude-code 2026-05-03] S58-T1: Arbitrum seat metadata uses DeepSeek direct.
 // [claude-code 2026-04-29] DeepSeek migration: all Arbitrum seats now run
 // `deepseek-reasoner` via DeepSeek's OpenAI-compat API. Seat divergence still
@@ -19,6 +20,7 @@ import type {
   ArbitrumCommentaryContext,
   ArbitrumDeliberateInput,
   ArbitrumEconContext,
+  ArbitrumRiskContext,
   ArbitrumSeatConfig,
   ArbitrumSeatRound,
   SeatOverrideRow,
@@ -236,6 +238,9 @@ Your job: produce a calibrated probabilistic answer to the chamber's question wi
 
 ## Discernment Guidelines
 - Anchor your read to the supplied RiskFlow, econ, commentary, IV simulation, and user-provided context. Name the specific catalyst or missing context that drives your probability.
+- Consensus is baseline only. Deliberate as PIC's macro event-risk desk: internal forecast, miss/beat paths, confidence, data-cycle stage, cross-asset transmission, and second-order read.
+- Every run must compare seven-day headwinds vs tailwinds, then state a first-order conclusion and what Harper should synthesize second-order for the week/session.
+- Futures entries require fractal time: HTF context, LTF trigger, and multi-instrument correlation. Missing GEX/HVL is pending context, not permission to fabricate levels.
 - If context is sparse, lower confidence and say exactly what evidence is missing. Do not fill gaps with generic macro commentary.
 - Probability answers the chamber question, not broad market direction. Confidence measures evidence quality and agreement with your seat's domain.
 - Surface one concrete implication for the desk: revise, hold, wait for a print, reduce exposure, or escalate for a wider run.
@@ -308,6 +313,27 @@ function formatCommentaryContext(
   return lines.join("\n");
 }
 
+function formatRiskContext(
+  risk: ArbitrumRiskContext | null | undefined,
+): string | null {
+  if (!risk) return null;
+  return [
+    `Risk signal window: ${risk.riskSignalWindowDays}d`,
+    `Headwinds: ${risk.headwindRisks.join(" | ")}`,
+    `Tailwinds: ${risk.tailwindRisks.join(" | ")}`,
+    `Positioning: ${risk.wallStreetPrepositioning}`,
+    `Wall Street forecasts: ${risk.wallStreetForecasts.join(" | ") || "unavailable"}`,
+    `Rate futures: ${risk.rateFuturesRead}`,
+    `Sector rotation: ${risk.sectorRotationRisk}`,
+    `Fractal time: ${risk.htfLtfConfluence}`,
+    `Correlation: ${risk.multiInstrumentCorrelation}`,
+    `Vol gate: ${risk.volatilityGate.status} | VIX ${risk.volatilityGate.vix} | bonds ${risk.volatilityGate.bonds} | Greeks ${risk.volatilityGate.greeks}`,
+    `GEX/HVL: ${risk.basisAdjustedGexReference ?? "unavailable"}`,
+    `Entry read: ${risk.eventRiskTimedEntryRead}`,
+    `Point opportunity: ${risk.expectedPointOpportunity}`,
+  ].join("\n");
+}
+
 function buildUserPrompt(
   input: ArbitrumDeliberateInput,
   ctx: MoAInvocationContext,
@@ -318,6 +344,8 @@ function buildUserPrompt(
   if (input.context) parts.push(`Context:\n${input.context}`);
   const econLines = formatEconContext(input.econ_context);
   if (econLines) parts.push(`Econ data:\n${econLines}`);
+  const riskLines = formatRiskContext(input.risk_context);
+  if (riskLines) parts.push(`Mandatory macro risk context:\n${riskLines}`);
   const commentaryLines = formatCommentaryContext(input.commentary_context);
   if (commentaryLines) parts.push(`Commentary context:\n${commentaryLines}`);
   if (input.iv_simulation) {
@@ -336,12 +364,14 @@ function buildDistillPrompt(
   ctx: MoAInvocationContext,
 ): string {
   const econLines = formatEconContext(input.econ_context);
+  const riskLines = formatRiskContext(input.risk_context);
   const commentaryLines = formatCommentaryContext(input.commentary_context);
   return [
     `Task:\n${input.question}`,
     `Category: ${input.category}`,
     input.context ? `Context:\n${input.context}` : "",
     econLines ? `Econ data:\n${econLines}` : "",
+    riskLines ? `Mandatory macro risk context:\n${riskLines}` : "",
     commentaryLines ? `Commentary context:\n${commentaryLines}` : "",
     `Round: ${ctx.round}`,
     ctx.peerDraftsSummary

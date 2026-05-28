@@ -33,8 +33,6 @@ import {
   BellOff,
   ClipboardList,
   Clock705,
-  Lock,
-  LockOpen,
 } from "lucide-react";
 import { WhatsNewButton } from "../onboarding/WhatsNewButton";
 import { StickyBulletin } from "../StickyBulletin";
@@ -45,8 +43,8 @@ import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
-import { usePlatformBlocker } from "../../hooks/usePlatformBlocker";
 import { ToolbarDnD } from "./ToolbarDnD";
+import { HeaderLockButton } from "./HeaderLockButton";
 
 type NavTab =
   | "feed"
@@ -181,32 +179,6 @@ export function TopHeader({
       });
     } catch {}
   }, []);
-  const {
-    state: platformBlockerState,
-    blockTargetInApp,
-    unblockInApp,
-  } = usePlatformBlocker(selectedPlatform);
-  const handleQuickPlatformBlock = useCallback(async () => {
-    const result = platformBlockerState.activeForTarget
-      ? await unblockInApp()
-      : await blockTargetInApp();
-    if (result.ok) {
-      addToast(
-        platformBlockerState.activeForTarget
-          ? "In-app blocker cleared"
-          : `Blocked ${platformBlockerState.target?.label ?? "platform"} in-app`,
-        "success",
-      );
-      return;
-    }
-    addToast(result.reason ?? "Blocker update failed", "error");
-  }, [
-    addToast,
-    blockTargetInApp,
-    platformBlockerState.activeForTarget,
-    platformBlockerState.target?.label,
-    unblockInApp,
-  ]);
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
   }, []);
@@ -542,29 +514,7 @@ export function TopHeader({
                 <FadingRuler orientation="vertical" className="mx-0.5" />
               )}
               {compactLevel < 2 && (
-                <button
-                  onClick={handleQuickPlatformBlock}
-                  disabled={
-                    platformBlockerState.loading || !platformBlockerState.target
-                  }
-                  className={`toolbar-icon-btn ${
-                    platformBlockerState.activeForTarget ? "toolbar-active" : ""
-                  }`}
-                  title={
-                    platformBlockerState.activeForTarget
-                      ? `Unblock ${platformBlockerState.target?.label ?? "platform"} in-app`
-                      : `Block ${platformBlockerState.target?.label ?? "selected platform"} in-app`
-                  }
-                >
-                  {platformBlockerState.activeForTarget ? (
-                    <Lock
-                      className="w-3 h-3 toolbar-icon-active"
-                      style={activeIconStyle("#ef4444")}
-                    />
-                  ) : (
-                    <LockOpen className="w-3 h-3" />
-                  )}
-                </button>
+                <HeaderLockButton />
               )}
             </div>
           )}

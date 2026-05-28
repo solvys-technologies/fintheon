@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 PIC macro event-risk forecast contract.
 // [claude-code 2026-05-15] Econ forecast: replaced price fields with econForecast.
 //   Mirrors backend-hono/src/types/day-plan.ts verbatim. Mobile keeps its own copy.
 
@@ -14,6 +15,19 @@ export interface EconForecastScenario {
 }
 
 export interface EconForecast {
+  calendarConsensus?: string | null;
+  picInternalForecast?: string;
+  missProbability?: number;
+  beatProbability?: number;
+  confidenceScore?: number;
+  forecastDeltaVsConsensus?: string;
+  dataCycleStage?: string;
+  fedMilestoneAnchor?: string;
+  secondOrderRead?: string;
+  crossAssetTransmission?: string;
+  whatConfirms?: string;
+  whatInvalidates?: string;
+  commandmentChecks?: string[];
   forecast: string;
   miss: EconForecastScenario;
   beat: EconForecastScenario;

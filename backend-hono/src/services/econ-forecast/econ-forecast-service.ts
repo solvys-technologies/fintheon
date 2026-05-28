@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 PIC internal forecast fields and macro event-risk rules.
 // [claude-code 2026-05-15] Econ forecast service — AI-powered miss/beat prediction
 //   engine for the Desk Plan. Pulls fresh econ event data at viewing time, runs
 //   AI prediction (DeepSeek via invokeAgent fallback chain), and returns structured
@@ -38,16 +39,32 @@ export interface EconForecastInput {
 const SPEECH_SYSTEM_PROMPT = `You analyze scheduled central bank and government speeches for traders at Priced In Capital.
 Output strictly a JSON object with these fields:
 {
-  "forecast": "hawkish" | "dovish" | "none",
+  "calendarConsensus": string | null,
+  "picInternalForecast": "hawkish" | "dovish" | "none",
+  "forecast": "legacy mirror of picInternalForecast",
   "miss": { "description": "what would constitute a dovish surprise", "isBullishForEquities": true, "probability": number, "agenticPrint": "dovish" },
   "beat": { "description": "what would constitute a hawkish surprise", "isBullishForEquities": false, "probability": number, "agenticPrint": "hawkish" },
+  "missProbability": number,
+  "beatProbability": number,
+  "confidenceScore": number,
+  "forecastDeltaVsConsensus": "compact delta or obstacle read",
+  "dataCycleStage": "where this sits in the Fed/data cycle",
+  "fedMilestoneAnchor": "next Fed decision/presser/dot plot anchor",
+  "secondOrderRead": "what markets do after the first reaction",
+  "crossAssetTransmission": "rates/bonds/DXY/equity path",
+  "whatConfirms": "what confirms the read",
+  "whatInvalidates": "what invalidates the read",
+  "commandmentChecks": ["compact commandment guardrails"],
   "otherNotableEvents": [],
   "aiPrediction": "1-2 sentence actionable prediction"
 }
 
 Rules:
+- Calendar consensus is a baseline/obstacle only. It is never PIC's forecast.
+- picInternalForecast is the desk forecast.
 - "dovish" = rates lower/sooner = bullish equities; "hawkish" = rates higher/later = bearish equities
 - Probabilities must sum to 100. If the speaker is consistently in one camp, weight accordingly.
+- confidenceScore is 0-100.
 - miss.agenticPrint and beat.agenticPrint are the agentic desk's scenario tone only: "dovish", "hawkish", or "none". No prose.
 - aiPrediction: declarative, convicted, no hedging. Reference what the speaker has said recently.
 - No emojis, no markdown. Plain JSON only.`;
@@ -57,15 +74,30 @@ Rules:
 const ECON_SYSTEM_PROMPT = `You analyze scheduled economic data releases for traders at Priced In Capital.
 Output strictly a JSON object with these fields:
 {
-  "forecast": "the consensus forecast number as a string, e.g. '0.3%' or '215K'",
+  "calendarConsensus": "the consensus number as a string, e.g. '0.3%' or '215K', or null",
+  "picInternalForecast": "PIC's internal forecast value or tone, e.g. '0.2% sticky disinflation' or '210K soft jobs'",
+  "forecast": "legacy mirror of picInternalForecast",
   "miss": { "description": "what print would classify as a miss and why", "isBullishForEquities": bool, "probability": number, "agenticPrint": "the desk's miss-side print forecast, e.g. '<0.3%' or '198K'" },
   "beat": { "description": "what print would classify as a beat and why", "isBullishForEquities": bool, "probability": number, "agenticPrint": "the desk's beat-side print forecast, e.g. '>0.3%' or '232K'" },
+  "missProbability": number,
+  "beatProbability": number,
+  "confidenceScore": number,
+  "forecastDeltaVsConsensus": "compact delta versus calendar consensus",
+  "dataCycleStage": "jobs week / CPI-PPI-PCE / PMIs / GDP / earnings / quarter structure",
+  "fedMilestoneAnchor": "next Fed decision, presser, dots, or minutes anchor",
+  "secondOrderRead": "what markets do after the first reaction",
+  "crossAssetTransmission": "rates/bonds/DXY/equity rotation path",
+  "whatConfirms": "what confirms the internal forecast",
+  "whatInvalidates": "what invalidates the internal forecast",
+  "commandmentChecks": ["compact commandment guardrails"],
   "otherNotableEvents": ["any other events at the same time"],
   "aiPrediction": "1-3 sentence actionable prediction citing recent trends and what traders are positioned for"
 }
 
 Rules:
-- forecast: use the provided consensus or previous value if no consensus exists
+- Calendar consensus is a baseline/obstacle only. It is never PIC's forecast.
+- picInternalForecast: produce the desk's internal forecast from data-cycle logic, recent prints, RiskFlow, rate futures/positioning context when available, and cross-asset reaction risk.
+- forecast: mirror picInternalForecast for legacy consumers only.
 - miss.agenticPrint and beat.agenticPrint are the Agentic Desk's deliberated scenario print for that path, not probability. Use only the print/value with unit or comparator. No prose.
 - If consensus is missing, infer a directional forecast from recent prints, RiskFlow headlines, and regime data. Do not answer with a generic passage.
 - miss/beat isBullishForEquities depends on what's good/bad for risk assets:
@@ -74,7 +106,9 @@ Rules:
   * Lower jobless claims = bullish (labor strong). Higher = bearish.
   * BUT: if inflation is the dominant fear (VIX elevated), strong growth data can be bearish (more rate hikes).
   * Think through the current macro regime — use the context provided.
-- Probabilities must sum to 100. Base them on recent trend momentum (streak of beats/misses).
+- missProbability and beatProbability must sum to 100 and match miss/beat.probability.
+- confidenceScore is 0-100.
+- Include Wall Street pre-positioning, rate-sensitive equity rotation, and fractal time/correlation requirements when the context supports it.
 - aiPrediction: sharp, convicted, declarative. Cite the last 2-3 prints if available. Include what positioning implies.
 - No emojis, no markdown. Plain JSON only.`;
 
@@ -289,11 +323,21 @@ function parseForecastResponse(
 
     const parsed = JSON.parse(json);
 
-    const forecast = String(parsed.forecast ?? input.forecast ?? "N/A");
+    const calendarConsensus =
+      cleanOptionalString(parsed.calendarConsensus) ??
+      cleanOptionalString(input.forecast) ??
+      cleanOptionalString(input.previous);
+    const picInternalForecast =
+      cleanOptionalString(parsed.picInternalForecast) ??
+      cleanOptionalString(parsed.forecast) ??
+      "Internal forecast pending";
+    const forecast = picInternalForecast;
     const miss: EconForecastScenario = {
       description: String(parsed.miss?.description ?? "Print below consensus"),
       isBullishForEquities: Boolean(parsed.miss?.isBullishForEquities),
-      probability: clampProb(Number(parsed.miss?.probability) || 40),
+      probability: clampProb(
+        Number(parsed.missProbability ?? parsed.miss?.probability) || 40,
+      ),
       agenticPrint: scenarioAgenticPrint(
         parsed.miss?.agenticPrint,
         forecast,
@@ -304,7 +348,9 @@ function parseForecastResponse(
     const beat: EconForecastScenario = {
       description: String(parsed.beat?.description ?? "Print above consensus"),
       isBullishForEquities: Boolean(parsed.beat?.isBullishForEquities),
-      probability: clampProb(Number(parsed.beat?.probability) || 40),
+      probability: clampProb(
+        Number(parsed.beatProbability ?? parsed.beat?.probability) || 40,
+      ),
       agenticPrint: scenarioAgenticPrint(
         parsed.beat?.agenticPrint,
         forecast,
@@ -331,6 +377,33 @@ function parseForecastResponse(
     );
 
     return {
+      calendarConsensus,
+      picInternalForecast,
+      missProbability: miss.probability,
+      beatProbability: beat.probability,
+      confidenceScore: clampProb(Number(parsed.confidenceScore) || 45),
+      forecastDeltaVsConsensus:
+        cleanOptionalString(parsed.forecastDeltaVsConsensus) ??
+        "Consensus is baseline only",
+      dataCycleStage:
+        cleanOptionalString(parsed.dataCycleStage) ??
+        inferDataCycleStage(input),
+      fedMilestoneAnchor:
+        cleanOptionalString(parsed.fedMilestoneAnchor) ??
+        "Next Fed communication",
+      secondOrderRead:
+        cleanOptionalString(parsed.secondOrderRead) ??
+        "Watch rates, bonds, DXY, and equity rotation after the first move.",
+      crossAssetTransmission:
+        cleanOptionalString(parsed.crossAssetTransmission) ??
+        "Rates and bonds transmit into NQ/ES leadership.",
+      whatConfirms:
+        cleanOptionalString(parsed.whatConfirms) ??
+        "Tape confirms through rates, bonds, and index correlation.",
+      whatInvalidates:
+        cleanOptionalString(parsed.whatInvalidates) ??
+        "Cross-asset reaction rejects the event read.",
+      commandmentChecks: cleanStringList(parsed.commandmentChecks),
       forecast,
       miss,
       beat,
@@ -347,6 +420,33 @@ function parseForecastResponse(
 
 function clampProb(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function cleanOptionalString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || /^(n\/?a|null|undefined)$/i.test(trimmed)) return null;
+  return trimmed.slice(0, 320);
+}
+
+function cleanStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(cleanOptionalString)
+    .filter((item): item is string => Boolean(item))
+    .slice(0, 6);
+}
+
+function inferDataCycleStage(input: EconForecastInput): string {
+  const name = input.eventName.toLowerCase();
+  if (/cpi|ppi|pce|inflation|prices/.test(name)) return "inflation cycle";
+  if (/payroll|jobs|claims|employment|unemployment|wage/.test(name)) {
+    return "labor cycle";
+  }
+  if (/pmi|ism|manufacturing|services/.test(name)) return "growth survey cycle";
+  if (/gdp|spending|retail/.test(name)) return "growth/spending cycle";
+  if (input.isSpeech) return "Fed communication cycle";
+  return "macro data cycle";
 }
 
 function scenarioAgenticPrint(
@@ -383,6 +483,21 @@ function buildFallbackForecast(input: EconForecastInput): EconForecast {
     : (input.forecast ?? input.previous ?? "N/A");
 
   return {
+    calendarConsensus: isSpeech
+      ? null
+      : (input.forecast ?? input.previous ?? null),
+    picInternalForecast: "Internal forecast pending",
+    missProbability: 50,
+    beatProbability: 50,
+    confidenceScore: 35,
+    forecastDeltaVsConsensus: "Pending desk review",
+    dataCycleStage: inferDataCycleStage(input),
+    fedMilestoneAnchor: "Next Fed communication",
+    secondOrderRead: "Fallback read: wait for cross-asset confirmation.",
+    crossAssetTransmission: "Rates, bonds, DXY, and equity indices must agree.",
+    whatConfirms: "HTF/LTF alignment and correlated NQ/ES tape.",
+    whatInvalidates: "Rates or bonds reject the event move.",
+    commandmentChecks: ["3: no shot in the dark", "12: right or right out"],
     forecast: fallbackForecast,
     miss: {
       description: isSpeech

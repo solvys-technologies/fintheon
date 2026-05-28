@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 briefs consume PIC macro event-risk cognition.
 // [claude-code 2026-05-03] S58-T3: Route MDB/ADB/PMDB/TWT generation through the DeepSeek primary provider chain.
 // [claude-code 2026-04-26] S45-T1: Inline Desk Theme block — pulls today's day_plan + windows and renders a monospace gutter (titles left / values right) before invokeAgent so MDB / ADB / PMDB / TWT all carry the prescriptive Day Card context.
 // [claude-code 2026-04-24] S35-T11: Inject Arbitrum "Chamber Read" (17:00 session digest) into PMDB prompt. Dynamic import of getLatestChamberRead so build stays green before T1/T12 lands the arbitrum barrel.
@@ -19,6 +20,7 @@ import { createLogger } from "../lib/logger.js";
 import { MARKET_REGIMES, type MarketRegime } from "../types/regime.js";
 import { setRegime } from "./regime/regime-service.js";
 import { proposeRegimeChange } from "./regime/propose.js";
+import { loadMacroEventCognitionBlock } from "./ai/agent-instructions/macro-event-cognition.js";
 
 const SCORING_V4 = process.env.SCORING_V4 === "true";
 
@@ -86,29 +88,44 @@ function formatDeskThemeBlock(plan: DayPlan): string {
       lines.push(padRow("Catalyst", w.eventName));
     }
     if (w.econForecast) {
-      lines.push(padRow("Forecast", w.econForecast.forecast));
+      lines.push(
+        padRow(
+          "PIC Forecast",
+          w.econForecast.picInternalForecast ||
+            w.econForecast.aiPrediction ||
+            "pending",
+        ),
+      );
       lines.push(
         padRow(
           "Miss",
-          `${w.econForecast.miss.description} (${w.econForecast.miss.probability}%)`,
+          `${briefScenarioPrint(w.econForecast, "miss")} (${w.econForecast.missProbability ?? w.econForecast.miss.probability}%)`,
         ),
       );
       lines.push(
         padRow(
           "Beat",
-          `${w.econForecast.beat.description} (${w.econForecast.beat.probability}%)`,
+          `${briefScenarioPrint(w.econForecast, "beat")} (${w.econForecast.beatProbability ?? w.econForecast.beat.probability}%)`,
         ),
       );
-      if (w.econForecast.otherNotableEvents.length > 0) {
-        lines.push(
-          padRow("Also", w.econForecast.otherNotableEvents.join(", ")),
-        );
-      }
-      lines.push(padRow("Prediction", w.econForecast.aiPrediction));
+      lines.push(
+        padRow("Confidence", `${w.econForecast.confidenceScore ?? 35}%`),
+      );
+      lines.push(
+        padRow("2nd Order", w.econForecast.secondOrderRead ?? "pending"),
+      );
+      lines.push(padRow("Thesis", w.econForecast.aiPrediction));
     }
   }
   lines.push("```");
   return lines.join("\n");
+}
+
+function briefScenarioPrint(
+  forecast: NonNullable<DayPlan["windows"][number]["econForecast"]>,
+  side: "miss" | "beat",
+): string {
+  return forecast[side]?.agenticPrint || forecast[side]?.description || side;
 }
 
 function padRow(label: string, value: string): string {
@@ -307,6 +324,7 @@ export async function generateBrief(
   // pulled from today's day_plan. MDB / ADB / PMDB / TWT all carry it.
   const deskThemeBlock = await fetchDeskThemeBlock(today);
   const deskThemeSection = deskThemeBlock ? `\n${deskThemeBlock}\n` : "";
+  const macroDoctrineSection = await loadMacroEventCognitionBlock();
 
   const isFull = briefType === "MDB" || briefType === "TWT";
 
@@ -321,6 +339,7 @@ ${today}
 
 ## Recent RiskFlow Headlines
 ${feedSummary}
+${macroDoctrineSection}
 ${deskThemeSection}
 ## Instructions
 ${
@@ -381,6 +400,7 @@ ${today}
 
 ## Recent RiskFlow Headlines
 ${feedSummary}
+${macroDoctrineSection}
 ${chamberSection}${deskThemeSection}
 ## Instructions
 ${
@@ -396,7 +416,7 @@ ${
   });
   const result = await generateViaChain({
     systemPrompt:
-      "You are Fintheon, a macro trading assistant for Priced In Capital. You generate the recurring MDB, ADB, PMDB, and TWT reports exactly when requested. NEVER use emojis or decorative unicode symbols — plain Markdown only. Use ## headers, bullet points (-), and **bold** text.",
+      "You are Fintheon, PIC's macro event-risk desk assistant. Calendar consensus is baseline only; PIC internal forecast and second-order event-risk cognition drive every brief. NEVER use emojis or decorative unicode symbols — plain Markdown only. Use ## headers, bullet points (-), and **bold** text.",
     prompt,
     model: "deepseek-reasoner",
     temperature: 0.4,

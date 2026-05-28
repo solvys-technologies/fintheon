@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 mandatory macro event-risk context for chamber runs.
 // [claude-code 2026-05-01] S56 Track A: added SeatOverride, ArbitrumHealth, and
 //   ArbitrumHealthResponse types for the settings/health panel endpoints.
 // [claude-code 2026-04-24] S35-T1: Arbitrum type surface.
@@ -85,6 +86,29 @@ export interface ArbitrumCommentaryContext {
   }>;
 }
 
+export interface ArbitrumRiskContext {
+  riskSignalWindowDays: 7;
+  headwindRisks: string[];
+  tailwindRisks: string[];
+  wallStreetPrepositioning: string;
+  wallStreetForecasts: string[];
+  rateFuturesRead: string;
+  sectorRotationRisk: string;
+  htfLtfConfluence: string;
+  multiInstrumentCorrelation: string;
+  volatilityGate: {
+    vix: string;
+    bonds: string;
+    greeks: string;
+    status: "clear" | "mixed" | "blocked";
+  };
+  basisAdjustedGexReference: string | null;
+  firstOrderConclusion: string;
+  caoSecondOrderInsight: string;
+  eventRiskTimedEntryRead: string;
+  expectedPointOpportunity: string;
+}
+
 export interface ArbitrumDeliberateInput {
   question: string;
   category: string;
@@ -92,6 +116,7 @@ export interface ArbitrumDeliberateInput {
   iv_simulation?: ArbitrumIvSimulation | null;
   econ_context?: ArbitrumEconContext | null;
   commentary_context?: ArbitrumCommentaryContext | null;
+  risk_context?: ArbitrumRiskContext | null;
 }
 
 export interface ArbitrumDissent {
@@ -126,6 +151,7 @@ export interface ArbitrumVerdict {
   digest_text: string;
   iv_simulation?: ArbitrumIvSimulation | null;
   trigger_source?: ArbitrumTriggerSource | null;
+  risk_context?: ArbitrumRiskContext | null;
   latency_ms?: number;
   model_cost_usd?: number;
 }

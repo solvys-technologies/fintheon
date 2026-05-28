@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] S102 PIC macro event-risk forecast contract.
 // [claude-code 2026-05-15] Econ forecast types for Desk Plan replacement —
 //   replaces invalidation/profit-target/entries/prices-of-interest with
 //   AI-generated miss/beat scenarios and prediction text.
@@ -12,6 +13,19 @@ export interface EconForecastScenario {
 }
 
 export interface EconForecast {
+  calendarConsensus: string | null;
+  picInternalForecast: string;
+  missProbability: number;
+  beatProbability: number;
+  confidenceScore: number;
+  forecastDeltaVsConsensus: string;
+  dataCycleStage: string;
+  fedMilestoneAnchor: string;
+  secondOrderRead: string;
+  crossAssetTransmission: string;
+  whatConfirms: string;
+  whatInvalidates: string;
+  commandmentChecks: string[];
   /** Numerical forecast value, or "hawkish"/"dovish"/"none" for speeches */
   forecast: string;
   /** Miss scenario */

@@ -4,11 +4,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSettings } from "../contexts/SettingsContext";
 import {
-  loadBlockerCustomDomains,
-  loadBlockerQuickTarget,
   mergeDomainLists,
   notifyBlockerStateUpdated,
   resolveBlockerTarget,
+  type BlockerStatus,
 } from "../lib/platform-blocker";
 
 export interface LockoutState {
@@ -28,7 +27,11 @@ interface NextWindowInfo {
 }
 
 interface BlockerApi {
+  enable: () => Promise<unknown>;
   enableFast: () => Promise<unknown>;
+  disable: () => Promise<unknown>;
+  disableFast?: () => Promise<unknown>;
+  getStatus?: () => Promise<BlockerStatus>;
   setDomains: (
     domains: string[],
   ) => Promise<{ ok: boolean; domains?: string[]; reason?: string }>;
@@ -41,6 +44,8 @@ interface LockoutElectronApi {
 
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL || "http://localhost:8080";
+
+export type BriefingAnchor = "mdb" | "adb" | "pmdb";
 
 function getBlockerApi(): BlockerApi | null {
   const e = window as unknown as { electron?: { blocker?: BlockerApi } };
@@ -139,6 +144,8 @@ export function useLockout(pollMs = 5000) {
   const {
     defaultPlatform,
     proposerIframeSources,
+    blockerQuickTarget,
+    blockerCustomDomains,
     lockoutPermission,
     setLockoutPermission,
   } = useSettings();
@@ -161,25 +168,50 @@ export function useLockout(pollMs = 5000) {
     const api = getBlockerApi();
     if (!api) return;
     const target = resolveBlockerTarget({
-      target: loadBlockerQuickTarget(),
+      target: blockerQuickTarget,
       sources: proposerIframeSources,
       selectedPlatform: defaultPlatform,
     });
     const blockerDomains = mergeDomainLists(
       target?.domains ?? [],
-      loadBlockerCustomDomains(),
+      blockerCustomDomains,
     );
     if (blockerDomains.length === 0) return;
 
     try {
       const result = await api.setDomains(blockerDomains);
       if (!result.ok) return;
+      const status = api.getStatus ? await api.getStatus() : null;
+      const hasSystemLayer =
+        !!status?.layers?.hosts || !!status?.layers?.resolver;
+      if (hasSystemLayer) await api.enable();
       await api.enableFast();
       notifyBlockerStateUpdated();
     } catch {
       // Best effort only — lockout itself should still proceed.
     }
-  }, [defaultPlatform, proposerIframeSources]);
+  }, [
+    blockerCustomDomains,
+    blockerQuickTarget,
+    defaultPlatform,
+    proposerIframeSources,
+  ]);
+
+  const releaseSelectedPlatformBlocker = useCallback(async () => {
+    const api = getBlockerApi();
+    if (!api) return;
+    try {
+      const status = api.getStatus ? await api.getStatus() : null;
+      const hasSystemLayer =
+        !!status?.layers?.hosts || !!status?.layers?.resolver;
+      if (hasSystemLayer) await api.disable();
+      else if (api.disableFast) await api.disableFast();
+      else await api.disable();
+      notifyBlockerStateUpdated();
+    } catch {
+      // Lockout state is server-owned; blocker release is best effort.
+    }
+  }, []);
 
   const ensureAccessibilityPermission = useCallback(async () => {
     const api = getLockoutApi();
@@ -258,9 +290,41 @@ export function useLockout(pollMs = 5000) {
 
   const unlock = useCallback(async () => {
     const ok = await toggleLockout(false);
-    if (ok) await refresh();
+    if (ok) {
+      await releaseSelectedPlatformBlocker();
+      await refresh();
+    }
     return ok;
-  }, [refresh]);
+  }, [refresh, releaseSelectedPlatformBlocker]);
+
+  const lockUntilBriefing = useCallback(
+    async (briefingAnchor: BriefingAnchor): Promise<LockoutState> => {
+      try {
+        await ensureAccessibilityPermission();
+        const res = await fetch(`${API_BASE}/api/lockout/toggle`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locked: true, briefingAnchor }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          await ensureSelectedPlatformBlocked();
+          await refresh();
+        }
+        return {
+          locked: !!data.locked,
+          until: data.until ?? null,
+          remaining: data.remaining ?? null,
+          autoReleaseAt: data.autoReleaseAt ?? null,
+          scheduledBy: data.scheduledBy ?? null,
+        };
+      } catch {
+        return { locked: false, until: null, remaining: null };
+      }
+    },
+    [ensureAccessibilityPermission, ensureSelectedPlatformBlocked, refresh],
+  );
 
   /**
    * Schedule a timed lockout. Accepts either a duration + optional windowStartTime,
@@ -363,7 +427,9 @@ export function useLockout(pollMs = 5000) {
     refresh,
     scheduleLock,
     lockUntil,
+    lockUntilBriefing,
     lockUntilDeskSession,
     getNextWindow,
+    requestPermission: ensureAccessibilityPermission,
   };
 }

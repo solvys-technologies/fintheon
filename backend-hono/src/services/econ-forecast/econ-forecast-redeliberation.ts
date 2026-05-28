@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Keep redeliberation aligned with PIC internal forecast fields.
 import { invokeAgent } from "../strands/index.js";
 import type { EconForecast } from "../../types/day-plan.js";
 import type { EconForecastInput } from "./econ-forecast-service.js";
@@ -13,9 +14,13 @@ interface RedeliberationInput {
 interface RedeliberationResult {
   verdict?: "pass" | "adjust";
   rationale?: string;
-  forecast?: string;
+  picInternalForecast?: string;
   missProbability?: number;
   beatProbability?: number;
+  confidenceScore?: number;
+  secondOrderRead?: string;
+  whatConfirms?: string;
+  whatInvalidates?: string;
   missAgenticPrint?: string;
   beatAgenticPrint?: string;
   aiPrediction?: string;
@@ -99,7 +104,21 @@ function applyRedeliberation(
 
   return {
     ...forecast,
-    forecast: parsed.forecast ?? forecast.forecast,
+    picInternalForecast:
+      cleanAgenticPrint(parsed.picInternalForecast) ??
+      forecast.picInternalForecast,
+    forecast:
+      cleanAgenticPrint(parsed.picInternalForecast) ??
+      forecast.picInternalForecast ??
+      forecast.forecast,
+    missProbability: normalizedMiss,
+    beatProbability: 100 - normalizedMiss,
+    confidenceScore: clampProbability(
+      parsed.confidenceScore ?? forecast.confidenceScore,
+    ),
+    secondOrderRead: parsed.secondOrderRead ?? forecast.secondOrderRead,
+    whatConfirms: parsed.whatConfirms ?? forecast.whatConfirms,
+    whatInvalidates: parsed.whatInvalidates ?? forecast.whatInvalidates,
     miss: {
       ...forecast.miss,
       probability: normalizedMiss,
@@ -155,12 +174,19 @@ function buildRedeliberationPrompt(
     "Current forecast JSON:",
     JSON.stringify({
       forecast: forecast.forecast,
+      picInternalForecast: forecast.picInternalForecast,
+      calendarConsensus: forecast.calendarConsensus,
       miss: forecast.miss,
       beat: forecast.beat,
+      confidenceScore: forecast.confidenceScore,
+      secondOrderRead: forecast.secondOrderRead,
+      whatConfirms: forecast.whatConfirms,
+      whatInvalidates: forecast.whatInvalidates,
       aiPrediction: forecast.aiPrediction,
     }),
     "",
-    "Validate the forecast and adjust only if the miss/beat probabilities or wording are internally inconsistent.",
+    "Validate the PIC internal forecast. Calendar consensus is baseline only, never the desk forecast.",
+    "Adjust only if the miss/beat probabilities, confidence, or second-order read are internally inconsistent.",
   ].join("\n");
 }
 
@@ -201,9 +227,13 @@ Return strict JSON only:
 {
   "verdict": "pass" | "adjust",
   "rationale": "one concise sentence",
-  "forecast": "optional corrected consensus string",
+  "picInternalForecast": "optional corrected PIC internal forecast only",
   "missProbability": number,
   "beatProbability": number,
+  "confidenceScore": number,
+  "secondOrderRead": "optional tightened second-order read",
+  "whatConfirms": "optional tightened confirmation",
+  "whatInvalidates": "optional tightened invalidation",
   "missAgenticPrint": "optional corrected miss-side print value only",
   "beatAgenticPrint": "optional corrected beat-side print value only",
   "aiPrediction": "optional tightened prediction"
@@ -211,6 +241,7 @@ Return strict JSON only:
 
 Rules:
 - Run a skeptical validity check against event type, consensus, previous, and macro logic.
+- Calendar consensus is not PIC's forecast.
 - Do not invent actual print data.
 - Probabilities must represent miss vs beat odds and sum to roughly 100.
 - Only return missAgenticPrint or beatAgenticPrint when the current print values are concretely wrong. Values must be terse print/tone strings, not prose.

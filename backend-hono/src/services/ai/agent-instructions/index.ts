@@ -1,3 +1,4 @@
+// [Codex 2026-05-27] Inject PIC macro event-risk doctrine into every agent prompt.
 // [claude-code 2026-04-16] S20-T1: Agent dossiers injected after base prompt
 // [claude-code 2026-04-19] S27-T8 W1d: Identity/scope/constraints/grounding now load from SOUL.md per agent.
 //   BASE_PROMPTS + DOSSIER_* remain as fallbacks for legacy code paths and surface-specific layers (capabilities, gates, skills).
@@ -36,6 +37,7 @@ import {
   ensureAgentPromptVault,
   renderFileroomPromptLayer,
 } from "./fileroom-prompt-vault.js";
+import { loadMacroEventCognitionBlock } from "./macro-event-cognition.js";
 
 const ROLE_TO_SOUL_ID: Record<HermesAgentRole, SoulAgentId> = {
   "harper-cao": "harper",
@@ -331,6 +333,9 @@ export async function getAgentSystemPrompt(
 
   // 2. Shared beliefs — the neural web
   prompt += SHARED_BELIEFS;
+
+  // 2.1. S102 macro event-risk doctrine — consensus is baseline only.
+  prompt += await loadMacroEventCognitionBlock();
 
   // 2.5. Dynamic org identity — PIC, Chief TP, Solvys, peer roster
   prompt += ORG_IDENTITY_BLOCK;

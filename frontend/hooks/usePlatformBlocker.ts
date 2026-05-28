@@ -3,13 +3,10 @@ import { useSettings } from "../contexts/SettingsContext";
 import type { TradingPlatform } from "../components/TradingBrowser";
 import {
   getBlockerApi,
-  loadBlockerCustomDomains,
-  loadBlockerQuickTarget,
   mergeDomainLists,
   notifyBlockerStateUpdated,
   resolveBlockerTarget,
   sameDomainSet,
-  type BlockerQuickTarget,
   type BlockerStatus,
   type ResolvedBlockerTarget,
 } from "../lib/platform-blocker";
@@ -32,29 +29,29 @@ const DEFAULT_STATUS: BlockerStatus = {
 };
 
 export function usePlatformBlocker(selectedPlatform: TradingPlatform) {
-  const { proposerIframeSources } = useSettings();
-  const [quickTarget, setQuickTarget] = useState<BlockerQuickTarget | null>(
-    () => loadBlockerQuickTarget(),
-  );
-  const [customDomains, setCustomDomains] = useState<string[]>(() =>
-    loadBlockerCustomDomains(),
-  );
+  const { proposerIframeSources, blockerQuickTarget, blockerCustomDomains } =
+    useSettings();
   const [status, setStatus] = useState<BlockerStatus>(DEFAULT_STATUS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const target = useMemo(() => {
     const resolved = resolveBlockerTarget({
-      target: quickTarget,
+      target: blockerQuickTarget,
       sources: proposerIframeSources,
       selectedPlatform,
     });
     if (!resolved) return null;
     return {
       ...resolved,
-      domains: mergeDomainLists(resolved.domains, customDomains),
+      domains: mergeDomainLists(resolved.domains, blockerCustomDomains),
     };
-  }, [customDomains, proposerIframeSources, quickTarget, selectedPlatform]);
+  }, [
+    blockerCustomDomains,
+    blockerQuickTarget,
+    proposerIframeSources,
+    selectedPlatform,
+  ]);
 
   const refresh = useCallback(async () => {
     const api = getBlockerApi();
@@ -89,39 +86,16 @@ export function usePlatformBlocker(selectedPlatform: TradingPlatform) {
   }, [refresh]);
 
   useEffect(() => {
-    const handleTargetUpdate = () => setQuickTarget(loadBlockerQuickTarget());
-    const handleCustomDomainsUpdate = () =>
-      setCustomDomains(loadBlockerCustomDomains());
     const handleStateUpdate = () => void refresh();
-    window.addEventListener(
-      "fintheon:blocker-quick-target-updated",
-      handleTargetUpdate,
-    );
-    window.addEventListener(
-      "fintheon:blocker-custom-domains-updated",
-      handleCustomDomainsUpdate,
-    );
     window.addEventListener(
       "fintheon:blocker-state-updated",
       handleStateUpdate,
     );
-    window.addEventListener("storage", handleTargetUpdate);
-    window.addEventListener("storage", handleCustomDomainsUpdate);
     return () => {
-      window.removeEventListener(
-        "fintheon:blocker-quick-target-updated",
-        handleTargetUpdate,
-      );
-      window.removeEventListener(
-        "fintheon:blocker-custom-domains-updated",
-        handleCustomDomainsUpdate,
-      );
       window.removeEventListener(
         "fintheon:blocker-state-updated",
         handleStateUpdate,
       );
-      window.removeEventListener("storage", handleTargetUpdate);
-      window.removeEventListener("storage", handleCustomDomainsUpdate);
     };
   }, [refresh]);
 
