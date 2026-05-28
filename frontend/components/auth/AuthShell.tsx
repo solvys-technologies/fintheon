@@ -4,6 +4,8 @@ import { LoadingGlobe } from "../loading/LoadingGlobe";
 import { LoadingStatusCard } from "../loading/LoadingStatusCard";
 import { TimeQuote } from "./TimeQuote";
 import { GoogleSignInButton } from "./GoogleSignInButton";
+import { MagicLinkSignInForm } from "./MagicLinkSignInForm";
+import { signInWithMagicLink } from "../../lib/supabase";
 
 type AuthShellProps = {
   onSignIn: () => void;
@@ -53,6 +55,10 @@ export const AuthShell: React.FC<AuthShellProps> = ({
             onClick={handleSignIn}
             isLoading={isLoading || showLoader}
             disabled={busy}
+          />
+          <MagicLinkSignInForm
+            onSend={signInWithMagicLink}
+            disabled={isLoading || showLoader}
           />
           <div style={{ marginTop: 4 }}>
             <TimeQuote />

@@ -43,6 +43,24 @@ export async function signInWithGoogle() {
   return data;
 }
 
+export async function signInWithMagicLink(email: string) {
+  if (!supabase)
+    throw new Error(
+      "Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY",
+    );
+
+  const API_BASE = getRuntimeApiBase();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${API_BASE}/api/auth/supabase/callback`,
+      shouldCreateUser: true,
+      data: { source: "fintheon-magic-link" },
+    },
+  });
+  if (error) throw error;
+}
+
 /** Get current session access token (for Bearer header to backend) */
 export async function getAccessToken(): Promise<string | null> {
   if (!supabase) return null;

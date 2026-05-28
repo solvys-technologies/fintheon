@@ -9,6 +9,18 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T00:50:00-04:00",
+    agent: "codex",
+    summary:
+      "Added reviewer-friendly Supabase magic-link sign-in on the desktop login screen. The email-link path uses the existing /api/auth/supabase/callback relay so magic-link callbacks open the Electron app through the existing fintheon:// deep-link flow, while Google sign-in remains available.",
+    files: [
+      "frontend/lib/supabase.ts",
+      "frontend/components/auth/AuthShell.tsx",
+      "frontend/components/auth/MagicLinkSignInForm.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T00:31:00-04:00",
     agent: "codex",
     summary:
