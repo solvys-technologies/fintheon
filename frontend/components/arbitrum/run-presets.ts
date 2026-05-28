@@ -1,4 +1,4 @@
-// [Codex 2026-05-27] S103 local Arbitrum manual-run preset registry.
+// [Codex 2026-05-27] Local Arbitrum manual-run preset registry.
 import type { ArbitrumRunPresetId } from "./types";
 
 export type { ArbitrumRunPresetId };

@@ -1,4 +1,4 @@
-// [Codex 2026-05-27] S103 manual chamber run template registry.
+// [Codex 2026-05-27] Manual chamber run template registry.
 import type { ArbitrumRunPresetId } from "./types.js";
 
 export interface ArbitrumRunPreset {

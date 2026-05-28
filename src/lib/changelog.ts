@@ -51,7 +51,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-05-28T00:08:00-04:00",
     agent: "codex",
     summary:
-      "S103 Arbitrum chamber templates: added passwordless multi-select manual-run presets with RORO default, passed canonical preset IDs into manual deliberations, added a 24h-decaying manual history icon, and made event/outlook/post-brief Arbitrum runs opt-in so the 17:00 ET session remains the only default automated chamber run.",
+      "Arbitrum chamber immediate-task templates: added passwordless multi-select manual-run presets with RORO default, passed canonical preset IDs into manual deliberations, added a 24h-decaying manual history icon, and made event/outlook/post-brief Arbitrum runs opt-in so the 17:00 ET session remains the only default automated chamber run.",
     files: [
       "backend-hono/src/routes/arbitrum/index.ts",
       "backend-hono/src/routes/arbitrum/deliberate.ts",

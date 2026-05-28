@@ -1,4 +1,4 @@
-// [Codex 2026-05-27] S103 24h freshness window for manual Arbitrum runs.
+// [Codex 2026-05-27] 24h freshness window for manual Arbitrum runs.
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";

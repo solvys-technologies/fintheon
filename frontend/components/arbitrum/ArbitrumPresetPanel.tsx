@@ -1,4 +1,4 @@
-// [Codex 2026-05-27] S103 passwordless manual-run preset selector.
+// [Codex 2026-05-27] Passwordless manual-run preset selector.
 import { useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
 import { DotMatrixLoader } from "../icon-bank/DotMatrixLoader";

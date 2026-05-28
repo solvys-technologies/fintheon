@@ -1,4 +1,4 @@
-// [Codex 2026-05-27] S103 manual Arbitrum deliberate handler with run presets.
+// [Codex 2026-05-27] Manual Arbitrum deliberate handler with run presets.
 import type { Context } from "hono";
 import { createLogger } from "../../lib/logger.js";
 import {

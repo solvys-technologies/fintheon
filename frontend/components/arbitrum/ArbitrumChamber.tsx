@@ -13,7 +13,7 @@
 // [claude-code 2026-05-01] S56 Track A: gear icon opens ArbitrumSettingsPanel overlay.
 // [claude-code 2026-05-03] S57: compact chamber stack with consensus below seats.
 // [claude-code 2026-05-03] Arbitrum-only floating full agent summaries, capped at two.
-// [Codex 2026-05-27] S103: added manual-run presets and 24h history decay.
+// [Codex 2026-05-27] Added manual-run presets and 24h history decay.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
