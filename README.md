@@ -6,6 +6,52 @@ No API keys needed. Sign in with Google.
 
 ---
 
+## Agent Handoff: Install v7.0.5 Desktop Build
+
+Copy this prompt to a local agent when the user needs the current desktop build
+installed from this repo:
+
+```text
+You are installing the current Fintheon desktop build for the user.
+
+Repo: /Users/tifos/Documents/Codebases/fintheon
+Branch: v7.0.5
+Version: 7.0.5
+DMG: /Users/tifos/Desktop/Fintheon-7.0.5-arm64.dmg
+Expected SHA256: 100a874059c40834c3afae7d4fab84ee847952ff93544af1d246bb2f60a50bf6
+
+Release contents to preserve:
+- Arbitrum manual-run presets/history fixes.
+- Desk Plan PIC Forecast value-only row fix.
+- System Blocker Gate fix: the app bundle must include
+  Contents/Library/LaunchServices/io.pricedinresearch.fintheon.blocker-helper.
+- Briefing window fixes: daily briefs stay readable until next-day 7:45 AM
+  local time, missing briefs show publish status, and Weekly Tribune stays until
+  replaced.
+
+Install task:
+1. Confirm the repo is on branch v7.0.5 and the worktree is clean.
+2. Confirm the Desktop DMG exists and matches the expected SHA256. If it is
+   missing or stale, run:
+   FINTHEON_ALLOW_S100_UNSIGNED=1 bash scripts/desktop-release-preflight.sh
+   Then copy desktop-dist/Fintheon-7.0.5-arm64.dmg to ~/Desktop.
+3. Detach any mounted /Volumes/Fintheon* volume, mount the DMG read-only, copy
+   Fintheon.app into /Applications, and run:
+   xattr -cr /Applications/Fintheon.app
+4. Verify /Applications/Fintheon.app reports version 7.0.5, bundle id
+   io.pricedinresearch.fintheon, and has the executable blocker helper at:
+   /Applications/Fintheon.app/Contents/Library/LaunchServices/io.pricedinresearch.fintheon.blocker-helper
+5. Do not install or repair the privileged helper directly from the shell. Tell
+   the user to open Settings > Trading > System Blocker Gate > Approve/Repair
+   once; that is the only intended admin-password path.
+6. Launch Fintheon and report the DMG path, checksum, installed app version, and
+   blocker-helper presence.
+
+Do not publish, upload, reset git state, or touch unrelated dirty files.
+```
+
+---
+
 ## Install
 
 ### Option A: One-Liner (Fresh MacBook)
