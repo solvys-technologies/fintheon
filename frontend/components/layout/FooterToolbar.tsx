@@ -115,6 +115,7 @@ interface FooterToolbarProps {
   allowSplitView?: boolean;
   onPowerOff?: () => void;
   compactLevel?: 0 | 1 | 2;
+  allowCustomIframes?: boolean;
 }
 
 export function FooterToolbar({
@@ -128,6 +129,7 @@ export function FooterToolbar({
   onSplitViewToggle,
   allowSplitView = false,
   onPowerOff,
+  allowCustomIframes = true,
 }: FooterToolbarProps) {
   const { proposerIframeSources } = useSettings();
   const [panelOpen, setPanelOpen] = useState(false);
@@ -816,7 +818,7 @@ export function FooterToolbar({
         {/* Right section — pushed to end */}
         <div className="ml-auto flex items-center gap-3">
           {/* Iframe controls (when TopStepX active) */}
-          {topStepXEnabled && (
+          {allowCustomIframes && topStepXEnabled && (
             <>
               <div className="w-px h-3.5 bg-[var(--fintheon-accent)]/10" />
               <div className="flex items-center gap-1.5">

@@ -9,6 +9,29 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T02:15:52-04:00",
+    agent: "codex",
+    summary:
+      "Web-PWA surface split: mobile now uses the responsive desktop shell with floating nav, Web/PWA hides custom iframe and Performance surfaces, Consilium is limited to Chat plus Arbitrum outside Electron, Desk page two is Feed-only on mobile, and settings/calendar were tightened for the compact shell while retaining Supabase user-scoped storage.",
+    files: [
+      "shared/surface-routing.ts",
+      "frontend/lib/surface-capabilities.ts",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/MobileFloatingNav.tsx",
+      "frontend/components/consilium/ConsiliumLite.tsx",
+      "frontend/components/layout/TabRenderer.tsx",
+      "frontend/components/layout/NavSidebar.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/layout/FooterToolbar.tsx",
+      "frontend/components/SettingsPanel.tsx",
+      "frontend/components/desk/DeskDashboardPrototype.tsx",
+      "frontend/components/desk/DeskSprintMapCalendar.tsx",
+      "frontend/components/econ/TradingViewCalendar.tsx",
+      "frontend/components/executive/MainDashboard.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T01:08:00-04:00",
     agent: "codex",
     summary:

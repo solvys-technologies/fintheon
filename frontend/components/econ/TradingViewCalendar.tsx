@@ -224,11 +224,11 @@ export function TradingViewCalendar() {
         />
       </div>
       <div className="fintheon-content-top-fade z-20" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-4 pt-3">
-        <div className="flex items-start justify-between gap-3">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-2 pt-3 sm:px-4">
+        <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
           <div className="pointer-events-auto flex min-w-0 items-center gap-2">
             <CalendarDays className="h-4 w-4 text-[var(--fintheon-accent)]" />
-            <h2 className="text-sm font-semibold text-[var(--fintheon-accent)]">
+            <h2 className="text-xs font-semibold text-[var(--fintheon-accent)] sm:text-sm">
               Econ Calendar
             </h2>
             {saveState.phase === "saving" && (
@@ -254,18 +254,18 @@ export function TradingViewCalendar() {
               </span>
             )}
           </div>
-          <div className="pointer-events-auto flex items-center gap-2 pr-1">
+          <div className="pointer-events-auto flex min-w-0 items-center gap-1.5 pr-1 sm:gap-2">
             <div
-              className="flex h-7 items-center gap-1.5 text-[9px] uppercase tracking-wider text-zinc-500"
+              className="flex h-7 min-w-0 items-center gap-1 text-[9px] uppercase tracking-wider text-zinc-500 sm:gap-1.5"
               title={`Desk Queue · ${formatRelative(queue.last_ingest_at)}`}
             >
               <BookOpen className="h-3 w-3" />
               <span className="text-[var(--fintheon-accent)] tabular-nums">
                 {queue.count}
               </span>
-              <span>queued</span>
-              <span className="text-zinc-600">·</span>
-              <span className="text-zinc-500 normal-case tracking-normal">
+              <span className="hidden min-[420px]:inline">queued</span>
+              <span className="hidden text-zinc-600 min-[420px]:inline">·</span>
+              <span className="hidden text-zinc-500 normal-case tracking-normal min-[420px]:inline">
                 {formatRelative(queue.last_ingest_at)}
               </span>
             </div>

@@ -40,6 +40,7 @@ import { DangerTab } from "./settings/DangerTab";
 import { DeveloperTab } from "./settings/DeveloperTab";
 import { DevPasswordGate } from "./settings/DevPasswordGate";
 import { SettingsActionStatus } from "./settings/SettingsActionStatus";
+import type { SurfaceCapabilities } from "../lib/surface-capabilities";
 
 type SettingsTab =
   | "general"
@@ -173,7 +174,11 @@ function SettingsTabPanel({
   );
 }
 
-export function SettingsPage() {
+export function SettingsPage({
+  capabilities,
+}: {
+  capabilities?: SurfaceCapabilities;
+}) {
   const { tier, setTier, isAuthenticated } = useAuth();
   const {
     apiKeys,
@@ -237,7 +242,20 @@ export function SettingsPage() {
     detail?: string;
     tone?: "muted" | "success" | "error" | "warning";
   } | null>(null);
-  const orderedTabs = ORDERED_TABS;
+  const isMobileSettings = capabilities?.isMobile ?? false;
+  const orderedTabs = ORDERED_TABS.filter((tab) => {
+    if (!capabilities?.allowCustomIframes && tab.id === "iframes") return false;
+    if (isMobileSettings && (tab.id === "admin" || tab.id === "developer")) {
+      return false;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (orderedTabs.some((tab) => tab.id === activeTab)) return;
+    setActiveTab("general");
+    setShowLanding(true);
+  }, [activeTab, orderedTabs]);
 
   const handleTabChange = (tab: SettingsTab) => {
     if (!showLanding && tab === activeTab && !tabTransitioning) return;
@@ -481,22 +499,44 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="settings-pass-through h-full w-full flex relative">
+    <div
+      className={`settings-pass-through h-full w-full flex relative ${isMobileSettings ? "settings-mobile-shell" : ""}`}
+    >
       <div className="flex-1 flex flex-col min-h-0">
         {showLanding ? (
           <div
-            className={`flex-1 overflow-y-auto px-8 py-8 flex items-center justify-center transition-all duration-200 ${landingExiting ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"}`}
+            className={`flex-1 overflow-y-auto flex justify-center transition-all duration-200 ${
+              isMobileSettings
+                ? "items-start px-4 py-5"
+                : "items-center px-8 py-8"
+            } ${landingExiting ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"}`}
           >
-            <div className="max-w-3xl w-full">
-              <div className="text-center mb-8">
-                <h1 className="text-[22px] font-semibold text-white tracking-tight mb-1">
+            <div
+              className={`${isMobileSettings ? "max-w-none" : "max-w-3xl"} w-full`}
+            >
+              <div
+                className={
+                  isMobileSettings ? "mb-5 text-left" : "text-center mb-8"
+                }
+              >
+                <h1
+                  className={`${isMobileSettings ? "text-[17px]" : "text-[22px]"} font-semibold text-white tracking-tight mb-1`}
+                >
                   Settings
                 </h1>
-                <p className="text-[13px] text-gray-500">
-                  Configure your Fintheon environment
+                <p
+                  className={`${isMobileSettings ? "text-[11px]" : "text-[13px]"} text-gray-500`}
+                >
+                  User-synced Fintheon controls
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div
+                className={`grid ${
+                  isMobileSettings
+                    ? "grid-cols-1 gap-1.5"
+                    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                }`}
+              >
                 {orderedTabs.map((tab) => {
                   const Icon = tab.icon;
                   const isDanger = tab.id === "danger";
@@ -504,7 +544,11 @@ export function SettingsPage() {
                     <React.Fragment key={tab.id}>
                       {isDanger && <div className="hidden lg:block" />}
                       <div
-                        className={`group relative text-right p-4 rounded-md transition-all duration-200 hover:opacity-80 ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
+                        className={`group relative text-right rounded-md transition-all duration-200 hover:opacity-80 ${
+                          isMobileSettings
+                            ? "border border-[var(--fintheon-accent)]/10 px-3 py-2.5"
+                            : "p-4"
+                        } ${isDanger ? "text-red-400" : "text-[var(--fintheon-text)]"}`}
                       >
                         <button
                           type="button"
@@ -512,7 +556,7 @@ export function SettingsPage() {
                           className="flex w-full items-start justify-end gap-3 text-right"
                         >
                           <div
-                            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${isDanger ? "text-red-400" : "text-[var(--fintheon-accent)]/70"} transition-opacity duration-200`}
+                            className={`mt-0.5 flex ${isMobileSettings ? "h-7 w-7" : "h-8 w-8"} shrink-0 items-center justify-center rounded-md ${isDanger ? "text-red-400" : "text-[var(--fintheon-accent)]/70"} transition-opacity duration-200`}
                           >
                             <Icon className="w-4 h-4" />
                           </div>
@@ -538,7 +582,11 @@ export function SettingsPage() {
           <div
             className={`flex-1 flex flex-col min-h-0 transition-all duration-200 ${landingTransition ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}
           >
-            <div className="shrink-0 flex items-center gap-3 px-8 pt-5 pb-3">
+            <div
+              className={`shrink-0 flex items-center gap-3 ${
+                isMobileSettings ? "px-4 pt-4 pb-2" : "px-8 pt-5 pb-3"
+              }`}
+            >
               <button
                 onClick={handleBackToLanding}
                 className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 transition-colors"
@@ -560,10 +608,20 @@ export function SettingsPage() {
                 </h2>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto px-8 py-4 pb-28 space-y-6 relative">
+            <div
+              className={`flex-1 overflow-y-auto ${
+                isMobileSettings ? "px-4 py-3 pb-24" : "px-8 py-4 pb-28"
+              } space-y-6 relative`}
+            >
               {renderTabContent()}
             </div>
-            <div className="sticky bottom-0 bg-[var(--fintheon-bg)] px-8 pb-7 pt-3">
+            <div
+              className={`sticky bottom-0 bg-[var(--fintheon-bg)] ${
+                isMobileSettings
+                  ? "px-4 pb-[calc(env(safe-area-inset-bottom)+18px)] pt-3"
+                  : "px-8 pb-7 pt-3"
+              }`}
+            >
               <div className="flex flex-col items-end justify-end gap-1 text-right">
                 <button
                   onClick={handleSave}

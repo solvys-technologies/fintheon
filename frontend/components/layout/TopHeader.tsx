@@ -101,6 +101,7 @@ interface TopHeaderProps {
   econCountdownWidget?: React.ReactNode;
   toolbarEditMode?: boolean;
   compactLevel?: 0 | 1 | 2;
+  allowCustomIframes?: boolean;
 }
 
 export function TopHeader({
@@ -124,6 +125,7 @@ export function TopHeader({
   econCountdownWidget,
   toolbarEditMode = false,
   compactLevel = 0,
+  allowCustomIframes = true,
 }: TopHeaderProps) {
   const { tier } = useAuth();
   const backend = useBackend();
@@ -158,6 +160,7 @@ export function TopHeader({
   // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
   const [quickClockPulse, setQuickClockPulse] = useState(false);
+  const showIframeControls = allowCustomIframes;
   const shouldShowLeftPanelToggle = !topStepXEnabled && compactLevel < 2;
   const shouldShowRightPanelToggle = !(
     topStepXEnabled && layoutOption === "tickers-only"
@@ -526,145 +529,149 @@ export function TopHeader({
           {psychAssistHeadingWidget}
           {econCountdownWidget}
           {activeTab === "performance" && performanceChatWidget}
-          {topStepXEnabled && onLayoutOptionChange ? (
-            // iFrame active → Castra/Zen layout dropdown
-            <div className="relative" ref={dropdownRef}>
-              {/* [claude-code 2026-04-27] S46.4/F: chip chrome stripped per TP —
+          {showIframeControls &&
+            (topStepXEnabled && onLayoutOptionChange ? (
+              // iFrame active → Castra/Zen layout dropdown
+              <div className="relative" ref={dropdownRef}>
+                {/* [claude-code 2026-04-27] S46.4/F: chip chrome stripped per TP —
                   trigger sits flush with the toolbar like other icon buttons.
                   Resting state: no bg + no border. Hover keeps the accent flash. */}
-              <button
-                onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
-                className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
-                aria-label="Layout Options"
-                title="Layout Options"
-              >
-                {layoutOptions.find((opt) => opt.value === layoutOption)?.icon}
-                {compactLevel < 1 && (
-                  <span className="fintheon-zen-label">
-                    {
-                      layoutOptions.find((opt) => opt.value === layoutOption)
-                        ?.label
-                    }
-                  </span>
-                )}
-                <ChevronDown
-                  className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
-                />
-              </button>
-              {showLayoutDropdown &&
-                layoutDropdownPos &&
-                createPortal(
-                  <div
-                    ref={layoutPortalRef}
-                    style={{
-                      position: "fixed",
-                      top: layoutDropdownPos.top,
-                      left: layoutDropdownPos.left,
-                      zIndex: 9999,
-                    }}
-                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
-                  >
-                    {layoutOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          onLayoutOptionChange(option.value);
-                          setShowLayoutDropdown(false);
-                        }}
-                        className={`w-full border border-transparent px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
-                          layoutOption === option.value
-                            ? "border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
-                            : ""
-                        }`}
-                      >
-                        <div className="mt-0.5 text-[var(--fintheon-accent)]">
-                          {option.icon}
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
+                <button
+                  onClick={() => setShowLayoutDropdown(!showLayoutDropdown)}
+                  className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                  aria-label="Layout Options"
+                  title="Layout Options"
+                >
+                  {
+                    layoutOptions.find((opt) => opt.value === layoutOption)
+                      ?.icon
+                  }
+                  {compactLevel < 1 && (
+                    <span className="fintheon-zen-label">
+                      {
+                        layoutOptions.find((opt) => opt.value === layoutOption)
+                          ?.label
+                      }
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`w-3 h-3 transition-transform ${showLayoutDropdown ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {showLayoutDropdown &&
+                  layoutDropdownPos &&
+                  createPortal(
+                    <div
+                      ref={layoutPortalRef}
+                      style={{
+                        position: "fixed",
+                        top: layoutDropdownPos.top,
+                        left: layoutDropdownPos.left,
+                        zIndex: 9999,
+                      }}
+                      className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden animate-dropdown-enter"
+                    >
+                      {layoutOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            onLayoutOptionChange(option.value);
+                            setShowLayoutDropdown(false);
+                          }}
+                          className={`w-full border border-transparent px-4 py-3 text-left hover:bg-[var(--fintheon-accent)]/10 transition-colors flex items-start gap-3 ${
+                            layoutOption === option.value
+                              ? "border-[var(--fintheon-accent)]/28 text-[var(--fintheon-accent)]"
+                              : ""
+                          }`}
+                        >
+                          <div className="mt-0.5 text-[var(--fintheon-accent)]">
+                            {option.icon}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[var(--fintheon-accent)] mb-1">
+                              {option.label}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              {option.description}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>,
+                    document.body,
+                  )}
+              </div>
+            ) : (
+              // iFrame off → platform/browser selection dropdown
+              <div className="relative" ref={platformDropdownRef}>
+                {/* [claude-code 2026-04-27] S46.4/F: chip chrome stripped per TP. */}
+                <button
+                  onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
+                  className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
+                  aria-label="Select trading platform"
+                  title="Select trading platform"
+                >
+                  <Monitor className="w-3 h-3" />
+                  {compactLevel < 1 && (
+                    <span className="fintheon-zen-label">
+                      {selectedPlatformLabel}
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {showPlatformDropdown &&
+                  platformDropdownPos &&
+                  createPortal(
+                    <div
+                      ref={platformPortalRef}
+                      style={{
+                        position: "fixed",
+                        top: platformDropdownPos.top,
+                        left: platformDropdownPos.left,
+                        zIndex: 9999,
+                      }}
+                      className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
+                    >
+                      {platformOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            onPlatformSelect?.(option.value);
+                            setShowPlatformDropdown(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left transition-colors ${
+                            selectedPlatform === option.value
+                              ? "bg-[var(--fintheon-accent)]/15"
+                              : "hover:bg-[var(--fintheon-accent)]/8"
+                          }`}
+                        >
+                          <div
+                            className={`text-xs font-semibold tracking-[0.14em] uppercase ${
+                              selectedPlatform === option.value
+                                ? "text-[var(--fintheon-accent)]"
+                                : "text-gray-200"
+                            }`}
+                          >
                             {option.label}
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div
+                            className={`text-[10px] mt-0.5 ${
+                              selectedPlatform === option.value
+                                ? "text-[var(--fintheon-accent)]/60"
+                                : "text-gray-500"
+                            }`}
+                          >
                             {option.description}
                           </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>,
-                  document.body,
-                )}
-            </div>
-          ) : (
-            // iFrame off → platform/browser selection dropdown
-            <div className="relative" ref={platformDropdownRef}>
-              {/* [claude-code 2026-04-27] S46.4/F: chip chrome stripped per TP. */}
-              <button
-                onClick={() => setShowPlatformDropdown(!showPlatformDropdown)}
-                className="px-2.5 h-7 rounded-lg text-xs font-medium text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/10 hover:border hover:border-[var(--fintheon-accent)]/40 transition-colors flex items-center gap-1.5"
-                aria-label="Select trading platform"
-                title="Select trading platform"
-              >
-                <Monitor className="w-3 h-3" />
-                {compactLevel < 1 && (
-                  <span className="fintheon-zen-label">
-                    {selectedPlatformLabel}
-                  </span>
-                )}
-                <ChevronDown
-                  className={`w-3 h-3 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`}
-                />
-              </button>
-              {showPlatformDropdown &&
-                platformDropdownPos &&
-                createPortal(
-                  <div
-                    ref={platformPortalRef}
-                    style={{
-                      position: "fixed",
-                      top: platformDropdownPos.top,
-                      left: platformDropdownPos.left,
-                      zIndex: 9999,
-                    }}
-                    className="w-72 bg-[var(--fintheon-surface)] border border-[var(--fintheon-accent)]/20 rounded-lg shadow-xl overflow-hidden py-1 animate-dropdown-enter"
-                  >
-                    {platformOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          onPlatformSelect?.(option.value);
-                          setShowPlatformDropdown(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left transition-colors ${
-                          selectedPlatform === option.value
-                            ? "bg-[var(--fintheon-accent)]/15"
-                            : "hover:bg-[var(--fintheon-accent)]/8"
-                        }`}
-                      >
-                        <div
-                          className={`text-xs font-semibold tracking-[0.14em] uppercase ${
-                            selectedPlatform === option.value
-                              ? "text-[var(--fintheon-accent)]"
-                              : "text-gray-200"
-                          }`}
-                        >
-                          {option.label}
-                        </div>
-                        <div
-                          className={`text-[10px] mt-0.5 ${
-                            selectedPlatform === option.value
-                              ? "text-[var(--fintheon-accent)]/60"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {option.description}
-                        </div>
-                      </button>
-                    ))}
-                  </div>,
-                  document.body,
-                )}
-            </div>
-          )}
+                        </button>
+                      ))}
+                    </div>,
+                    document.body,
+                  )}
+              </div>
+            ))}
           <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
             <div className="flex items-center gap-1.5">
               {compactLevel < 2 && (
@@ -695,7 +702,7 @@ export function TopHeader({
             }}
           </ToolbarDnD>
           <div className={TOOLBAR_PILL_CLASS}>
-            {onTopStepXDisable && (
+            {showIframeControls && onTopStepXDisable && (
               <button
                 onClick={onTopStepXDisable}
                 className={`toolbar-icon-btn ${topStepXEnabled ? "toolbar-active" : ""}`}
@@ -713,7 +720,7 @@ export function TopHeader({
                 />
               </button>
             )}
-            {onTopStepXDisable && (
+            {showIframeControls && onTopStepXDisable && (
               <FadingRuler orientation="vertical" className="mx-0.5" />
             )}
             <button

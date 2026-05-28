@@ -28,12 +28,18 @@ const MULTI_REFETCH_EVENT = "fintheon:day-plan-multi-refetch";
 export function DeskSprintMapCalendar({
   plans,
   isLoading,
+  allowedViews,
 }: {
   plans: DayPlan[];
   isLoading: boolean;
+  allowedViews?: readonly DeskMapView[];
 }) {
-  const [view, setView] = useState<DeskMapView>("sprint");
-  const [renderedView, setRenderedView] = useState<DeskMapView>("sprint");
+  const effectiveViews = allowedViews?.length ? allowedViews : ALL_VIEWS;
+  const initialView = effectiveViews.includes("sprint")
+    ? "sprint"
+    : effectiveViews[0];
+  const [view, setView] = useState<DeskMapView>(initialView);
+  const [renderedView, setRenderedView] = useState<DeskMapView>(initialView);
   const [viewPhase, setViewPhase] = useState<
     "entering" | "entered" | "exiting"
   >("entered");
@@ -59,6 +65,13 @@ export function DeskSprintMapCalendar({
   useEffect(() => {
     setSegmentIndex(findNextDeskPlanSegmentIndex(segments));
   }, [segments]);
+
+  useEffect(() => {
+    if (effectiveViews.includes(view)) return;
+    const next = effectiveViews[0] ?? "briefing";
+    setView(next);
+    setRenderedView(next);
+  }, [effectiveViews, renderedView, view]);
 
   useEffect(() => {
     if (view === renderedView) return;
@@ -117,7 +130,11 @@ export function DeskSprintMapCalendar({
             ) : null}
           </div>
         </div>
-        <DeskSprintViewToggle view={view} onViewChange={setView} />
+        <DeskSprintViewToggle
+          view={view}
+          allowedViews={effectiveViews}
+          onViewChange={setView}
+        />
       </header>
 
       <div
@@ -170,34 +187,43 @@ export function DeskSprintMapCalendar({
 
 function DeskSprintViewToggle({
   view,
+  allowedViews,
   onViewChange,
 }: {
   view: DeskMapView;
+  allowedViews: readonly DeskMapView[];
   onViewChange: (view: DeskMapView) => void;
 }) {
+  const options = VIEW_OPTIONS.filter((option) =>
+    allowedViews.includes(option.view),
+  );
+  if (options.length <= 1) return null;
+
   return (
     <div className="inline-flex h-8 items-center justify-end gap-1">
-      <ToggleButton
-        icon={FileText}
-        label="Feed"
-        isSelected={view === "briefing"}
-        onClick={() => onViewChange("briefing")}
-      />
-      <ToggleButton
-        icon={MapIcon}
-        label="Sprint"
-        isSelected={view === "sprint"}
-        onClick={() => onViewChange("sprint")}
-      />
-      <ToggleButton
-        icon={CalendarDays}
-        label="Calendar"
-        isSelected={view === "calendar"}
-        onClick={() => onViewChange("calendar")}
-      />
+      {options.map(({ view: optionView, icon, label }) => (
+        <ToggleButton
+          key={optionView}
+          icon={icon}
+          label={label}
+          isSelected={view === optionView}
+          onClick={() => onViewChange(optionView)}
+        />
+      ))}
     </div>
   );
 }
+
+const ALL_VIEWS: readonly DeskMapView[] = ["sprint", "calendar", "briefing"];
+const VIEW_OPTIONS: ReadonlyArray<{
+  view: DeskMapView;
+  icon: LucideIcon;
+  label: string;
+}> = [
+  { view: "briefing", icon: FileText, label: "Feed" },
+  { view: "sprint", icon: MapIcon, label: "Sprint" },
+  { view: "calendar", icon: CalendarDays, label: "Calendar" },
+];
 
 function ToggleButton({
   icon: Icon,

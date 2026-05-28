@@ -9,10 +9,12 @@ const DESK_PAGES = ["Briefing", "Sprint Map"];
 
 interface DeskDashboardPrototypeProps {
   onNavigateTab?: (tab: string) => void;
+  deskSecondPageMode?: "all" | "feed-only";
 }
 
 export function DeskDashboardPrototype({
   onNavigateTab,
+  deskSecondPageMode = "all",
 }: DeskDashboardPrototypeProps) {
   const { allPlans, isLoading } = useDayPlanMultiWeek();
   const [activePage, setActivePage] = useState(0);
@@ -72,7 +74,13 @@ export function DeskDashboardPrototype({
           data-desk-page="1"
           className="h-full min-h-0 snap-start overflow-hidden px-2 py-2"
         >
-          <DeskSprintMapCalendar plans={allPlans} isLoading={isLoading} />
+          <DeskSprintMapCalendar
+            plans={allPlans}
+            isLoading={isLoading}
+            allowedViews={
+              deskSecondPageMode === "feed-only" ? ["briefing"] : undefined
+            }
+          />
         </section>
       </div>
       <DeskPrototypePager activePage={activePage} onSelect={scrollToPage} />

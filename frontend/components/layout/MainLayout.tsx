@@ -69,6 +69,7 @@ import { TabRenderer } from "./TabRenderer";
 import { MissionControlContent } from "./MissionControlContent";
 import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
+import { MobileFloatingNav } from "./MobileFloatingNav";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
 // Voice lives in the app-native ProxVoice surface.
@@ -87,6 +88,11 @@ import { StrategiumPeekBar } from "./StrategiumPeekBar";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useLayoutState } from "../../hooks/useLayoutState";
 import { useBrowserTransition } from "../../hooks/useBrowserTransition";
+import {
+  buildSurfaceCapabilities,
+  resolveSurfaceTab,
+  type SurfaceNavTab,
+} from "../../lib/surface-capabilities";
 
 type NavTab =
   | "feed"
@@ -118,10 +124,16 @@ const VALID_TABS: ReadonlySet<NavTab> = new Set<NavTab>([
   "settings",
 ]);
 
-function readLastRoute(): NavTab {
+function routeStorageKey(userId: string): string {
+  return userId ? `${LAST_ROUTE_KEY}:${userId}` : LAST_ROUTE_KEY;
+}
+
+function readLastRoute(userId = ""): NavTab {
   if (typeof window === "undefined") return "dashboard";
   try {
-    const raw = window.localStorage.getItem(LAST_ROUTE_KEY);
+    const raw =
+      window.localStorage.getItem(routeStorageKey(userId)) ??
+      window.localStorage.getItem(LAST_ROUTE_KEY);
     if (raw && VALID_TABS.has(raw as NavTab)) return raw as NavTab;
   } catch {
     // ignore
@@ -129,10 +141,10 @@ function readLastRoute(): NavTab {
   return "dashboard";
 }
 
-function writeLastRoute(tab: NavTab): void {
+function writeLastRoute(tab: NavTab, userId = ""): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(LAST_ROUTE_KEY, tab);
+    window.localStorage.setItem(routeStorageKey(userId), tab);
   } catch {
     // ignore
   }
@@ -169,9 +181,12 @@ function MainLayoutInner() {
   const { iframeUrls, defaultLayout, defaultPlatform, developerSettings } =
     useSettings();
   const { theme, zenModeEnabled } = useTheme();
+  const { isAuthenticated, userId } = useAuth();
   const isStone = theme.name === "solvys-stone";
   const { setAutoDnd, flushQueue, toggleManualDnd } = useDND();
-  const [activeTab, setActiveTab] = useState<NavTab>(() => readLastRoute());
+  const [activeTab, setActiveTab] = useState<NavTab>(() =>
+    readLastRoute(userId),
+  );
 
   // [claude-code 2026-05-05] Tiered responsive compaction — MainLayout owns
   // the viewport-width state and passes compactLevel (0/1/2) to children so
@@ -191,6 +206,10 @@ function MainLayoutInner() {
       : viewportWidth < COMPACT_MODERATE_BP
         ? 1
         : 0;
+  const surfaceCapabilities = useMemo(
+    () => buildSurfaceCapabilities(viewportWidth),
+    [viewportWidth],
+  );
 
   const {
     topStepXEnabled,
@@ -205,6 +224,8 @@ function MainLayoutInner() {
     handleBrowserToggle,
     handleBrowserEnable,
   } = useBrowserTransition({ defaultPlatform });
+  const iframeModeActive =
+    surfaceCapabilities.allowCustomIframes && topStepXEnabled;
 
   const {
     layoutEditMode,
@@ -228,7 +249,7 @@ function MainLayoutInner() {
     sidebarOverlayVisible,
     setSidebarOverlayVisible,
   } = useLayoutState({
-    topStepXEnabled,
+    topStepXEnabled: iframeModeActive,
     defaultLayout,
     setAutoDnd,
     flushQueue,
@@ -391,16 +412,28 @@ function MainLayoutInner() {
 
   // Persist every tab change so the next boot lands on the same surface.
   useEffect(() => {
-    writeLastRoute(activeTab);
-  }, [activeTab]);
+    writeLastRoute(activeTab, userId);
+  }, [activeTab, userId]);
+
+  useEffect(() => {
+    const safeTab = resolveSurfaceTab(
+      activeTab as SurfaceNavTab,
+      surfaceCapabilities,
+    ) as NavTab;
+    if (safeTab !== activeTab) setActiveTab(safeTab);
+  }, [activeTab, surfaceCapabilities]);
 
   const navigateTab = (tab: NavTab) => {
+    const safeTab = resolveSurfaceTab(
+      tab as SurfaceNavTab,
+      surfaceCapabilities,
+    ) as NavTab;
     // Trim forward history when navigating to a new tab
     const trimmed = tabHistory.slice(0, historyIndex + 1);
-    trimmed.push(tab);
+    trimmed.push(safeTab);
     setTabHistory(trimmed);
     setHistoryIndex(trimmed.length - 1);
-    setActiveTab(tab);
+    setActiveTab(safeTab);
   };
 
   useEffect(() => {
@@ -414,7 +447,7 @@ function MainLayoutInner() {
         /* ignore */
       }
       setShowRefinement(false);
-      if (topStepXEnabled) handleBrowserToggle();
+      if (iframeModeActive) handleBrowserToggle();
       navigateTab("analysis");
       window.setTimeout(() => {
         window.dispatchEvent(new Event("fintheon:open-narrativeflow"));
@@ -429,7 +462,7 @@ function MainLayoutInner() {
         "fintheon:jump-to-narrativeflow",
         jumpToNarrativeFlow,
       );
-  }, [handleBrowserToggle, historyIndex, tabHistory, topStepXEnabled]);
+  }, [handleBrowserToggle, historyIndex, tabHistory, iframeModeActive]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -457,7 +490,6 @@ function MainLayoutInner() {
   };
 
   const backend = useBackend();
-  const { isAuthenticated } = useAuth();
   const { alerts: riskFlowAlerts, isSeen, freshAlertId } = useRiskFlow();
   const { addToast } = useToast();
   const lastZenNewsToastRef = useRef<string | null>(null);
@@ -550,12 +582,13 @@ function MainLayoutInner() {
 
   // Determine layout based on TopStepX state and layout option
   const showMissionControl =
-    topStepXEnabled && missionControlPosition !== "floating";
-  const showTape = topStepXEnabled && tapePosition !== "floating";
-  const showFloatingWidget = topStepXEnabled && layoutOption === "tickers-only";
-  const showCombinedPanel = topStepXEnabled && layoutOption === "combined";
+    iframeModeActive && missionControlPosition !== "floating";
+  const showTape = iframeModeActive && tapePosition !== "floating";
+  const showFloatingWidget =
+    iframeModeActive && layoutOption === "tickers-only";
+  const showCombinedPanel = iframeModeActive && layoutOption === "combined";
   const zenModeActive =
-    zenModeEnabled || (topStepXEnabled && layoutOption === "tickers-only");
+    zenModeEnabled || (iframeModeActive && layoutOption === "tickers-only");
   const zenFreshAlert = useMemo(
     () => riskFlowAlerts.find((alert) => alert.id === freshAlertId) ?? null,
     [freshAlertId, riskFlowAlerts],
@@ -563,9 +596,9 @@ function MainLayoutInner() {
 
   useEffect(() => {
     if (!zenModeActive || !zenFreshAlert) return;
-    const isRiskFlowMainVisible = activeTab === "riskflow" && !topStepXEnabled;
+    const isRiskFlowMainVisible = activeTab === "riskflow" && !iframeModeActive;
     const shouldToast =
-      missionControlCollapsed || !isRiskFlowMainVisible || topStepXEnabled;
+      missionControlCollapsed || !isRiskFlowMainVisible || iframeModeActive;
     if (!shouldToast) return;
     if (lastZenNewsToastRef.current === zenFreshAlert.id) return;
 
@@ -579,7 +612,7 @@ function MainLayoutInner() {
       {
         label: "Open RiskFlow",
         onClick: () => {
-          if (topStepXEnabled) handleBrowserToggle();
+          if (iframeModeActive) handleBrowserToggle();
           navigateTab("riskflow");
         },
       },
@@ -591,7 +624,7 @@ function MainLayoutInner() {
     addToast,
     handleBrowserToggle,
     missionControlCollapsed,
-    topStepXEnabled,
+    iframeModeActive,
     zenFreshAlert,
     zenModeActive,
   ]);
@@ -761,7 +794,7 @@ function MainLayoutInner() {
   );
 
   // When TopStepX is enabled, render panels based on layout option
-  if (topStepXEnabled) {
+  if (iframeModeActive) {
     if (layoutOption === "combined") {
       // Combined panel: Mission Control + The Tape in one scroll (split, no overlap)
       rightPanels.push(
@@ -938,16 +971,26 @@ function MainLayoutInner() {
     <ScheduleProvider>
       <YouTubeMiniplayerProvider>
         <div
-          className={`fintheon-app-shell h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${topStepXEnabled ? "topstepx-active" : ""}`}
+          data-surface-runtime={surfaceCapabilities.runtime}
+          data-surface-form-factor={surfaceCapabilities.formFactor}
+          className={`fintheon-app-shell h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${iframeModeActive ? "topstepx-active" : ""}`}
         >
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
             voice (when speaking). The previous draggable COACH popup is gone. */}
           <AgentVoiceWaveform />
           <TopHeader
-            topStepXEnabled={topStepXEnabled}
-            onTopStepXToggle={handleBrowserEnable} // [claude-code 2026-03-16] Restore: clicking platform in dropdown enables iframe
-            onTopStepXDisable={handleBrowserToggle}
+            topStepXEnabled={iframeModeActive}
+            onTopStepXToggle={
+              surfaceCapabilities.allowCustomIframes
+                ? handleBrowserEnable
+                : undefined
+            }
+            onTopStepXDisable={
+              surfaceCapabilities.allowCustomIframes
+                ? handleBrowserToggle
+                : undefined
+            }
             selectedPlatform={selectedPlatform}
             onPlatformSelect={setSelectedPlatform}
             layoutOption={layoutOption}
@@ -956,7 +999,7 @@ function MainLayoutInner() {
             onChatToggle={() =>
               setShowChat((prev) => {
                 // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
-                if (!prev && topStepXEnabled && layoutOption === "combined") {
+                if (!prev && iframeModeActive && layoutOption === "combined") {
                   setLayoutOption("tickers-only");
                 }
                 return !prev;
@@ -967,10 +1010,10 @@ function MainLayoutInner() {
             historyIndex={historyIndex}
             onBack={goBack}
             onForward={goForward}
-            hideBranding={topStepXEnabled && sidebarOverlayVisible}
+            hideBranding={iframeModeActive && sidebarOverlayVisible}
             toolbarEditMode={layoutEditMode}
             psychAssistHeadingWidget={
-              topStepXEnabled &&
+              iframeModeActive &&
               layoutOption === "tickers-only" &&
               psychAssistTarget === "header" &&
               !showEconCountdown ? (
@@ -982,7 +1025,7 @@ function MainLayoutInner() {
               ) : undefined
             }
             econCountdownWidget={
-              topStepXEnabled &&
+              iframeModeActive &&
               layoutOption === "tickers-only" &&
               showEconCountdown ? (
                 <EconCountdownWidget
@@ -992,6 +1035,7 @@ function MainLayoutInner() {
               ) : undefined
             }
             compactLevel={compactLevel}
+            allowCustomIframes={surfaceCapabilities.allowCustomIframes}
             /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
              the only voice trigger now. */
           />
@@ -1001,7 +1045,8 @@ function MainLayoutInner() {
           <div className="flex-1 flex overflow-hidden relative bg-[var(--fintheon-surface)]">
             <div
               className={
-                topStepXEnabled
+                iframeModeActive ||
+                surfaceCapabilities.navigationMode === "floating"
                   ? "hidden"
                   : "relative shrink-0 transition-[width] duration-300 ease-in-out"
               }
@@ -1013,7 +1058,7 @@ function MainLayoutInner() {
                   handleTabChange(tab);
                 }}
                 onLogout={handleLogout}
-                topStepXEnabled={topStepXEnabled}
+                topStepXEnabled={iframeModeActive}
                 onOverlayVisibilityChange={setSidebarOverlayVisible}
                 editMode={layoutEditMode}
                 onEditModeChange={setLayoutEditMode}
@@ -1023,12 +1068,38 @@ function MainLayoutInner() {
                 onRefinementClick={() => setShowRefinement((v) => !v)}
                 refinementEnabled={refinementEnabled}
                 refinementActive={showRefinement}
-              />
-              <NotificationCenter
-                open={notificationCenterOpen}
-                onClose={() => setNotificationCenterOpen(false)}
+                capabilities={surfaceCapabilities}
               />
             </div>
+            <NotificationCenter
+              open={notificationCenterOpen}
+              onClose={() => setNotificationCenterOpen(false)}
+            />
+            {!iframeModeActive &&
+              surfaceCapabilities.navigationMode === "floating" && (
+                <MobileFloatingNav
+                  activeTab={activeTab}
+                  onTabChange={(tab) => {
+                    setShowRefinement(false);
+                    handleTabChange(tab as NavTab);
+                  }}
+                  onConsiliumView={(view) => {
+                    setShowRefinement(false);
+                    navigateTab("analysis");
+                    window.setTimeout(() => {
+                      window.dispatchEvent(
+                        new CustomEvent("fintheon:consilium-lite-view", {
+                          detail: { view },
+                        }),
+                      );
+                    }, 30);
+                  }}
+                  onNotificationCenterToggle={() =>
+                    setNotificationCenterOpen((v) => !v)
+                  }
+                  onLogout={handleLogout}
+                />
+              )}
 
             {/* Left Panels */}
             {leftPanels.length > 0 && <div className="flex">{leftPanels}</div>}
@@ -1043,14 +1114,14 @@ function MainLayoutInner() {
                 open={timelineOverlayOpen}
                 onClose={() => setTimelineOverlayOpen(false)}
               />
-              {topStepXEnabled && !timelineOverlayOpen && (
+              {iframeModeActive && !timelineOverlayOpen && (
                 <TimelineToggleButton
                   onClick={() => setTimelineOverlayOpen(true)}
                 />
               )}
 
               {/* Browser layer */}
-              {topStepXEnabled && (
+              {iframeModeActive && (
                 <div
                   className={`absolute inset-0 z-10 ${isStone ? "bg-black" : ""} ${browserVisible ? "animate-browser-in" : "animate-browser-out"}`}
                 >
@@ -1061,16 +1132,16 @@ function MainLayoutInner() {
                     onSecondaryPlatformChange={setSecondaryPlatform}
                     splitViewEnabled={splitBrowserView}
                     onSplitViewEnabledChange={setSplitBrowserView}
-                    allowSplitView={topStepXEnabled}
+                    allowSplitView={iframeModeActive}
                   />
                 </div>
               )}
 
               {/* Main content layer */}
               <div
-                className={`h-full relative flex-1 flex flex-col ${topStepXEnabled ? "pointer-events-none" : ""}`}
+                className={`h-full relative flex-1 flex flex-col ${iframeModeActive ? "pointer-events-none" : ""}`}
                 style={{
-                  opacity: topStepXEnabled ? 0 : 1,
+                  opacity: iframeModeActive ? 0 : 1,
                   transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
               >
@@ -1081,6 +1152,7 @@ function MainLayoutInner() {
                   showRefinement={showRefinement}
                   navigateTab={navigateTab}
                   onChatAlert={handleChatAlert}
+                  capabilities={surfaceCapabilities}
                 />
               </div>
             </div>
@@ -1101,7 +1173,7 @@ function MainLayoutInner() {
             )}
 
             {/* Zen Layout: dockable PsychAssist widget (float ↔ header) */}
-            {topStepXEnabled &&
+            {iframeModeActive &&
               layoutOption === "tickers-only" &&
               psychAssistTarget === "floating" && (
                 <PsychAssistDockable
@@ -1164,19 +1236,20 @@ function MainLayoutInner() {
 
           <FooterToolbar
             compactLevel={compactLevel}
-            topStepXEnabled={topStepXEnabled}
+            topStepXEnabled={iframeModeActive}
             primaryPlatform={selectedPlatform}
             onPrimaryPlatformChange={setSelectedPlatform}
             secondaryPlatform={secondaryPlatform}
             onSecondaryPlatformChange={setSecondaryPlatform}
             splitViewEnabled={splitBrowserView}
             onSplitViewToggle={() => setSplitBrowserView((v) => !v)}
-            allowSplitView={topStepXEnabled}
+            allowSplitView={iframeModeActive}
             onPowerOff={handleBrowserToggle}
+            allowCustomIframes={surfaceCapabilities.allowCustomIframes}
           />
 
           {/* Preload iframes — hidden, loads TopStepX + Research in background for instant tab switch */}
-          {!topStepXEnabled && (
+          {surfaceCapabilities.allowCustomIframes && !iframeModeActive && (
             <div
               style={{
                 position: "fixed",

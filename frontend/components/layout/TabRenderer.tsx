@@ -21,6 +21,8 @@ import { DeskRail } from "../desk/DeskRail";
 import { ApparatusMap } from "../apparatus/ApparatusMap";
 import { AdminShell } from "../admin/AdminShell";
 import { SettingsPage } from "../SettingsPanel";
+import { ConsiliumLite } from "../consilium/ConsiliumLite";
+import type { SurfaceCapabilities } from "../../lib/surface-capabilities";
 
 type NavTab =
   | "feed"
@@ -47,6 +49,7 @@ interface TabRendererProps {
     ivScore?: number | null;
     publishedAt?: string;
   }) => void;
+  capabilities: SurfaceCapabilities;
 }
 
 export function TabRenderer({
@@ -56,6 +59,7 @@ export function TabRenderer({
   showRefinement,
   navigateTab,
   onChatAlert,
+  capabilities,
 }: TabRendererProps) {
   const [hasMountedEcon, setHasMountedEcon] = useState(activeTab === "econ");
   const animClass =
@@ -80,7 +84,10 @@ export function TabRenderer({
           data-tour-target="dashboard"
           className={`h-full w-full section-fade-corners ${animClass}`}
         >
-          <MainDashboard onNavigateTab={(tab) => navigateTab(tab as NavTab)} />
+          <MainDashboard
+            onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+            deskSecondPageMode={capabilities.deskSecondPageMode}
+          />
         </div>
       )}
       {!showRefinement && activeTab === "analysis" && (
@@ -89,7 +96,11 @@ export function TabRenderer({
           data-tour-target="chat"
           className={`h-full w-full section-fade-corners ${animClass}`}
         >
-          <ConsiliumHub />
+          {capabilities.consiliumMode === "full" ? (
+            <ConsiliumHub />
+          ) : (
+            <ConsiliumLite />
+          )}
         </div>
       )}
       {!showRefinement && activeTab === "riskflow" && (
@@ -148,13 +159,20 @@ export function TabRenderer({
           data-tour-target="performance"
           className={`h-full w-full ${animClass}`}
         >
-          <PerformanceJournal />
+          {capabilities.allowPerformance ? (
+            <PerformanceJournal />
+          ) : (
+            <MainDashboard
+              onNavigateTab={(tab) => navigateTab(tab as NavTab)}
+              deskSecondPageMode={capabilities.deskSecondPageMode}
+            />
+          )}
         </div>
       )}
       {/* S14-T5: research tab removed — now in ConsiliumHub Boardroom > Imperium */}
       {!showRefinement && activeTab === "settings" && (
         <div key="settings" className={`h-full w-full ${animClass}`}>
-          <SettingsPage />
+          <SettingsPage capabilities={capabilities} />
         </div>
       )}
     </div>

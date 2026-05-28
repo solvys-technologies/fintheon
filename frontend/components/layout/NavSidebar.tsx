@@ -21,6 +21,7 @@ import {
   setSidebarOrder,
   type NavTabId,
 } from "../../lib/layoutOrderStorage";
+import type { SurfaceCapabilities } from "../../lib/surface-capabilities";
 
 type NavTab =
   | "feed"
@@ -47,6 +48,7 @@ interface NavSidebarProps {
   onRefinementClick?: () => void;
   refinementEnabled?: boolean;
   refinementActive?: boolean;
+  capabilities?: SurfaceCapabilities;
 }
 
 const NAV_ITEMS_MAP: Record<
@@ -111,6 +113,7 @@ export function NavSidebar({
   onRefinementClick,
   refinementEnabled = false,
   refinementActive = false,
+  capabilities,
 }: NavSidebarProps) {
   const { dndActive, toggleManualDnd, queueCount } = useDND();
   // [claude-code 2026-04-25] S35-Unified: badge reflects server unread + local queue.
@@ -232,7 +235,9 @@ export function NavSidebar({
   const orderedItems = order
     .filter(
       (id): id is keyof typeof NAV_ITEMS_MAP =>
-        id in NAV_ITEMS_MAP && id !== "performance",
+        id in NAV_ITEMS_MAP &&
+        id !== "performance" &&
+        (capabilities?.allowedTabs.includes(id as NavTab) ?? true),
     )
     .map((tabId) => ({
       tabId,
@@ -435,33 +440,34 @@ export function NavSidebar({
             )}
           </button>
         )}
-        {/* Performance */}
-        <button
-          onClick={() => onTabChange("performance")}
-          data-tour-target="performance"
-          className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
-            activeTab === "performance"
-              ? "fintheon-nav-active"
-              : "fintheon-nav-inactive"
-          }`}
-          title={expanded ? undefined : "Performance"}
-        >
-          <BookOpenCheck className="w-4 h-4 shrink-0" />
-          {expanded && (
-            <div className="min-w-0 text-left">
-              <div
-                className={`text-[11px] font-semibold truncate ${activeTab === "performance" ? "text-black" : ""}`}
-              >
-                Performance
+        {capabilities?.allowPerformance !== false && (
+          <button
+            onClick={() => onTabChange("performance")}
+            data-tour-target="performance"
+            className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
+              activeTab === "performance"
+                ? "fintheon-nav-active"
+                : "fintheon-nav-inactive"
+            }`}
+            title={expanded ? undefined : "Performance"}
+          >
+            <BookOpenCheck className="w-4 h-4 shrink-0" />
+            {expanded && (
+              <div className="min-w-0 text-left">
+                <div
+                  className={`text-[11px] font-semibold truncate ${activeTab === "performance" ? "text-black" : ""}`}
+                >
+                  Performance
+                </div>
+                <div
+                  className={`text-[9px] truncate ${activeTab === "performance" ? "text-black/60" : "text-gray-500"}`}
+                >
+                  ER history & KPIs
+                </div>
               </div>
-              <div
-                className={`text-[9px] truncate ${activeTab === "performance" ? "text-black/60" : "text-gray-500"}`}
-              >
-                ER history & KPIs
-              </div>
-            </div>
-          )}
-        </button>
+            )}
+          </button>
+        )}
         <button
           onClick={() => onTabChange("settings")}
           className={`w-full flex items-center gap-2.5 rounded-md transition-colors px-2 py-1.5 justify-start ${
