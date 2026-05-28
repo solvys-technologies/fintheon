@@ -9,6 +9,31 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T00:08:00-04:00",
+    agent: "codex",
+    summary:
+      "S103 Arbitrum chamber templates: added passwordless multi-select manual-run presets with RORO default, passed canonical preset IDs into manual deliberations, added a 24h-decaying manual history icon, and made non-5PM automated Arbitrum runs opt-in so the 17:00 ET session remains the only default automated chamber run.",
+    files: [
+      "backend-hono/src/routes/arbitrum/index.ts",
+      "backend-hono/src/routes/arbitrum/deliberate.ts",
+      "backend-hono/src/services/arbitrum/types.ts",
+      "backend-hono/src/services/arbitrum/index.ts",
+      "backend-hono/src/services/arbitrum/presets.ts",
+      "backend-hono/src/services/arbitrum/event-trigger.ts",
+      "backend-hono/src/boot/services.ts",
+      "frontend/components/arbitrum/ArbitrumChamber.tsx",
+      "frontend/components/arbitrum/ArbitrumChamberHeader.tsx",
+      "frontend/components/arbitrum/ArbitrumConfidencePair.tsx",
+      "frontend/components/arbitrum/ArbitrumPresetPanel.tsx",
+      "frontend/components/arbitrum/run-presets.ts",
+      "frontend/components/arbitrum/useStaggeredReveal.ts",
+      "frontend/components/arbitrum/types.ts",
+      "frontend/hooks/useArbitrumManualHistory.ts",
+      "frontend/components/consilium/ConsiliumHub.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-27T23:48:00-04:00",
     agent: "codex",
     summary:

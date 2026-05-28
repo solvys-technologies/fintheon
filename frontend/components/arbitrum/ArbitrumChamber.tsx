@@ -13,6 +13,7 @@
 // [claude-code 2026-05-01] S56 Track A: gear icon opens ArbitrumSettingsPanel overlay.
 // [claude-code 2026-05-03] S57: compact chamber stack with consensus below seats.
 // [claude-code 2026-05-03] Arbitrum-only floating full agent summaries, capped at two.
+// [Codex 2026-05-27] S103: added manual-run presets and 24h history decay.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useArbitrumLatest } from "../../hooks/useArbitrumLatest";
@@ -27,6 +28,7 @@ import { ArbitrumConfidencePair } from "./ArbitrumConfidencePair";
 import { ArbitrumPresetPanel } from "./ArbitrumPresetPanel";
 import { ArbitrumSettingsPanel } from "./ArbitrumSettingsPanel";
 import { ChamberAgentSummaryPopup } from "./ChamberAgentSummaryPopup";
+import { useStaggeredReveal } from "./useStaggeredReveal";
 import type { ArbitrumSeat, ArbitrumVerdict } from "./types";
 
 interface ArbitrumChamberProps {
@@ -53,45 +55,6 @@ const AGENT_ROW_ROLES: ReadonlyArray<ArbitrumSeat["role"]> = [
 
 const EMPTY_COPY =
   "No fresh read — chamber convenes at 17:00 ET or on IV ≥ 8.5.";
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
-}
-
-function useStaggeredReveal(count: number, stepMs = 200): boolean[] {
-  const [revealed, setRevealed] = useState<boolean[]>(() =>
-    Array<boolean>(count).fill(prefersReducedMotion()),
-  );
-
-  useEffect(() => {
-    if (count <= 0) {
-      setRevealed([]);
-      return;
-    }
-    const reduced = prefersReducedMotion();
-    setRevealed(Array<boolean>(count).fill(reduced));
-    if (reduced) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let i = 0; i < count; i++) {
-      timers.push(
-        setTimeout(() => {
-          setRevealed((prev) => {
-            if (prev[i]) return prev;
-            const next = prev.slice();
-            next[i] = true;
-            return next;
-          });
-        }, i * stepMs),
-      );
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [count, stepMs]);
-
-  return revealed;
-}
 
 export function ArbitrumChamber(props: ArbitrumChamberProps) {
   const { onSynthesisComplete } = props;
