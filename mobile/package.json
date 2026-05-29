@@ -31,8 +31,10 @@
     "vite": "^6.2.5"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "cd ../frontend && bun run dev",
+    "dev:legacy": "vite",
+    "build": "cd ../frontend && bun run build && rm -rf ../mobile/dist && mkdir -p ../mobile/dist && cp -R dist/. ../mobile/dist/",
+    "build:legacy": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   }

@@ -9,6 +9,10 @@ import "./index.css";
 installEasternTimeFormatOverride();
 installRuntimeApiBaseFetchBridge();
 
+const MOBILE_PRODUCTION_HOSTS = new Set([
+  "fintheon.pricedinresearch.io",
+]);
+
 // Suppress noisy third-party warnings (e.g. Snowplow "Invalid environment undefined")
 const _origWarn = console.warn;
 console.warn = (...args: unknown[]) => {
@@ -31,4 +35,13 @@ if (
       <App />
     </React.StrictMode>,
   );
+}
+
+if (
+  import.meta.env.PROD &&
+  typeof window !== "undefined" &&
+  "serviceWorker" in navigator &&
+  MOBILE_PRODUCTION_HOSTS.has(window.location.hostname)
+) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
 }
