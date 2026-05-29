@@ -6,13 +6,65 @@ import { updatePresence } from "./presence-store.js";
 import type { ProxVoiceProfile } from "./types.js";
 
 export const PROXVOICE_ROOM = "fintheon-floor";
+const PROFILE_LOOKUP_TIMEOUT_MS = 1500;
+
+function fallbackProfile(req: {
+  userId: string;
+  email?: string;
+}): ProxVoiceProfile {
+  return {
+    userId: req.userId,
+    displayName: req.email?.split("@")[0] || "Fintheon User",
+    avatarUrl: null,
+    bio: null,
+    position: null,
+    broker: null,
+    socialLinks: {},
+  };
+}
+
+async function withTimeout<T>(task: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`Timed out after ${timeoutMs}ms`)),
+          timeoutMs,
+        );
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export async function getPublicVoiceProfile(req: {
   userId: string;
   email?: string;
 }): Promise<ProxVoiceProfile> {
-  const profile = await getOrCreateProfile(req.userId, req.email);
-  const appState = (await getAppState(req.userId)) ?? {};
+  const fallback = fallbackProfile(req);
+  const profile = await withTimeout(
+    getOrCreateProfile(req.userId, req.email),
+    PROFILE_LOOKUP_TIMEOUT_MS,
+  ).catch((error) => {
+    console.warn("[ProxVoice] profile lookup skipped", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  });
+  const appState =
+    (await withTimeout(
+      getAppState(req.userId),
+      PROFILE_LOOKUP_TIMEOUT_MS,
+    ).catch((error) => {
+      console.warn("[ProxVoice] app state lookup skipped", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    })) ?? {};
   const socialLinks = normalizeSocialLinks(appState.socialLinks);
   const bio =
     typeof appState.bio === "string" ? appState.bio.slice(0, 180) : null;
@@ -29,7 +81,7 @@ export async function getPublicVoiceProfile(req: {
     avatarUrl:
       (typeof appState.avatarUrl === "string" ? appState.avatarUrl : null) ??
       profile?.avatar_url ??
-      null,
+      fallback.avatarUrl,
     bio,
     position,
     broker,
