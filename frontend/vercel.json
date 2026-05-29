@@ -11,7 +11,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(Android|webOS|iPhone|iPad|iPod|BlackBerry|BB10|IEMobile|Opera Mini|Mobile|Silk|Kindle|Tablet).*"
+          "value": ".*(iPhone|iPod|Windows Phone|IEMobile|BlackBerry|BB10|Opera Mini|Android.*Mobile|webOS).*"
         }
       ],
       "missing": [{ "type": "query", "key": "surface" }],

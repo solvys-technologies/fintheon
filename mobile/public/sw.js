@@ -17,8 +17,8 @@
 //   served the v1 cached assets. activate step nukes any cache name not in the current list.
 // [claude-code 2026-04-16] T7: Service worker — push notifications, app shell caching, stale-while-revalidate
 
-const CACHE_NAME = "fintheon-v5.27.0";
-const STATIC_CACHE = "fintheon-static-v5.27.0";
+const CACHE_NAME = "fintheon-v7.0.7-surface-routing";
+const STATIC_CACHE = "fintheon-static-v7.0.7-surface-routing";
 
 // App shell resources to pre-cache on install
 const APP_SHELL = ["/", "/index.html"];
@@ -114,7 +114,14 @@ self.addEventListener("fetch", (event) => {
     url.pathname === "/index.html"
   ) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("/index.html")),
+      caches.open(CACHE_NAME).then((cache) =>
+        fetch(event.request)
+          .then((res) => {
+            if (res.ok) cache.put("/index.html", res.clone());
+            return res;
+          })
+          .catch(() => caches.match("/index.html")),
+      ),
     );
     return;
   }

@@ -27,8 +27,34 @@ const DEFAULT_MOBILE_URL = "https://fintheon.pricedinresearch.io";
 export function detectPreferredSurface(
   snapshot: ClientSnapshot,
 ): SurfaceTarget {
-  void snapshot;
-  return SURFACE_TARGETS.desktop;
+  if (snapshot.isElectron) return SURFACE_TARGETS.desktop;
+
+  const userAgent = snapshot.userAgent.toLowerCase();
+  const minScreen = Math.min(snapshot.screenWidth, snapshot.screenHeight);
+  const maxScreen = Math.max(snapshot.screenWidth, snapshot.screenHeight);
+  const isAndroidPhone =
+    /\bandroid\b/i.test(userAgent) && /\bmobile\b/i.test(userAgent);
+  const isPhoneUserAgent =
+    /\b(iphone|ipod|windows phone|iemobile|blackberry|bb10|opera mini)\b/i.test(
+      userAgent,
+    ) || isAndroidPhone;
+  const isTabletUserAgent =
+    /\b(ipad|tablet|kindle|silk)\b/i.test(userAgent) ||
+    (/\bmacintosh\b/i.test(userAgent) &&
+      snapshot.maxTouchPoints > 1 &&
+      minScreen >= 768);
+  const isPhoneViewport =
+    snapshot.hasCoarsePointer &&
+    snapshot.maxTouchPoints > 0 &&
+    minScreen > 0 &&
+    minScreen <= 820 &&
+    maxScreen <= 1180;
+
+  if (isTabletUserAgent) return SURFACE_TARGETS.desktop;
+
+  return isPhoneUserAgent || isPhoneViewport
+    ? SURFACE_TARGETS.mobile
+    : SURFACE_TARGETS.desktop;
 }
 
 export function getSurfaceRedirectUrl(
@@ -116,10 +142,11 @@ function readSurfaceOverride(params: URLSearchParams): SurfaceTarget | null {
   if (["desktop", "web", "web-pwa"].includes(value)) {
     return SURFACE_TARGETS.desktop;
   }
-  if (["mobile", "compact", "mobile-pwa"].includes(value)) {
-    return SURFACE_TARGETS.desktop;
-  }
-  if (["legacy-mobile", "old-mobile"].includes(value)) {
+  if (
+    ["mobile", "compact", "mobile-pwa", "legacy-mobile", "old-mobile"].includes(
+      value,
+    )
+  ) {
     return SURFACE_TARGETS.mobile;
   }
 
