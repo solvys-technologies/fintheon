@@ -142,6 +142,32 @@ async function fetchLatestFromManifest(): Promise<DesktopRelease | null> {
   return release;
 }
 
+async function fetchDirectArchRelease(
+  manifest: DesktopRelease | null,
+  arch: ReleaseArch,
+): Promise<DesktopRelease | null> {
+  if (!manifest?.version) return null;
+  const assetName = getArchAssetName(manifest.version, arch);
+  const checksumRes = await fetch(
+    `${GITHUB_LATEST_DOWNLOAD_URL}/${encodeURIComponent(assetName)}.sha256`,
+    { headers: { "User-Agent": "Fintheon-Desktop-Updater" } },
+  );
+  if (!checksumRes.ok) return null;
+  const sha256 = (await checksumRes.text()).trim().split(/\s+/)[0] ?? "";
+  if (!/^[a-f0-9]{64}$/i.test(sha256)) return null;
+  return {
+    version: manifest.version,
+    tag: manifest.tag,
+    assetName,
+    downloadUrl: `${GITHUB_LATEST_DOWNLOAD_URL}/${encodeURIComponent(assetName)}`,
+    sha256,
+    sha512: null,
+    size: null,
+    releaseUrl: manifest.releaseUrl,
+    publishedAt: manifest.publishedAt,
+  };
+}
+
 function mergeReleaseAndManifest(
   release: GitHubRelease,
   asset: GitHubAsset,
@@ -238,6 +264,15 @@ async function fetchLatestRelease(
         return release;
       }
     }
+  }
+
+  const directRelease = await fetchDirectArchRelease(manifest, arch);
+  if (directRelease) {
+    cachedReleaseByArch[arch] = {
+      release: directRelease,
+      fetchedAt: Date.now(),
+    };
+    return directRelease;
   }
 
   const release = manifest;
