@@ -283,6 +283,18 @@ input {
   }
 }
 
+@media (max-width: 1180px) {
+  .hero-signal-strip {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    margin-top: 30px;
+  }
+}
+
 .hero-copy {
   position: relative;
   z-index: 2;
@@ -466,7 +478,7 @@ h3 {
 
 .silence-section {
   position: relative;
-  min-height: 230dvh;
+  min-height: 235dvh;
   background: #050402;
 }
 
@@ -475,8 +487,8 @@ h3 {
   top: 0;
   display: block;
   width: 100%;
-  height: 64dvh;
-  opacity: 0.82;
+  height: 70dvh;
+  opacity: 0.92;
   background: #050402;
 }
 
@@ -487,12 +499,12 @@ h3 {
   grid-template-columns: minmax(0, 0.86fr) minmax(320px, 0.64fr);
   gap: clamp(34px, 7vw, 110px);
   min-height: 86dvh;
-  margin-top: -64dvh;
-  padding: clamp(110px, 12vw, 180px) clamp(20px, 6vw, 84px);
+  margin-top: -44dvh;
+  padding: clamp(88px, 10vw, 150px) clamp(20px, 6vw, 84px);
   align-items: center;
   background:
-    linear-gradient(90deg, rgba(5, 4, 2, 0.96), rgba(5, 4, 2, 0.5)),
-    linear-gradient(180deg, transparent 0%, #050402 92%);
+    linear-gradient(90deg, rgba(5, 4, 2, 0.88), rgba(5, 4, 2, 0.18)),
+    linear-gradient(180deg, transparent 0%, rgba(5, 4, 2, 0.82) 88%);
 }
 
 .section-heading {
@@ -791,7 +803,7 @@ h3 {
   gap: 10px;
   align-items: end;
   width: min(100%, 680px);
-  margin: clamp(28px, 5vw, 54px) auto 0;
+  margin: clamp(22px, 4vw, 38px) auto 0;
   padding: 22px 0 0;
   border-top: 1px solid rgba(199, 159, 74, 0.22);
   text-align: left;
@@ -813,7 +825,7 @@ h3 {
 }
 
 .beta-gate label span {
-  margin: 10px 0 8px;
+  margin: 0 0 8px;
   color: var(--dim);
   font-size: 0.78rem;
 }
@@ -953,6 +965,7 @@ details p {
   }
 
   .hero-signal-strip {
+    display: flex;
     margin-top: 28px;
     position: relative;
     right: auto;
