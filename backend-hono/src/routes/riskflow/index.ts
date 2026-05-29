@@ -37,6 +37,7 @@ import {
   handleDoctor,
   handleGetItemById,
 } from "./handlers.js";
+import { handleGetRiskFlowStats } from "./stats.js";
 
 export function createRiskFlowRoutes(): Hono {
   const router = new Hono();
@@ -95,6 +96,9 @@ export function createRiskFlowRoutes(): Hono {
 
   // GET /api/riskflow/sources - Connection status for data source indicators (public)
   router.get("/sources", handleGetSources);
+
+  // GET /api/riskflow/stats - Public DB-backed marketing counters
+  router.get("/stats", handleGetRiskFlowStats);
 
   // POST /api/riskflow/polling-toggle - Enable/disable automatic polling (S10-T1c)
   router.post("/polling-toggle", handlePollingToggle);

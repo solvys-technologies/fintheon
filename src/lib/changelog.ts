@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T12:47:41-04:00",
+    agent: "codex",
+    summary:
+      "Fintheon landing prototype pass: converted the nav mark to a typography wordmark, replaced hero notes with live DB-backed catalyst and licensing metrics, tightened the hero-to-data-rain transition, moved the desk mockup into the Consilium section, centered the beta CTA over the existing dithered LoadingGlobe scene, and added a public RiskFlow stats endpoint for total ingested catalysts.",
+    files: [
+      "backend-hono/src/routes/riskflow/index.ts",
+      "backend-hono/src/routes/riskflow/stats.ts",
+      "frontend/fintheon-landing-prototype.html",
+      "frontend/public/marketing/fintheon-landing-prototype.css",
+      "frontend/src/marketing/fintheon-catalyst-counter.ts",
+      "frontend/src/marketing/fintheon-data-wall.ts",
+      "frontend/src/marketing/fintheon-globe-hero.ts",
+      "frontend/src/marketing/fintheon-landing-prototype.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-29T11:22:00-04:00",
     agent: "codex",
     summary:

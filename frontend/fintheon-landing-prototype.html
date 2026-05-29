@@ -13,7 +13,6 @@
   <body>
     <header class="site-nav" data-nav>
       <a class="brand" href="#hero" aria-label="Fintheon home">
-        <span class="brand-mark">F</span>
         <span class="brand-word">Fintheon</span>
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
@@ -60,28 +59,19 @@
             <a class="ghost-button" href="#method">Explore the desk</a>
           </div>
         </div>
-        <div class="hero-signal-strip" aria-label="Platform notes">
+        <div class="hero-signal-strip" aria-label="Platform metrics">
           <p>
-            <span>RiskFlow</span>
-            Scores every headline against your positions in real time.
+            <span data-catalyst-count>[LOADING]</span>
+            Live catalysts ingested
           </p>
           <p>
-            <span>Consilium</span>
-            A boardroom where agents route signal into a single read.
+            <span>&lt; 4.5s</span>
+            Average Time-to-Print
           </p>
           <p>
-            <span>PsychAssist</span>
-            Intervenes before tilt turns into a capital event.
+            <span>One-Time License Available</span>
+            Bring your own Keys, Bring your own Docs. Monthly plans available.
           </p>
-        </div>
-      </section>
-
-      <section class="mockup-showcase" aria-label="Fintheon product preview">
-        <div class="mockup-shell">
-          <img
-            src="/marketing/fintheon-desk-mockup.png"
-            alt="Fintheon desktop showing The Weekly Tribune, Desk Plan, and live risk signals"
-          />
         </div>
       </section>
 
@@ -189,6 +179,9 @@
       </section>
 
       <section id="waitlist" class="waitlist section">
+        <div class="waitlist-globe" data-product-object aria-hidden="true">
+          <div class="webgl-fallback"></div>
+        </div>
         <div class="waitlist-copy">
           <p class="overline">Beta lane</p>
           <h2>Enter the tunnel before the desk opens.</h2>
@@ -197,12 +190,7 @@
             becoming a beta lane for traders who want the market stream routed
             into a surface they can actually command.
           </p>
-        </div>
-        <form class="beta-gate" aria-label="Join the Fintheon beta waitlist">
-          <div class="tunnel-visual" data-product-object aria-hidden="true">
-            <div class="webgl-fallback"></div>
-          </div>
-          <div class="tunnel-content">
+          <form class="beta-gate" aria-label="Join the Fintheon beta waitlist">
             <p class="card-label">Access request</p>
             <h3>Get the next opening.</h3>
             <p>Get notified when the next Fintheon beta lane opens.</p>
@@ -211,12 +199,17 @@
               <input type="email" name="email" placeholder="trader@desk.com" />
             </label>
             <button type="submit">Request access</button>
-          </div>
-        </form>
+          </form>
+        </div>
       </section>
 
       <section id="surface" class="surface section">
-        <div class="surface-media" aria-hidden="true"></div>
+        <div class="mockup-shell surface-mockup">
+          <img
+            src="/marketing/fintheon-desk-mockup.png"
+            alt="Fintheon desktop showing The Weekly Tribune, Desk Plan, and live risk signals"
+          />
+        </div>
         <div class="surface-copy">
           <p class="overline">The Consilium Boardroom</p>
           <h2>Five agents. Zero lag.</h2>
