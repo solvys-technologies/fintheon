@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T00:21:32-04:00",
+    agent: "codex",
+    summary:
+      "Mobile Desk scroll arbitration fix: each compact Desk page now gives its child surface a real full-height flex box, and phone page swipes only advance once the active scrollable section has reached its top or bottom. Briefings and other long mobile Desk sections can be read normally before drilling to the next page.",
+    files: [
+      "frontend/components/desk/DeskDashboardPrototype.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T22:44:08-04:00",
     agent: "codex",
     summary:

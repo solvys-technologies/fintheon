@@ -38,7 +38,7 @@ export function DeskDashboardPrototype({
     x: number;
     y: number;
     target: EventTarget | null;
-    zone: "top" | "bottom";
+    page: number;
   } | null>(null);
 
   const scrollToPage = useCallback(
@@ -81,24 +81,12 @@ export function DeskDashboardPrototype({
         touchStartRef.current = null;
         return;
       }
-      const activeSection = containerRef.current?.querySelector(
-        `[data-desk-page="${activePage}"]`,
-      );
-      const rect = activeSection?.getBoundingClientRect();
-      if (!rect) {
-        touchStartRef.current = null;
-        return;
-      }
-      const edgeZone = 112;
-      const zone =
-        touch.clientY >= rect.bottom - edgeZone
-          ? "bottom"
-          : touch.clientY <= rect.top + edgeZone
-            ? "top"
-            : null;
-      touchStartRef.current = zone
-        ? { x: touch.clientX, y: touch.clientY, target: event.target, zone }
-        : null;
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        target: event.target,
+        page: activePage,
+      };
     },
     [activePage, deskSecondPageMode],
   );
@@ -115,10 +103,16 @@ export function DeskDashboardPrototype({
       const deltaX = Math.abs(touch.clientX - start.x);
       if (Math.abs(deltaY) < 112 || deltaX > 54) return;
       const direction = deltaY < 0 ? 1 : -1;
-      if (direction > 0 && start.zone !== "bottom") return;
-      if (direction < 0 && start.zone !== "top") return;
-      if (hasScrollableRoom(start.target, direction)) return;
-      scrollToPage(activePage + direction);
+      const activeSection = containerRef.current?.querySelector(
+        `[data-desk-page="${start.page}"]`,
+      );
+      if (
+        activeSection instanceof HTMLElement &&
+        hasScrollableRoom(start.target, direction, activeSection)
+      ) {
+        return;
+      }
+      scrollToPage(start.page + direction);
     },
     [activePage, deskSecondPageMode, scrollToPage],
   );
@@ -229,27 +223,53 @@ function MobileDeskPage({
             : `translateY(${offset > 0 ? 8 : -8}px) scale(0.986)`,
       }}
     >
-      {children}
+      <div className="flex h-full min-h-0 flex-col [&>*]:min-h-0 [&>*]:flex-1">
+        {children}
+      </div>
     </section>
   );
 }
 
-function hasScrollableRoom(target: EventTarget | null, direction: number) {
-  let node = target instanceof HTMLElement ? target : null;
-  while (node && node.dataset.deskPage == null) {
-    const style = window.getComputedStyle(node);
-    const canScroll =
-      /(auto|scroll)/.test(style.overflowY) &&
-      node.scrollHeight > node.clientHeight + 2;
-    if (canScroll) {
-      if (direction > 0) {
-        return node.scrollTop + node.clientHeight < node.scrollHeight - 4;
-      }
-      return node.scrollTop > 4;
-    }
-    node = node.parentElement;
+function hasScrollableRoom(
+  target: EventTarget | null,
+  direction: number,
+  page: HTMLElement,
+) {
+  const scrollableAncestor = findScrollableAncestor(target, page);
+  if (scrollableAncestor)
+    return canScrollInDirection(scrollableAncestor, direction);
+
+  const scrollables = page.querySelectorAll<HTMLElement>("*");
+  for (const node of scrollables) {
+    if (canScrollInDirection(node, direction)) return true;
   }
   return false;
+}
+
+function findScrollableAncestor(target: EventTarget | null, page: HTMLElement) {
+  let node = target instanceof HTMLElement ? target : null;
+  while (node && node !== page) {
+    if (isScrollableY(node)) return node;
+    node = node.parentElement;
+  }
+  return isScrollableY(page) ? page : null;
+}
+
+function canScrollInDirection(node: HTMLElement, direction: number) {
+  if (!isScrollableY(node)) return false;
+  if (direction > 0) {
+    return node.scrollTop + node.clientHeight < node.scrollHeight - 6;
+  }
+  return node.scrollTop > 6;
+}
+
+function isScrollableY(node: HTMLElement) {
+  const style = window.getComputedStyle(node);
+  return (
+    node.clientHeight > 0 &&
+    /(auto|scroll)/.test(style.overflowY) &&
+    node.scrollHeight > node.clientHeight + 2
+  );
 }
 
 function DeskPrototypePager({
