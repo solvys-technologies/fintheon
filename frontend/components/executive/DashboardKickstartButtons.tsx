@@ -14,11 +14,13 @@ export function RiskSignalsRefreshButton({
       type="button"
       onClick={onClick}
       disabled={isLoading}
-      className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40"
+      className="p-1 rounded hover:bg-[var(--fintheon-accent)]/10 text-zinc-500 hover:text-[var(--fintheon-accent)] transition-colors disabled:opacity-40 max-[767px]:p-1.5 max-[767px]:text-[var(--fintheon-accent)]/72"
       title="Refresh risk signals"
       aria-label="Refresh risk signals"
     >
-      <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+      <RefreshCw
+        className={`w-3 h-3 max-[767px]:h-4 max-[767px]:w-4 ${isLoading ? "animate-spin" : ""}`}
+      />
     </button>
   );
 }

@@ -173,6 +173,7 @@ export function TopHeader({
   const showIframeControls = allowCustomIframes;
   const isMobileSurface =
     surfaceCapabilities?.navigationMode === "underlay-drawer";
+  const showMobileBack = isMobileSurface && historyIndex > 0;
   const allowVoiceAssistant = surfaceCapabilities?.allowVoiceAssistant ?? true;
   const shouldShowLeftPanelToggle =
     !isMobileSurface && !topStepXEnabled && compactLevel < 2;
@@ -437,29 +438,42 @@ export function TopHeader({
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={onMobileDrawerToggle}
+                onClick={showMobileBack ? onBack : onMobileDrawerToggle}
                 aria-label={
-                  mobileDrawerOpen ? "Close mobile menu" : "Open mobile menu"
+                  showMobileBack
+                    ? "Back"
+                    : mobileDrawerOpen
+                      ? "Close mobile menu"
+                      : "Open mobile menu"
                 }
-                aria-expanded={mobileDrawerOpen}
-                className={`grid h-9 w-9 place-items-center rounded-full border transition-[border-color,background,color,transform] active:scale-95 ${
-                  mobileDrawerOpen
+                aria-expanded={showMobileBack ? undefined : mobileDrawerOpen}
+                className={`relative grid h-9 w-9 place-items-center overflow-hidden rounded-full border transition-[border-color,background,color,transform] active:scale-95 ${
+                  mobileDrawerOpen && !showMobileBack
                     ? "border-[var(--fintheon-accent)]/45 bg-[var(--fintheon-accent)] text-black"
                     : "border-[var(--fintheon-accent)]/28 bg-[var(--fintheon-bg)] text-[var(--fintheon-accent)]"
                 }`}
-                title={mobileDrawerOpen ? "Close menu" : "Open menu"}
+                title={
+                  showMobileBack
+                    ? "Back"
+                    : mobileDrawerOpen
+                      ? "Close menu"
+                      : "Open menu"
+                }
               >
-                <Menu className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onBack}
-                disabled={historyIndex <= 0}
-                aria-label="Back"
-                className="grid h-9 w-9 place-items-center rounded-full border border-[var(--fintheon-accent)]/18 bg-[var(--fintheon-bg)] text-[var(--fintheon-accent)]/75 transition-colors disabled:border-[var(--fintheon-accent)]/8 disabled:text-[var(--fintheon-muted)]/35"
-                title="Back"
-              >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft
+                  className={`absolute h-4 w-4 transition-[opacity,transform,filter] duration-200 ${
+                    showMobileBack
+                      ? "translate-x-0 scale-100 opacity-100 blur-0"
+                      : "-translate-x-2 scale-90 opacity-0 blur-[1px]"
+                  }`}
+                />
+                <Menu
+                  className={`absolute h-4 w-4 transition-[opacity,transform,filter] duration-200 ${
+                    showMobileBack
+                      ? "translate-x-2 scale-90 opacity-0 blur-[1px]"
+                      : "translate-x-0 scale-100 opacity-100 blur-0"
+                  }`}
+                />
               </button>
             </div>
           )}
@@ -717,16 +731,18 @@ export function TopHeader({
                   )}
               </div>
             ))}
-          <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
-            <div className="flex items-center gap-1.5">
-              {compactLevel < 2 && (
-                <span className="text-[9px] text-gray-500">VIX</span>
-              )}
-              <span className="text-xs font-mono text-gray-300">
-                {ivData ? ivData.vix.level.toFixed(2) : "--"}
-              </span>
+          {!isMobileSurface && (
+            <div className="bg-[var(--fintheon-bg)] border border-zinc-800 rounded-lg px-2.5 h-7 flex items-center flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                {compactLevel < 2 && (
+                  <span className="text-[9px] text-gray-500">VIX</span>
+                )}
+                <span className="text-xs font-mono text-gray-300">
+                  {ivData ? ivData.vix.level.toFixed(2) : "--"}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
           <ToolbarDnD
             items={toolbarOrder}
             editMode={toolbarEditMode}
@@ -740,13 +756,16 @@ export function TopHeader({
                     loading={ivLoading}
                     layoutOption={layoutOption}
                     compactCopy={!topStepXEnabled && compactLevel >= 1}
+                    mobileCombined={isMobileSurface}
                   />
                 );
               }
               return null;
             }}
           </ToolbarDnD>
-          <div className={TOOLBAR_PILL_CLASS}>
+          <div
+            className={`${TOOLBAR_PILL_CLASS} ${isMobileSurface ? "mr-1.5" : ""}`}
+          >
             {showIframeControls && onTopStepXDisable && (
               <button
                 onClick={onTopStepXDisable}

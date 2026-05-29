@@ -1044,76 +1044,108 @@ function MainLayoutInner() {
         <div
           data-surface-runtime={surfaceCapabilities.runtime}
           data-surface-form-factor={surfaceCapabilities.formFactor}
-          className={`fintheon-app-shell h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${iframeModeActive ? "topstepx-active" : ""}`}
+          className={`fintheon-app-shell relative h-screen w-full overflow-hidden flex flex-col bg-[var(--fintheon-bg)] text-white ${iframeModeActive ? "topstepx-active" : ""}`}
         >
           {/* [claude-code 2026-04-24] Standalone waveform overlay — no border, no
             background. Doubles as user-mic indicator (when listening) and agent
             voice (when speaking). The previous draggable COACH popup is gone. */}
           {surfaceCapabilities.allowVoiceAssistant && <AgentVoiceWaveform />}
-          <TopHeader
-            topStepXEnabled={iframeModeActive}
-            onTopStepXToggle={
-              surfaceCapabilities.allowCustomIframes
-                ? handleBrowserEnable
-                : undefined
-            }
-            onTopStepXDisable={
-              surfaceCapabilities.allowCustomIframes
-                ? handleBrowserToggle
-                : undefined
-            }
-            selectedPlatform={selectedPlatform}
-            onPlatformSelect={setSelectedPlatform}
-            layoutOption={layoutOption}
-            onLayoutOptionChange={setLayoutOption}
-            chatOpen={showChat}
-            onChatToggle={() =>
-              setShowChat((prev) => {
-                // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
-                if (!prev && iframeModeActive && layoutOption === "combined") {
-                  setLayoutOption("tickers-only");
-                }
-                return !prev;
-              })
-            }
-            activeTab={activeTab}
-            tabHistory={tabHistory}
-            historyIndex={historyIndex}
-            onBack={goBack}
-            onForward={goForward}
-            hideBranding={iframeModeActive && sidebarOverlayVisible}
-            toolbarEditMode={layoutEditMode}
-            psychAssistHeadingWidget={
-              surfaceCapabilities.allowPsychAssist &&
-              iframeModeActive &&
-              layoutOption === "tickers-only" &&
-              psychAssistTarget === "header" &&
-              !showEconCountdown ? (
-                <PsychAssistDockable
-                  target="header"
-                  onDockToHeader={() => setPsychAssistTarget("header")}
-                  onUndockToFloating={() => setPsychAssistTarget("floating")}
-                />
-              ) : undefined
-            }
-            econCountdownWidget={
-              iframeModeActive &&
-              layoutOption === "tickers-only" &&
-              showEconCountdown ? (
-                <EconCountdownWidget
-                  visible={showEconCountdown}
-                  onDismiss={() => setEconCountdownDismissed(true)}
-                />
-              ) : undefined
-            }
-            compactLevel={compactLevel}
-            allowCustomIframes={surfaceCapabilities.allowCustomIframes}
-            surfaceCapabilities={surfaceCapabilities}
-            mobileDrawerOpen={mobileDrawerOpen}
-            onMobileDrawerToggle={() => setMobileDrawerOpen((v) => !v)}
-            /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
-             the only voice trigger now. */
-          />
+          {mobileDrawerMode && (
+            <MobileUnderlayDrawer
+              open={mobileDrawerOpen}
+              activeTab={activeTab}
+              onClose={() => setMobileDrawerOpen(false)}
+              onTabChange={(tab) => {
+                setShowRefinement(false);
+                handleTabChange(tab as NavTab);
+              }}
+              onConsiliumView={(view) => {
+                setShowRefinement(false);
+                navigateTab("analysis");
+                window.setTimeout(() => {
+                  window.dispatchEvent(
+                    new CustomEvent("fintheon:consilium-lite-view", {
+                      detail: { view },
+                    }),
+                  );
+                }, 30);
+              }}
+              onNotificationCenterToggle={() =>
+                setNotificationCenterOpen((v) => !v)
+              }
+              onLogout={handleLogout}
+            />
+          )}
+          <div className="relative z-10 shrink-0" style={mobileContentStyle}>
+            <TopHeader
+              topStepXEnabled={iframeModeActive}
+              onTopStepXToggle={
+                surfaceCapabilities.allowCustomIframes
+                  ? handleBrowserEnable
+                  : undefined
+              }
+              onTopStepXDisable={
+                surfaceCapabilities.allowCustomIframes
+                  ? handleBrowserToggle
+                  : undefined
+              }
+              selectedPlatform={selectedPlatform}
+              onPlatformSelect={setSelectedPlatform}
+              layoutOption={layoutOption}
+              onLayoutOptionChange={setLayoutOption}
+              chatOpen={showChat}
+              onChatToggle={() =>
+                setShowChat((prev) => {
+                  // Opening chat in Castra → auto-switch to Zen so panels don't fight for space
+                  if (
+                    !prev &&
+                    iframeModeActive &&
+                    layoutOption === "combined"
+                  ) {
+                    setLayoutOption("tickers-only");
+                  }
+                  return !prev;
+                })
+              }
+              activeTab={activeTab}
+              tabHistory={tabHistory}
+              historyIndex={historyIndex}
+              onBack={goBack}
+              onForward={goForward}
+              hideBranding={iframeModeActive && sidebarOverlayVisible}
+              toolbarEditMode={layoutEditMode}
+              psychAssistHeadingWidget={
+                surfaceCapabilities.allowPsychAssist &&
+                iframeModeActive &&
+                layoutOption === "tickers-only" &&
+                psychAssistTarget === "header" &&
+                !showEconCountdown ? (
+                  <PsychAssistDockable
+                    target="header"
+                    onDockToHeader={() => setPsychAssistTarget("header")}
+                    onUndockToFloating={() => setPsychAssistTarget("floating")}
+                  />
+                ) : undefined
+              }
+              econCountdownWidget={
+                iframeModeActive &&
+                layoutOption === "tickers-only" &&
+                showEconCountdown ? (
+                  <EconCountdownWidget
+                    visible={showEconCountdown}
+                    onDismiss={() => setEconCountdownDismissed(true)}
+                  />
+                ) : undefined
+              }
+              compactLevel={compactLevel}
+              allowCustomIframes={surfaceCapabilities.allowCustomIframes}
+              surfaceCapabilities={surfaceCapabilities}
+              mobileDrawerOpen={mobileDrawerOpen}
+              onMobileDrawerToggle={() => setMobileDrawerOpen((v) => !v)}
+              /* [claude-code 2026-04-24] performanceChatWidget removed — orb is
+               the only voice trigger now. */
+            />
+          </div>
 
           {/* S14-T6: Peers panel removed — team status is now in footer Team tab */}
 
@@ -1122,32 +1154,6 @@ function MainLayoutInner() {
             onTouchStart={handleShellTouchStart}
             onTouchEnd={handleShellTouchEnd}
           >
-            {mobileDrawerMode && (
-              <MobileUnderlayDrawer
-                open={mobileDrawerOpen}
-                activeTab={activeTab}
-                onClose={() => setMobileDrawerOpen(false)}
-                onTabChange={(tab) => {
-                  setShowRefinement(false);
-                  handleTabChange(tab as NavTab);
-                }}
-                onConsiliumView={(view) => {
-                  setShowRefinement(false);
-                  navigateTab("analysis");
-                  window.setTimeout(() => {
-                    window.dispatchEvent(
-                      new CustomEvent("fintheon:consilium-lite-view", {
-                        detail: { view },
-                      }),
-                    );
-                  }, 30);
-                }}
-                onNotificationCenterToggle={() =>
-                  setNotificationCenterOpen((v) => !v)
-                }
-                onLogout={handleLogout}
-              />
-            )}
             <div
               className="relative flex h-full w-full overflow-hidden"
               style={mobileContentStyle}

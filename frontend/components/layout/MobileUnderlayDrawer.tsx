@@ -12,6 +12,8 @@ import {
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import type { SurfaceNavTab } from "../../lib/surface-capabilities";
 
 interface MobileUnderlayDrawerProps {
@@ -34,8 +36,11 @@ export function MobileUnderlayDrawer({
   onLogout,
 }: MobileUnderlayDrawerProps) {
   const { queueCount } = useDND();
+  const { user } = useAuth();
+  const { traderName } = useSettings();
   const { unreadCount } = useServerNotifications();
   const badgeCount = queueCount + unreadCount;
+  const greetingName = traderName || user?.email?.split("@")[0] || "Operator";
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const runAndClose = (action: () => void) => {
     action();
@@ -67,7 +72,7 @@ export function MobileUnderlayDrawer({
         data-mobile-underlay-drawer={open ? "open" : "closed"}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`pointer-events-auto absolute bottom-2.5 left-2.5 top-2.5 flex w-[min(300px,calc(100vw-72px))] flex-col overflow-hidden rounded-[16px] border border-[var(--fintheon-accent)]/12 px-2 py-3 shadow-[16px_0_34px_rgba(0,0,0,0.34)] transition-[transform,opacity] duration-[330ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`pointer-events-auto absolute bottom-2.5 left-2.5 top-[calc(env(safe-area-inset-top)+10px)] flex w-[min(300px,calc(100vw-72px))] flex-col overflow-hidden rounded-[16px] border border-[var(--fintheon-accent)]/12 px-2 py-3 shadow-[16px_0_34px_rgba(0,0,0,0.34)] transition-[transform,opacity] duration-[330ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
           open
             ? "translate-x-0 opacity-100"
             : "-translate-x-[calc(100%+20px)] opacity-70"
@@ -79,6 +84,15 @@ export function MobileUnderlayDrawer({
           WebkitBackdropFilter: "blur(18px) saturate(1.12)",
         }}
       >
+        <div className="px-3 pb-4 pt-1">
+          <p className="text-[16px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]">
+            Fintheon
+          </p>
+          <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--fintheon-text)]/48">
+            Desk ready, {greetingName}
+          </p>
+        </div>
+
         <nav
           className="flex flex-1 flex-col gap-1"
           aria-label="Mobile navigation"

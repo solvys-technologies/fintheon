@@ -715,6 +715,7 @@ html[data-zen-mode="true"] button[aria-label] {
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: var(--fintheon-bg);
   }
   /* Ensure ALL interactive/UI elements inherit the theme font */
   button,
@@ -745,6 +746,23 @@ html[data-zen-mode="true"] button[aria-label] {
   pre,
   .font-mono {
     font-family: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  }
+}
+
+@media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    background: var(--fintheon-bg);
+  }
+
+  .fintheon-app-shell[data-surface-form-factor="mobile"] {
+    height: 100dvh;
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--fintheon-bg);
   }
 }
 

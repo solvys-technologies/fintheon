@@ -194,10 +194,10 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
       className="relative h-full overflow-y-auto px-0 pt-0 pb-0"
     >
       <EconCountdownModal />
-      <header className="consilium-tab-bar riskflow-main-header grid shrink-0 grid-cols-[15.5rem_minmax(0,1fr)_15.5rem] items-center gap-3 px-4 pt-3 pb-1.5">
-        <div className="riskflow-main-header__side flex w-[15.5rem] items-center gap-3">
+      <header className="consilium-tab-bar riskflow-main-header grid shrink-0 grid-cols-[15.5rem_minmax(0,1fr)_15.5rem] items-center gap-3 px-4 pt-3 pb-1.5 max-[767px]:grid-cols-1 max-[767px]:gap-2 max-[767px]:px-3 max-[767px]:pt-2 max-[767px]:pb-2">
+        <div className="riskflow-main-header__side flex w-[15.5rem] items-center gap-3 max-[767px]:w-full max-[767px]:gap-2">
           <h2
-            className="consilium-tab-bar__title mr-0 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)]"
+            className="consilium-tab-bar__title mr-0 flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.2em] text-[var(--fintheon-accent)] max-[767px]:text-[15px]"
             style={{ fontFamily: "var(--font-heading, Roboto, sans-serif)" }}
           >
             <RadioTower size={14} />
@@ -219,7 +219,7 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
           </span>
           <span
             aria-hidden={!refreshing}
-            className="inline-flex min-w-[60px] items-center"
+            className="inline-flex min-w-[60px] items-center max-[767px]:ml-auto max-[767px]:min-w-0"
             style={{
               opacity: refreshing ? 1 : 0,
               transition: "opacity 180ms ease",
@@ -229,7 +229,7 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
           </span>
         </div>
 
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2 max-[767px]:order-3 max-[767px]:overflow-x-auto max-[767px]:pb-0.5">
           <PriorityFilterMenu
             selected={showProposals ? new Set() : severitySet}
             onToggle={(s) =>
@@ -281,28 +281,31 @@ export function RiskFlowMain({ onChatAlert }: RiskFlowMainProps) {
           </button>
         </div>
 
-        <div className="riskflow-main-header__side flex w-[15.5rem] items-center justify-end gap-1.5">
+        <div className="riskflow-main-header__side flex w-[15.5rem] items-center justify-end gap-1.5 max-[767px]:order-2 max-[767px]:w-full">
           <button
             type="button"
             onClick={() => {
               void handleKickstart();
             }}
             disabled={kickstarting}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors hover:border-[var(--fintheon-accent)]/24 hover:text-[var(--fintheon-accent)] disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-zinc-500 transition-colors hover:border-[var(--fintheon-accent)]/24 hover:text-[var(--fintheon-accent)] disabled:opacity-40 max-[767px]:h-9 max-[767px]:w-9 max-[767px]:rounded-lg max-[767px]:border-[var(--fintheon-accent)]/14 max-[767px]:text-[var(--fintheon-accent)]/72"
             title="Kickstart ingestion"
           >
-            <CircleQuarters active={kickstarting} size={14} />
+            <CircleQuarters
+              active={kickstarting}
+              size={kickstarting ? 17 : 16}
+            />
           </button>
           <button
             onClick={requestNotifications}
-            className="flex h-7 items-center gap-1.5 rounded-md border border-transparent px-3 text-xs font-medium text-[var(--fintheon-text)]/40 transition-colors hover:border-[var(--fintheon-accent)]/24 hover:text-[var(--fintheon-accent)]"
+            className="flex h-7 items-center gap-1.5 rounded-md border border-transparent px-3 text-xs font-medium text-[var(--fintheon-text)]/40 transition-colors hover:border-[var(--fintheon-accent)]/24 hover:text-[var(--fintheon-accent)] max-[767px]:px-2"
           >
             {notificationsEnabled ? (
               <Bell className="h-3.5 w-3.5" />
             ) : (
               <BellOff className="h-3.5 w-3.5" />
             )}
-            <span className="fintheon-zen-label">
+            <span className="fintheon-zen-label max-[767px]:hidden">
               {notificationsEnabled ? "Notifications On" : "Notifications"}
             </span>
           </button>
