@@ -307,7 +307,8 @@ h3 {
 .section-heading p,
 .waitlist-copy p,
 .surface-copy p,
-.agent-rail p,
+.agent-reveal-copy p,
+.agent-steps p,
 .faq p,
 .tunnel-content p {
   color: var(--muted);
@@ -505,33 +506,111 @@ h3 {
   );
 }
 
-.agent-rail-section {
-  background:
-    linear-gradient(180deg, #030303 0%, #071015 42%, var(--bg) 100%), var(--bg);
-  overflow: hidden;
-}
-
-.agent-rail {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(72vw, 780px);
-  gap: clamp(34px, 5vw, 78px);
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  padding: clamp(28px, 5vw, 70px) clamp(20px, 6vw, 84px) 46px 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(199, 159, 74, 0.46) transparent;
-}
-
-.agent-rail article {
+.agent-reveal-section {
   position: relative;
-  min-height: 320px;
-  scroll-snap-align: start;
-  padding-top: clamp(28px, 4vw, 50px);
+  min-height: 520dvh;
+  background: #030303;
 }
 
-.agent-rail article::before {
+.agent-reveal-stage {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(360px, 0.72fr);
+  gap: clamp(34px, 7vw, 110px);
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: clamp(110px, 10vw, 168px) clamp(20px, 6vw, 84px);
+  align-items: center;
+}
+
+.agent-context,
+.agent-context::before,
+.agent-context::after,
+.agent-context-image {
+  position: absolute;
+  inset: 0;
+}
+
+.agent-context {
+  z-index: -1;
+  overflow: hidden;
+  background: #030303;
+}
+
+.agent-context::before {
+  content: "";
+  z-index: 2;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(3, 3, 3, 0.94),
+      rgba(3, 3, 3, 0.48) 48%,
+      rgba(3, 3, 3, 0.88)
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.035) 0 1px,
+      transparent 1px 5px
+    );
+}
+
+.agent-context::after {
+  content: "";
+  z-index: 3;
+  background:
+    radial-gradient(
+      circle at var(--agent-light-x, 58%) var(--agent-light-y, 48%),
+      rgba(166, 214, 229, 0.16),
+      transparent 24%
+    ),
+    linear-gradient(180deg, transparent 0%, #030303 96%);
+}
+
+.agent-context-image {
+  z-index: 1;
+  opacity: 0;
+  background-position: center;
+  background-size: cover;
+  filter: saturate(0.72) contrast(1.12) brightness(0.52);
+  transform: scale(1.08);
+  transition:
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.agent-context-image.is-active {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+.agent-reveal-copy {
+  max-width: 790px;
+  will-change: opacity, transform;
+}
+
+.agent-reveal-copy p:not(.overline) {
+  max-width: 620px;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.38vw, 1.2rem);
+  line-height: 1.78;
+}
+
+.agent-steps {
+  position: relative;
+  min-height: min(70dvh, 640px);
+}
+
+.agent-steps article {
+  position: absolute;
+  inset: 50% 0 auto;
+  padding-top: 24px;
+  color: var(--ink);
+  will-change: transform, opacity;
+  filter: blur(var(--ghost-blur, 0));
+}
+
+.agent-steps article::before {
   content: "";
   position: absolute;
   inset: 0 0 auto;
@@ -539,22 +618,55 @@ h3 {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(199, 159, 74, 0.76),
+    rgba(199, 159, 74, 0.72),
     rgba(166, 214, 229, 0.2),
     transparent
   );
+  transform-origin: left;
+  transform: scaleX(var(--line-scale, 0.18));
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.agent-rail h3 {
-  max-width: 690px;
-  font-size: clamp(2.2rem, 5vw, 5.2rem);
+.agent-steps article.is-active::before {
+  --line-scale: 1;
 }
 
-.agent-rail p:not(.card-label) {
+.step-label {
+  margin: 0 0 18px;
+  color: var(--gold);
+  font-family: "Doto", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.agent-steps h3 {
+  max-width: 720px;
+  font-size: clamp(2.2rem, 5.4vw, 5.6rem);
+  opacity: var(--copy-opacity, 1);
+}
+
+.agent-steps p:not(.step-label) {
   max-width: 620px;
   color: var(--muted);
-  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-size: clamp(1rem, 1.4vw, 1.22rem);
   line-height: 1.75;
+  opacity: var(--body-opacity, 1);
+}
+
+.agent-progress {
+  position: absolute;
+  right: clamp(20px, 6vw, 84px);
+  bottom: 38px;
+  display: flex;
+  gap: 10px;
+  color: rgba(199, 159, 74, 0.74);
+  font-family: "Doto", monospace;
+  letter-spacing: 0.12em;
+}
+
+.agent-progress span:first-child {
+  color: var(--ink);
 }
 
 .waitlist {
@@ -820,13 +932,41 @@ details p {
     font-size: 1.05rem;
   }
 
-  .agent-rail-section {
-    padding-top: 86px;
+  .agent-reveal-section {
+    min-height: 520dvh;
   }
 
-  .agent-rail {
-    grid-auto-columns: minmax(82vw, 1fr);
-    padding-right: 18px;
+  .agent-reveal-stage {
+    display: block;
+    padding: 96px 18px 90px;
+  }
+
+  .agent-context::before {
+    background:
+      linear-gradient(180deg, rgba(3, 3, 3, 0.9), rgba(3, 3, 3, 0.52)),
+      repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.035) 0 1px,
+        transparent 1px 5px
+      );
+  }
+
+  .agent-reveal-copy {
+    max-width: 100%;
+  }
+
+  .agent-steps {
+    min-height: 52dvh;
+    margin-top: 54px;
+  }
+
+  .agent-steps h3 {
+    font-size: clamp(2.25rem, 12vw, 4rem);
+  }
+
+  .agent-progress {
+    right: 18px;
+    bottom: 22px;
   }
 
   .waitlist {
