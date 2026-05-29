@@ -59,6 +59,7 @@ export function setupDataWall(canvas: HTMLCanvasElement) {
 
   function draw() {
     const now = performance.now();
+    context.globalCompositeOperation = "source-over";
     context.fillStyle = "rgba(5, 4, 2, 0.34)";
     context.fillRect(0, 0, width, height);
     context.font = "12px Doto, JetBrains Mono, monospace";
