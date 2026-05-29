@@ -105,7 +105,7 @@ function Sparkline({
   const points = quote.sparkline;
   if (points.length < 2) {
     return (
-      <div className="mt-3 flex h-[74px] items-center justify-center rounded border border-[var(--fintheon-accent)]/10 bg-black/14 text-[10px] text-[var(--fintheon-muted)]/55">
+      <div className="mt-3 flex h-[74px] items-center justify-center rounded border border-[var(--fintheon-accent)]/10 bg-black/24 text-[10px] text-[var(--fintheon-muted)]/55">
         5D chart unavailable
       </div>
     );
@@ -135,7 +135,7 @@ function Sparkline({
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.34" />
+          <stop offset="0%" stopColor={color} stopOpacity="0.44" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -153,9 +153,9 @@ function Sparkline({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border border-[var(--fintheon-accent)]/10 bg-black/14 p-2">
-      <p className="text-[var(--fintheon-muted)]/45">{label}</p>
-      <p className="mt-1 font-mono text-[var(--fintheon-text)]/70">{value}</p>
+    <div className="rounded border border-[#3a2f13] bg-[#11100b] p-2">
+      <p className="text-[var(--fintheon-muted)]">{label}</p>
+      <p className="mt-1 font-mono text-[var(--fintheon-text)]">{value}</p>
     </div>
   );
 }

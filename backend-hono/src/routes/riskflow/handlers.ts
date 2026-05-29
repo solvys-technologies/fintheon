@@ -24,6 +24,7 @@ import type {
   NewsSource,
   MacroLevel,
 } from "../../types/riskflow.js";
+import type { RiskSignal } from "../../services/riskflow/risk-signal-types.js";
 import { isSupabaseConfigured } from "../../config/supabase.js";
 import { writeInstrumentScores } from "../../services/supabase-service.js";
 // isRettiwtAvailable replaced by pool-based check in handleGetSources
@@ -1918,7 +1919,16 @@ export async function handleGetEstimatedDrift(c: Context) {
   const eventType = c.req.query("eventType") ?? "default";
   const { estimateDrift } =
     await import("../../services/riskflow/estimated-drift-service.js");
-  const result = estimateDrift(signalId, eventType);
+  let signalContext: RiskSignal | undefined;
+  try {
+    const { getRiskSignals } =
+      await import("../../services/riskflow/risk-signal-generator.js");
+    const result = await getRiskSignals();
+    signalContext = result.signals.find((signal) => signal.id === signalId);
+  } catch {
+    signalContext = undefined;
+  }
+  const result = estimateDrift(signalId, eventType, signalContext);
   return c.json(result);
 }
 

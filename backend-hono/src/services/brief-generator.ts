@@ -41,6 +41,20 @@ export const BRIEF_LABELS: Record<string, string> = {
   TWT: "The Weekly Tribune (legacy TOTT)",
 };
 
+const CATALYST_CASCADE_TABLE_RULES = `## Catalyst Cascade Table Rule
+When the provided headlines or desk context show a series of related catalysts compounding into the same market theme, include a compact Markdown table.
+
+Use the table only when warranted:
+- 3+ related catalysts point at the same regime, positioning, or volatility theme; or
+- 2 catalysts plus clear market reaction imply potential catalyst drift.
+
+Table format:
+| Source | Signal | Implication |
+| --- | --- | --- |
+| <headline/source> | <what changed> | <desk consequence> |
+
+After the table, add one short "Session Drift Watch" line if the cluster can carry beyond the current session. Do not add a table for isolated one-off headlines.`;
+
 /**
  * Fetch the latest Arbitrum session-trigger digest for PMDB injection.
  * The import path is assembled at runtime so tsc doesn't statically resolve
@@ -391,6 +405,8 @@ ${today}
 ${feedSummary}
 ${macroDoctrineSection}
 ${deskThemeSection}
+${CATALYST_CASCADE_TABLE_RULES}
+
 ## Instructions
 ${
   briefType === "MDB"
@@ -452,6 +468,8 @@ ${today}
 ${feedSummary}
 ${macroDoctrineSection}
 ${chamberSection}${deskThemeSection}
+${CATALYST_CASCADE_TABLE_RULES}
+
 ## Instructions
 ${
   briefType === "ADB"

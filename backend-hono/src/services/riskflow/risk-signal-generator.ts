@@ -99,6 +99,49 @@ function normalizeDirection(value: unknown): RiskSignal["direction"] {
   return "neutral";
 }
 
+function normalizeStringList(value: unknown, limit: number): string[] {
+  return Array.isArray(value)
+    ? value
+        .map((item) => String(item ?? "").trim())
+        .filter(Boolean)
+        .slice(0, limit)
+    : [];
+}
+
+function catalystCascadePremium(input: {
+  title: string;
+  summary: string;
+  analysis: string;
+  relatedHeadlines: string[];
+  narrativeThreads: string[];
+}): number {
+  const text = [
+    input.title,
+    input.summary,
+    input.analysis,
+    ...input.relatedHeadlines,
+    ...input.narrativeThreads,
+  ]
+    .join(" ")
+    .toLowerCase();
+  const themeHits = [
+    /\bfed|fomc|powell|bowman|paulson|musalem|williams\b/,
+    /\bpmi|ism|manufactur|growth\b/,
+    /\binflation|cpi|pce|tariff|prices\b/,
+    /\byield|treasur|rates?|duration\b/,
+    /\bnq|nasdaq|tech|semis?|ai\b/,
+    /\bvix|vol|gamma|squeeze|positioning|repric\b/,
+  ].filter((pattern) => pattern.test(text)).length;
+  const explicitCascade =
+    /\b(snowball|cascade|cluster|chorus|feedback loop|pile[- ]?on)\b/.test(
+      text,
+    );
+  if (input.relatedHeadlines.length >= 3 && themeHits >= 2) return 1.1;
+  if (input.relatedHeadlines.length >= 2 && themeHits >= 3) return 0.7;
+  if (explicitCascade) return 0.6;
+  return 0;
+}
+
 function toResult(
   signals: RiskSignal[],
   status: RiskSignalResult["freshnessStatus"],
@@ -193,6 +236,8 @@ Rules:
 - direction must reflect the catalyst's likely market effect, not severity; use "neutral" when the evidence is mixed or insufficient
 - source: "bulletin" if derived from analyst bulletins, "catalyst-watch" if from catalysts, "risk-detector" if from systemic context
 - Deduplicate overlapping signals — merge related items into one signal
+- If multiple headlines snowball into the same macro, rates, VIX, positioning, or index-beta theme, treat it as potential catalyst drift rather than isolated headlines
+- For 3+ compounding catalysts, use at least 3 relatedHeadlines when available, add "catalyst-drift" or "headline-cascade" to narrativeThreads, and discuss Session Drift in the analysis
 - relatedHeadlines: 1-3 original headlines that informed this signal
 - narrativeThreads: 1-3 thematic tags (e.g. "fed-policy", "geopolitical", "earnings-season")
 - Be concise but substantive in analysis`;
@@ -232,13 +277,36 @@ Rules:
 
     const now = new Date().toISOString();
     const signals: RiskSignal[] = parsed.map((item) => {
-      const score = Math.min(10, Math.max(0, Number(item.score) || 0));
+      const title = String(item.title || "Untitled Signal");
+      const summary = String(item.summary || "");
+      const relatedHeadlines = normalizeStringList(item.relatedHeadlines, 3);
+      const baseThreads = normalizeStringList(item.narrativeThreads, 3);
+      const rawAnalysis = String(item.analysis || "");
+      const cascadePremium = catalystCascadePremium({
+        title,
+        summary,
+        analysis: rawAnalysis,
+        relatedHeadlines,
+        narrativeThreads: baseThreads,
+      });
+      const score = Math.min(
+        10,
+        Math.max(0, Number(item.score) || 0) + cascadePremium,
+      );
+      const narrativeThreads =
+        cascadePremium > 0 && !baseThreads.includes("catalyst-drift")
+          ? [...baseThreads.slice(0, 2), "catalyst-drift"]
+          : baseThreads;
+      const analysis =
+        cascadePremium > 0 && !/session drift/i.test(rawAnalysis)
+          ? `${rawAnalysis} Session Drift watch: related catalysts are compounding, so follow-through can persist longer than a one-off headline.`
+          : rawAnalysis;
       const source = String(item.source);
       return {
         id: String(item.id || crypto.randomUUID().slice(0, 8)),
-        title: String(item.title || "Untitled Signal"),
-        summary: String(item.summary || ""),
-        analysis: String(item.analysis || ""),
+        title,
+        summary,
+        analysis,
         direction: normalizeDirection(item.direction),
         refinementStatus: "agentic",
         score: Number(score.toFixed(1)),
@@ -248,12 +316,8 @@ Rules:
         )
           ? source
           : "catalyst-watch") as RiskSignal["source"],
-        relatedHeadlines: Array.isArray(item.relatedHeadlines)
-          ? (item.relatedHeadlines as string[]).slice(0, 3)
-          : [],
-        narrativeThreads: Array.isArray(item.narrativeThreads)
-          ? (item.narrativeThreads as string[]).slice(0, 3)
-          : [],
+        relatedHeadlines,
+        narrativeThreads,
         generatedAt: now,
       };
     });

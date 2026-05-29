@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T11:22:00-04:00",
+    agent: "codex",
+    summary:
+      "Tightened ticker sparkline legibility by making the Open/Day Range/5D High/5D Low metric cells fully opaque and lifting ticker widget opacity by 10 points; added catalyst-cascade table guidance for MDB/ADB/PMDB/TWT; and made RiskFlow estimated drift account for clustered/snowballing headline context instead of scoring blind by signal id alone.",
+    files: [
+      "frontend/components/chat/slots/MarketTickerCard.tsx",
+      "frontend/components/chat/slots/MarketTickerStripSlot.tsx",
+      "frontend/index.css",
+      "backend-hono/src/services/brief-generator.ts",
+      "backend-hono/src/services/riskflow/risk-signal-generator.ts",
+      "backend-hono/src/services/riskflow/estimated-drift-service.ts",
+      "backend-hono/src/routes/riskflow/handlers.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-29T09:07:52-04:00",
     agent: "codex",
     summary:

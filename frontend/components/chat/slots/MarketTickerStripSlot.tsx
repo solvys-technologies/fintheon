@@ -94,7 +94,7 @@ export function MarketTickerStripSlot({
       <SlotShell
         label={data?.title ?? "5d performance"}
         style={{
-          background: "rgba(10, 9, 5, 0.49)",
+          background: "rgba(10, 9, 5, 0.59)",
           borderColor: "rgba(199, 159, 74, 0.105)",
         }}
       >

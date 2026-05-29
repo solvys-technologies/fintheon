@@ -1973,7 +1973,7 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-market-ticker-card {
   background: color-mix(
     in srgb,
-    var(--fintheon-overlay-surface) 70%,
+    var(--fintheon-overlay-surface) 80%,
     transparent
   );
 }
@@ -2978,7 +2978,7 @@ html[data-zen-mode="true"] button[aria-label] {
   padding: 4px 9px;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.07), transparent 42%),
-    rgba(5, 4, 2, 0.44);
+    rgba(5, 4, 2, 0.54);
   color: var(--fintheon-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10px;
@@ -2995,7 +2995,7 @@ html[data-zen-mode="true"] button[aria-label] {
   border-color: color-mix(in srgb, var(--fintheon-accent) 38%, transparent);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 42%),
-    rgba(199, 159, 74, 0.056);
+    rgba(199, 159, 74, 0.156);
 }
 
 .fintheon-ticker-pill[data-direction="up"] span:last-child {
@@ -3593,6 +3593,40 @@ html[data-zen-mode="true"] button[aria-label] {
 .fintheon-desk-brief-markdown li {
   margin-top: 0.35rem;
   margin-bottom: 0.35rem;
+}
+
+.fintheon-desk-brief-markdown table {
+  width: 100%;
+  margin: 0.85rem 0;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--fintheon-accent) 22%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--fintheon-bg) 88%, transparent);
+}
+
+.fintheon-desk-brief-markdown th,
+.fintheon-desk-brief-markdown td {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--fintheon-accent) 14%, transparent);
+  padding: 0.55rem 0.7rem;
+  vertical-align: top;
+}
+
+.fintheon-desk-brief-markdown th {
+  color: var(--fintheon-accent);
+  font-family: var(--font-data, monospace);
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fintheon-desk-brief-markdown td {
+  color: color-mix(in srgb, var(--fintheon-text) 76%, transparent);
+}
+
+.fintheon-desk-brief-markdown tr:last-child td {
+  border-bottom: 0;
 }
 
 .fintheon-brief-time-token {
