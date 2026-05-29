@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 const REPO = "solvys-technologies/fintheon";
 const GITHUB_RELEASES_API = `https://api.github.com/repos/${REPO}/releases`;
+const GITHUB_RELEASE_BY_TAG_API = `https://api.github.com/repos/${REPO}/releases/tags`;
 const GITHUB_LATEST_MANIFEST_URL = `https://github.com/${REPO}/releases/latest/download/latest-mac.yml`;
 const GITHUB_LATEST_DOWNLOAD_URL = `https://github.com/${REPO}/releases/latest/download`;
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -172,10 +173,12 @@ async function fetchLatestRelease(
 
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
+    "Cache-Control": "no-cache",
     "User-Agent": "Fintheon-Desktop-Updater",
   };
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
   if (token) headers.Authorization = `Bearer ${token}`;
+  const manifest = await fetchLatestFromManifest().catch(() => null);
 
   const res = await fetch(GITHUB_RELEASES_API, { headers });
   if (res.ok) {
@@ -192,7 +195,6 @@ async function fetchLatestRelease(
         ? findCompatibleMacAsset(latest.assets, version, arch)
         : undefined;
     if (latest && version && asset) {
-      const manifest = await fetchLatestFromManifest().catch(() => null);
       const release = mergeReleaseAndManifest(latest, asset, version, manifest);
       if (
         !release.sha256 &&
@@ -211,7 +213,34 @@ async function fetchLatestRelease(
     }
   }
 
-  const release = await fetchLatestFromManifest();
+  if (manifest?.version) {
+    const tagRes = await fetch(
+      `${GITHUB_RELEASE_BY_TAG_API}/v${manifest.version}`,
+      {
+        headers,
+      },
+    );
+    if (tagRes.ok) {
+      const tagged = (await tagRes.json()) as GitHubRelease;
+      const asset = findCompatibleMacAsset(
+        tagged.assets,
+        manifest.version,
+        arch,
+      );
+      if (asset) {
+        const release = mergeReleaseAndManifest(
+          tagged,
+          asset,
+          manifest.version,
+          manifest,
+        );
+        cachedReleaseByArch[arch] = { release, fetchedAt: Date.now() };
+        return release;
+      }
+    }
+  }
+
+  const release = manifest;
   if (
     !release ||
     !isCompatibleAssetName(release.assetName, release.version, arch)
