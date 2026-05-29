@@ -94,7 +94,7 @@ export async function prepareNarrativeFlowAgentTurn(
           : undefined,
       message: input.message,
     },
-    { configurable: { thread_id: buildThreadId(input) } },
+    threadOptions(input) as Parameters<typeof graph.invoke>[1],
   );
 
   return {
@@ -111,7 +111,7 @@ export async function resumeNarrativeFlowGraphApproval(
   const graph = await getGraph();
   return graph.invoke(new Command({ resume }), {
     configurable: { thread_id: buildThreadId(input) },
-  });
+  } as Parameters<typeof graph.invoke>[1]);
 }
 
 async function getGraph() {
@@ -193,6 +193,10 @@ function buildThreadId(input: NarrativeFlowGraphInput): string {
     stringValue(input.workspace?.id) ?? "none",
   );
   return `narrativeflow:${user}:${workspace}:${conversation}`;
+}
+
+function threadOptions(input: NarrativeFlowGraphInput) {
+  return { configurable: { thread_id: buildThreadId(input) } };
 }
 
 function sanitizeThreadPart(value: string): string {
