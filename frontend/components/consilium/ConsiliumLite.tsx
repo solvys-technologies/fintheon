@@ -1,25 +1,38 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Landmark, MessageCircle } from "lucide-react";
+import { Landmark, MessageCircle, Stadium } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { ArbitrumChamber } from "../arbitrum/ArbitrumChamber";
+import { ProxVoiceForum } from "../proxvoice/ProxVoiceForum";
 import { FadingRuler } from "../shared/FadingRuler";
 
-type LiteView = "chat" | "arbitrum";
+export type ConsiliumLiteView = "chat" | "forum" | "arbitrum";
 
 export function ConsiliumLite() {
-  const [view, setView] = useState<LiteView>("chat");
+  const [view, setView] = useState<ConsiliumLiteView>("chat");
 
   useEffect(() => {
     const handler = (event: Event) => {
-      const next = (event as CustomEvent<{ view?: LiteView }>).detail?.view;
-      if (next === "chat" || next === "arbitrum") setView(next);
+      const next = (event as CustomEvent<{ view?: ConsiliumLiteView }>).detail
+        ?.view;
+      if (next === "chat" || next === "forum" || next === "arbitrum") {
+        setView(next);
+      }
     };
     window.addEventListener("fintheon:consilium-lite-view", handler);
     return () =>
       window.removeEventListener("fintheon:consilium-lite-view", handler);
   }, []);
+
+  const selectView = (next: ConsiliumLiteView) => {
+    setView(next);
+    window.dispatchEvent(
+      new CustomEvent("fintheon:consilium-lite-view-changed", {
+        detail: { view: next },
+      }),
+    );
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--fintheon-bg)]">
@@ -34,19 +47,27 @@ export function ConsiliumLite() {
         <LiteButton
           label="Chat"
           selected={view === "chat"}
-          onClick={() => setView("chat")}
+          onClick={() => selectView("chat")}
           icon={<MessageCircle className="h-3.5 w-3.5" />}
+        />
+        <LiteButton
+          label="Forum"
+          selected={view === "forum"}
+          onClick={() => selectView("forum")}
+          icon={<Stadium className="h-3.5 w-3.5" />}
         />
         <LiteButton
           label="Arbitrum"
           selected={view === "arbitrum"}
-          onClick={() => setView("arbitrum")}
+          onClick={() => selectView("arbitrum")}
           icon={<ArbitrumGlyph size={14} />}
         />
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">
         {view === "chat" ? (
           <ChatSidebar compact={false} />
+        ) : view === "forum" ? (
+          <ProxVoiceForum />
         ) : (
           <div className="h-full overflow-y-auto px-3 py-3">
             <ArbitrumChamber />

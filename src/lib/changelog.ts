@@ -9,6 +9,23 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T21:30:43-04:00",
+    agent: "codex",
+    summary:
+      "Mobile Web-PWA pass: added a Desk/Chat/Forum/RiskFlow quick footer, wired Forum into the compact Consilium surface without restoring passive voice widgets, centered the combined VIX/IV ticker, refreshed the mobile drawer title/greeting treatment, and stabilized Risk Signal card metric columns on phones.",
+    files: [
+      "frontend/components/consilium/ConsiliumLite.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/MobileQuickFooter.tsx",
+      "frontend/components/layout/MobileUnderlayDrawer.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/components/narrative/RiskSignalCards.tsx",
+      "frontend/components/proxvoice/ProxVoiceForum.tsx",
+      "frontend/lib/surface-capabilities.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T14:36:42-04:00",
     agent: "codex",
     summary:

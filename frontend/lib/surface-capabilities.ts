@@ -13,7 +13,7 @@ export type SurfaceNavTab =
 
 export type SurfaceRuntime = "electron-desktop" | "web-pwa";
 export type SurfaceFormFactor = "desktop" | "tablet" | "mobile";
-export type ConsiliumMode = "full" | "chat-arbitrum";
+export type ConsiliumMode = "full" | "chat-forum-arbitrum";
 export type NavigationMode = "sidebar" | "underlay-drawer";
 export type DeskSecondPageMode = "all" | "feed-only";
 
@@ -105,7 +105,7 @@ export function buildSurfaceCapabilities(
     allowStrategium: !isMobile,
     allowFooterToolbar: !isMobile,
     allowDesktopRail: !isMobile,
-    consiliumMode: "chat-arbitrum",
+    consiliumMode: "chat-forum-arbitrum",
     navigationMode: isMobile ? "underlay-drawer" : "sidebar",
     deskSecondPageMode: isMobile ? "feed-only" : "all",
     allowedTabs: isMobile ? MOBILE_TABS : WEB_DESKTOP_TABS,

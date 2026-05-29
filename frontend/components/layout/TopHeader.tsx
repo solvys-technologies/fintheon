@@ -426,13 +426,31 @@ export function TopHeader({
     }
   };
 
+  const headerJustifyClass = isMobileSurface
+    ? "justify-center px-3"
+    : "justify-between px-3";
+  const leftClusterClass = isMobileSurface
+    ? "absolute left-3 top-1/2 z-20 -translate-y-1/2"
+    : "";
+  const rightClusterClass = isMobileSurface
+    ? "pointer-events-none absolute inset-0 z-10"
+    : "";
+  const rightInnerClass = isMobileSurface
+    ? "contents"
+    : "flex items-center gap-2 flex-shrink-0";
+  const mobileTickerWrapperClass = isMobileSurface
+    ? "pointer-events-auto absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 justify-center"
+    : "";
+
   return (
     <div
       id="fintheon-heading-toolbar"
       data-tour-target="toolbar"
-      className={`fintheon-side-surface relative bg-[var(--fintheon-surface)] flex items-center justify-between px-3 ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
+      className={`fintheon-side-surface relative bg-[var(--fintheon-surface)] flex items-center ${headerJustifyClass} ${topStepXEnabled && layoutOption === "tickers-only" ? "h-[47px]" : "h-[50px]"}`}
     >
-      <div className="flex items-center gap-2 lg:gap-4 xl:gap-6">
+      <div
+        className={`flex items-center gap-2 lg:gap-4 xl:gap-6 ${leftClusterClass}`}
+      >
         <div className="flex items-center gap-3">
           {isMobileSurface && (
             <div className="flex items-center gap-1.5">
@@ -582,8 +600,10 @@ export function TopHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 lg:gap-3 min-w-0 shrink-0">
-        <div className="flex items-center gap-2 flex-shrink-0">
+      <div
+        className={`flex items-center gap-1.5 lg:gap-3 min-w-0 shrink-0 ${rightClusterClass}`}
+      >
+        <div className={rightInnerClass}>
           {compactLevel < 1 && <WhatsNewButton />}
           {psychAssistHeadingWidget}
           {econCountdownWidget}
@@ -743,28 +763,43 @@ export function TopHeader({
               </div>
             </div>
           )}
-          <ToolbarDnD
-            items={toolbarOrder}
-            editMode={toolbarEditMode}
-            onOrderChange={setToolbarOrderState}
-          >
-            {(id) => {
-              if (id === "ivScore") {
-                return (
-                  <IVScoreCard
-                    data={ivData}
-                    loading={ivLoading}
-                    layoutOption={layoutOption}
-                    compactCopy={!topStepXEnabled && compactLevel >= 1}
-                    mobileCombined={isMobileSurface}
-                  />
-                );
-              }
-              return null;
-            }}
-          </ToolbarDnD>
+          <div className={mobileTickerWrapperClass}>
+            {isMobileSurface ? (
+              <IVScoreCard
+                data={ivData}
+                loading={ivLoading}
+                layoutOption={layoutOption}
+                compactCopy={!topStepXEnabled && compactLevel >= 1}
+                mobileCombined
+              />
+            ) : (
+              <ToolbarDnD
+                items={toolbarOrder}
+                editMode={toolbarEditMode}
+                onOrderChange={setToolbarOrderState}
+              >
+                {(id) => {
+                  if (id === "ivScore") {
+                    return (
+                      <IVScoreCard
+                        data={ivData}
+                        loading={ivLoading}
+                        layoutOption={layoutOption}
+                        compactCopy={!topStepXEnabled && compactLevel >= 1}
+                      />
+                    );
+                  }
+                  return null;
+                }}
+              </ToolbarDnD>
+            )}
+          </div>
           <div
-            className={`${TOOLBAR_PILL_CLASS} ${isMobileSurface ? "mr-1.5" : ""}`}
+            className={`${TOOLBAR_PILL_CLASS} ${
+              isMobileSurface
+                ? "pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 mr-1.5"
+                : ""
+            }`}
           >
             {showIframeControls && onTopStepXDisable && (
               <button

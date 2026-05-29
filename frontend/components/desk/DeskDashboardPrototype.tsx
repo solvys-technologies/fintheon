@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type TouchEvent,
 } from "react";
 import { useDayPlanMultiWeek } from "../../hooks/useDayPlanWeek";
 import { DeskDailyBriefingPanel } from "./DeskDailyBriefingPanel";
@@ -72,7 +73,7 @@ export function DeskDashboardPrototype({
   }, [deskSecondPageMode]);
 
   const handleMobileTouchStart = useCallback(
-    (event: React.TouchEvent<HTMLDivElement>) => {
+    (event: TouchEvent<HTMLDivElement>) => {
       if (deskSecondPageMode !== "feed-only") return;
       const touch = event.touches[0];
       touchStartRef.current = touch
@@ -83,7 +84,7 @@ export function DeskDashboardPrototype({
   );
 
   const handleMobileTouchEnd = useCallback(
-    (event: React.TouchEvent<HTMLDivElement>) => {
+    (event: TouchEvent<HTMLDivElement>) => {
       if (deskSecondPageMode !== "feed-only") return;
       const start = touchStartRef.current;
       touchStartRef.current = null;

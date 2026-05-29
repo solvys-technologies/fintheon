@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Bell,
   Bot,
@@ -7,21 +7,24 @@ import {
   MessageCircle,
   Newspaper,
   Settings,
+  Stadium,
   Users,
 } from "lucide-react";
 import { ArbitrumGlyph } from "../icons/ArbitrumGlyph";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
-import { useAuth } from "../../contexts/AuthContext";
-import { useSettings } from "../../contexts/SettingsContext";
+import { LOADING_GREETINGS } from "../loading/loading-globe-config";
 import type { SurfaceNavTab } from "../../lib/surface-capabilities";
+
+type MobileConsiliumView = "chat" | "forum" | "arbitrum";
 
 interface MobileUnderlayDrawerProps {
   open: boolean;
   activeTab: SurfaceNavTab;
+  activeConsiliumView: MobileConsiliumView;
   onClose: () => void;
   onTabChange: (tab: SurfaceNavTab) => void;
-  onConsiliumView: (view: "chat" | "arbitrum") => void;
+  onConsiliumView: (view: MobileConsiliumView) => void;
   onNotificationCenterToggle: () => void;
   onLogout: () => void;
 }
@@ -29,6 +32,7 @@ interface MobileUnderlayDrawerProps {
 export function MobileUnderlayDrawer({
   open,
   activeTab,
+  activeConsiliumView,
   onClose,
   onTabChange,
   onConsiliumView,
@@ -36,16 +40,21 @@ export function MobileUnderlayDrawer({
   onLogout,
 }: MobileUnderlayDrawerProps) {
   const { queueCount } = useDND();
-  const { user } = useAuth();
-  const { traderName } = useSettings();
   const { unreadCount } = useServerNotifications();
   const badgeCount = queueCount + unreadCount;
-  const greetingName = traderName || user?.email?.split("@")[0] || "Operator";
+  const [greetingIndex, setGreetingIndex] = useState(0);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const runAndClose = (action: () => void) => {
     action();
     onClose();
   };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setGreetingIndex((index) => (index + 1) % LOADING_GREETINGS.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
     const touch = event.touches[0];
@@ -84,12 +93,25 @@ export function MobileUnderlayDrawer({
           WebkitBackdropFilter: "blur(18px) saturate(1.12)",
         }}
       >
-        <div className="px-3 pb-4 pt-1">
-          <p className="text-[16px] font-semibold uppercase tracking-[0.2em] text-[var(--fintheon-accent)]">
+        <div className="px-3 pb-5 pt-1">
+          <p
+            className="text-[17px] font-semibold uppercase tracking-normal text-[var(--fintheon-accent)]"
+            style={{
+              fontFamily:
+                "'Doto', 'Readable Digits', var(--font-heading), ui-monospace, monospace",
+            }}
+          >
             Fintheon
           </p>
-          <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--fintheon-text)]/48">
-            Desk ready, {greetingName}
+          <p
+            key={greetingIndex}
+            className="greeting-animate greeting-settle mt-1 text-[10px] text-[var(--fintheon-text)]/48"
+            style={{
+              fontFamily:
+                "'Doto', 'Readable Digits', var(--font-heading), ui-monospace, monospace",
+            }}
+          >
+            {LOADING_GREETINGS[greetingIndex]}
           </p>
         </div>
 
@@ -117,13 +139,21 @@ export function MobileUnderlayDrawer({
           />
           <DrawerRow
             label="Chat"
-            active={activeTab === "analysis"}
+            active={activeTab === "analysis" && activeConsiliumView === "chat"}
             icon={<MessageCircle className="h-4 w-4" />}
             onClick={() => runAndClose(() => onConsiliumView("chat"))}
           />
           <DrawerRow
+            label="Forum"
+            active={activeTab === "analysis" && activeConsiliumView === "forum"}
+            icon={<Stadium className="h-4 w-4" />}
+            onClick={() => runAndClose(() => onConsiliumView("forum"))}
+          />
+          <DrawerRow
             label="Arbitrum"
-            active={activeTab === "analysis"}
+            active={
+              activeTab === "analysis" && activeConsiliumView === "arbitrum"
+            }
             icon={<ArbitrumGlyph size={16} />}
             onClick={() => runAndClose(() => onConsiliumView("arbitrum"))}
           />

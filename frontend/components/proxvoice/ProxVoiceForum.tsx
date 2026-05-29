@@ -20,7 +20,7 @@ export function ProxVoiceForum() {
 
   return (
     <div className="flex h-full flex-col bg-[var(--fintheon-bg)] text-[var(--fintheon-text)] fintheon-fade-in">
-      <header className="px-5 py-4">
+      <header className="px-5 py-4 max-[767px]:px-4 max-[767px]:py-3">
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
@@ -45,15 +45,15 @@ export function ProxVoiceForum() {
           </div>
         </div>
       </header>
-      <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-4 lg:grid-cols-[1fr_320px]">
-        <section className="relative min-h-0 overflow-y-auto rounded-md p-4 pb-24">
+      <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-4 max-[767px]:p-3 lg:grid-cols-[1fr_320px]">
+        <section className="relative min-h-0 overflow-y-auto rounded-md p-4 pb-24 max-[767px]:p-2 max-[767px]:pb-24">
           <div className="fintheon-fade-divider mb-4 flex items-center justify-between gap-2 pb-1 text-xs text-[var(--fintheon-text)]/55">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[var(--fintheon-accent)]" />
               <span>Floor Audience</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {voice.participants.map((participant) => (
               <div
                 key={participant.identity}
@@ -139,7 +139,7 @@ export function ProxVoiceForum() {
             ))}
             {voice.participants.length === 0 && (
               <p className="text-sm text-[var(--fintheon-text)]/45">
-                Join the floor from the header to start voice.
+                Join the floor below to start voice.
               </p>
             )}
           </div>
@@ -182,7 +182,7 @@ export function ProxVoiceForum() {
             </button>
           </div>
         </section>
-        <aside className="min-h-0 overflow-hidden rounded-md">
+        <aside className="hidden min-h-0 overflow-hidden rounded-md lg:block">
           <div className="fintheon-fade-divider flex items-center gap-2 px-3 py-2 text-[var(--fintheon-accent)]">
             <Zap className="h-3.5 w-3.5" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">

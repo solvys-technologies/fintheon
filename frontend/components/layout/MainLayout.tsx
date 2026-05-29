@@ -70,6 +70,7 @@ import { MissionControlContent } from "./MissionControlContent";
 import { ChatPanel } from "./ChatPanel";
 import { YouTubeMiniplayer } from "./YouTubeMiniplayer";
 import { MobileUnderlayDrawer } from "./MobileUnderlayDrawer";
+import { MobileQuickFooter } from "./MobileQuickFooter";
 // [claude-code 2026-04-03] S14-T6: Removed PeerCarousel + PeerOnboarding — team status now in footer panel
 // TeamOnboarding re-wired into TeamPanel behind auth gate (2026-04-11)
 // Voice lives in the app-native ProxVoice surface.
@@ -107,6 +108,7 @@ type NavTab =
   | "desk-ops"
   | "settings";
 type LayoutOption = "tickers-only" | "combined";
+type MobileConsiliumView = "chat" | "forum" | "arbitrum";
 
 // [claude-code 2026-04-19] Last-visited tab persistence — restores the user's
 // prior surface on sign-in / app restart so we don't dump them back at the
@@ -269,6 +271,8 @@ function MainLayoutInner() {
 
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileConsiliumView, setMobileConsiliumView] =
+    useState<MobileConsiliumView>("chat");
   const mobileEdgeSwipeRef = useRef<{ x: number; y: number } | null>(null);
   const [showRefinement, setShowRefinement] = useState(false);
   const [timelineOverlayOpen, setTimelineOverlayOpen] = useState(false);
@@ -464,6 +468,35 @@ function MainLayoutInner() {
     setHistoryIndex(trimmed.length - 1);
     setActiveTab(safeTab);
   };
+
+  const openConsiliumLiteView = (view: MobileConsiliumView) => {
+    setMobileConsiliumView(view);
+    setShowRefinement(false);
+    navigateTab("analysis");
+    window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("fintheon:consilium-lite-view", {
+          detail: { view },
+        }),
+      );
+    }, 30);
+  };
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const view = (event as CustomEvent<{ view?: MobileConsiliumView }>).detail
+        ?.view;
+      if (view === "chat" || view === "forum" || view === "arbitrum") {
+        setMobileConsiliumView(view);
+      }
+    };
+    window.addEventListener("fintheon:consilium-lite-view-changed", handler);
+    return () =>
+      window.removeEventListener(
+        "fintheon:consilium-lite-view-changed",
+        handler,
+      );
+  }, []);
 
   useEffect(() => {
     const jumpToNarrativeFlow = () => {
@@ -1054,22 +1087,13 @@ function MainLayoutInner() {
             <MobileUnderlayDrawer
               open={mobileDrawerOpen}
               activeTab={activeTab}
+              activeConsiliumView={mobileConsiliumView}
               onClose={() => setMobileDrawerOpen(false)}
               onTabChange={(tab) => {
                 setShowRefinement(false);
                 handleTabChange(tab as NavTab);
               }}
-              onConsiliumView={(view) => {
-                setShowRefinement(false);
-                navigateTab("analysis");
-                window.setTimeout(() => {
-                  window.dispatchEvent(
-                    new CustomEvent("fintheon:consilium-lite-view", {
-                      detail: { view },
-                    }),
-                  );
-                }, 30);
-              }}
+              onConsiliumView={openConsiliumLiteView}
               onNotificationCenterToggle={() =>
                 setNotificationCenterOpen((v) => !v)
               }
@@ -1153,11 +1177,9 @@ function MainLayoutInner() {
             className="flex-1 overflow-hidden relative bg-[var(--fintheon-surface)]"
             onTouchStart={handleShellTouchStart}
             onTouchEnd={handleShellTouchEnd}
+            style={mobileContentStyle}
           >
-            <div
-              className="relative flex h-full w-full overflow-hidden"
-              style={mobileContentStyle}
-            >
+            <div className="relative flex h-full w-full overflow-hidden">
               <div
                 className={
                   iframeModeActive || mobileDrawerMode
@@ -1337,6 +1359,19 @@ function MainLayoutInner() {
           </div>
 
           {surfaceCapabilities.allowFooterToolbar && <SessionCountdownWidget />}
+
+          {mobileDrawerMode && (
+            <MobileQuickFooter
+              activeTab={activeTab}
+              activeConsiliumView={mobileConsiliumView}
+              style={mobileContentStyle}
+              onTabChange={(tab) => {
+                setShowRefinement(false);
+                handleTabChange(tab as NavTab);
+              }}
+              onConsiliumView={openConsiliumLiteView}
+            />
+          )}
 
           {surfaceCapabilities.allowFooterToolbar && (
             <FooterToolbar

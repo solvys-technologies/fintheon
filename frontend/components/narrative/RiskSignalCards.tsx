@@ -218,7 +218,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 expanded ? "text-[var(--fintheon-accent)]" : ""
               } ${freshness.stale ? "opacity-70" : ""} ${padding}`}
             >
-              <div className="flex min-w-0 items-center gap-2">
+              <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_5.25rem] items-center gap-2 max-[767px]:grid-cols-[auto_minmax(0,1fr)_6.35rem] max-[767px]:gap-2.5">
                 {expanded ? (
                   <ChevronDown className="h-3 w-3 shrink-0 text-[var(--fintheon-muted)]/45" />
                 ) : (
@@ -229,9 +229,9 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 >
                   {signal.title}
                 </span>
-                <span className="flex shrink-0 items-center gap-2 text-right font-mono leading-tight">
+                <span className="flex min-w-0 items-center justify-end gap-1.5 text-right font-mono leading-tight max-[767px]:gap-2">
                   <ChevronRight
-                    className="h-3 w-3"
+                    className="h-3 w-3 shrink-0"
                     style={{
                       color: directionColor,
                       transform:
@@ -242,12 +242,16 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                             : "rotate(0deg)",
                     }}
                   />
-                  <span className="w-[4.35rem]">
+                  <span className="block w-[4.35rem] shrink-0 max-[767px]:w-[5.2rem]">
                     <span
-                      className={`mb-1 flex items-center justify-between gap-1 ${metaSize} text-[var(--fintheon-muted)]/50`}
+                      className={`mb-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 ${metaSize} text-[var(--fintheon-muted)]/50`}
                     >
-                      <span>{driftLabel}</span>
-                      <span>{signal.score.toFixed(1)}</span>
+                      <span className="min-w-0 truncate whitespace-nowrap">
+                        {driftLabel}
+                      </span>
+                      <span className="whitespace-nowrap tabular-nums">
+                        {signal.score.toFixed(1)}
+                      </span>
                     </span>
                     <NothingFuse
                       value={Math.max(0, Math.min(1, signal.score / 10))}
@@ -263,7 +267,7 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
               aria-hidden={!expanded}
               className={`grid transition-[grid-template-rows,opacity,transform,filter] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 expanded
-                  ? "translate-y-0 opacity-100 blur-0"
+                  ? "translate-y-0 opacity-100 blur-none"
                   : "pointer-events-none -translate-y-1 opacity-0 blur-[1px]"
               }`}
               style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
