@@ -48,6 +48,10 @@ export default defineConfig(() => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, "index.html"),
+          "fintheon-landing-prototype": path.resolve(
+            __dirname,
+            "fintheon-landing-prototype.html",
+          ),
           "mini-widget": path.resolve(__dirname, "mini-widget.html"),
         },
         output: {
