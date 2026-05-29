@@ -12,6 +12,7 @@ import {
   type NarrativeSurfaceMode,
 } from "./narrative-surface-options";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
+import type { NarrativeRailPreview } from "./narrative-rail-preview";
 import type { SensemakingResponse } from "./sensemaking-types";
 
 interface NarrativeAgentActionOptions {
@@ -21,6 +22,7 @@ interface NarrativeAgentActionOptions {
   setSurfaceMode: Dispatch<SetStateAction<NarrativeSurfaceMode>>;
   setIsHistoryOpen: Dispatch<SetStateAction<boolean>>;
   setIsResearchRailOpen: Dispatch<SetStateAction<boolean>>;
+  setRailPreview: Dispatch<SetStateAction<NarrativeRailPreview | null>>;
   setValidationMessage: Dispatch<SetStateAction<string | null>>;
   openSession: (id: string) => Promise<void>;
   renameSession: (id: string, title: string, color: string) => Promise<void>;
@@ -34,6 +36,10 @@ interface NarrativeAgentActionDetail {
   editType?: unknown;
   patch?: unknown;
   operationId?: unknown;
+  dataKind?: unknown;
+  title?: unknown;
+  markdown?: unknown;
+  append?: unknown;
 }
 
 export function useNarrativeAgentActions(options: NarrativeAgentActionOptions) {
@@ -49,6 +55,10 @@ export function useNarrativeAgentActions(options: NarrativeAgentActionOptions) {
         options.setValidationMessage(
           "Harper staged a NarrativeFlow edit for approval.",
         );
+        return;
+      }
+      if (detail.action === "narrativeflow_show_internal_data") {
+        await showInternalData(options, detail);
         return;
       }
       if (detail.action === "narrativeflow_apply_approved_edit") {
@@ -76,6 +86,27 @@ async function openSurface(
   options.setSurfaceMode(surface);
   options.setIsHistoryOpen(false);
   if (surface === "workspace") options.setIsResearchRailOpen(true);
+}
+
+async function showInternalData(
+  options: NarrativeAgentActionOptions,
+  detail: NarrativeAgentActionDetail,
+) {
+  const sessionId =
+    stringValue(detail.sessionId) ?? stringValue(detail.targetId);
+  if (sessionId) await options.openSession(sessionId);
+  options.setSurfaceMode("workspace");
+  options.setIsHistoryOpen(false);
+  options.setIsResearchRailOpen(true);
+  options.setRailPreview({
+    tab: previewTabForKind(stringValue(detail.dataKind)),
+    title: stringValue(detail.title) ?? "NarrativeFlow Preview",
+    markdown:
+      stringValue(detail.markdown) ??
+      "Harper requested the Research rail, but no preview payload was provided.",
+    append: Boolean(detail.append),
+    updatedAt: Date.now(),
+  });
 }
 
 async function applyApprovedEdit(
@@ -207,6 +238,22 @@ function numberValue(value: unknown): number | null {
   if (typeof value !== "string") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function previewTabForKind(
+  dataKind: string | null,
+): NarrativeRailPreview["tab"] {
+  const kind = dataKind?.toLowerCase() ?? "";
+  if (kind.includes("timeline")) return "timeline";
+  if (
+    kind.includes("doc") ||
+    kind.includes("forecast") ||
+    kind.includes("coliseum") ||
+    kind.includes("resolved")
+  ) {
+    return "docs";
+  }
+  return "flow";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

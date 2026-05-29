@@ -25,21 +25,19 @@ export function ProxVoiceForum() {
           <div>
             <div className="flex items-center gap-2 text-[var(--fintheon-accent)]">
               <Stadium className="h-4 w-4" />
-              <h2 className="rounded-sm bg-black/20 px-1 text-sm font-semibold tracking-[0.18em] uppercase">
+              <h2 className="text-sm font-semibold tracking-[0.18em] uppercase">
                 Forum
               </h2>
             </div>
             <p className="mt-1 text-xs text-[var(--fintheon-text)]/45">
-              <span className="rounded-sm bg-black/20 px-1">
-                Persistent voice for active Fintheon users.
-              </span>
+              Persistent voice for active Fintheon users.
             </p>
           </div>
           <div className="text-right">
-            <div className="rounded-sm bg-black/20 px-1 font-mono text-lg text-[var(--fintheon-text)]">
+            <div className="font-mono text-lg text-[var(--fintheon-text)]">
               {voice.participants.length}
             </div>
-            <div className="rounded-sm bg-black/20 px-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-text)]/38">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--fintheon-text)]/38">
               Traders Listening
             </div>
           </div>
@@ -61,15 +59,14 @@ export function ProxVoiceForum() {
                   participant.leaving
                     ? "opacity-0"
                     : "fintheon-fade-in opacity-100"
+                } ${
+                  participant.isSpeaking || (participant.audioLevel ?? 0) > 0.08
+                    ? "proxvoice-speaking-card"
+                    : ""
                 }`}
                 style={{
                   border:
                     "1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
-                  boxShadow:
-                    participant.isSpeaking ||
-                    (participant.audioLevel ?? 0) > 0.08
-                      ? `0 0 ${8 + Math.round((participant.audioLevel ?? 0.4) * 24)}px color-mix(in srgb, var(--fintheon-accent) ${12 + Math.round((participant.audioLevel ?? 0.4) * 24)}%, transparent)`
-                      : "none",
                 }}
               >
                 <div className="flex items-center gap-3">

@@ -19,7 +19,10 @@ import { BrailleSpinnerCentered } from "./primitive/BrailleSpinner";
 import { useFintheonAgents } from "../../contexts/FintheonAgentContext";
 import { CognitionPanel } from "./CognitionPanel";
 import { ToolApprovalCard } from "./ToolApprovalCard";
-import { useToolApprovals } from "./hooks/useToolApprovals";
+import {
+  useToolApprovals,
+  type AddToolApprovalResponse,
+} from "./hooks/useToolApprovals";
 import { AssistantMessagePrimitive } from "./AssistantMessagePrimitive";
 import { UserMessagePrimitive } from "./UserMessagePrimitive";
 import { ChatAnswerStreamWidgets } from "./ChatAnswerStreamWidget";
@@ -143,6 +146,7 @@ interface FintheonThreadProps {
   composerBottomInset?: number;
   answerWidgets?: ChatAnswerWidget[];
   emptyState?: ReactNode;
+  addToolApprovalResponse?: AddToolApprovalResponse;
 }
 
 export function FintheonThread({
@@ -162,10 +166,14 @@ export function FintheonThread({
   composerBottomInset = 136,
   answerWidgets = [],
   emptyState,
+  addToolApprovalResponse,
 }: FintheonThreadProps) {
   const { activeAgent } = useFintheonAgents();
   const viewportRef = useRef<HTMLDivElement>(null);
-  const { approvals, sendDecision } = useToolApprovals(lastRequestId ?? null);
+  const { approvals, sendDecision } = useToolApprovals(
+    lastRequestId ?? null,
+    addToolApprovalResponse,
+  );
   const messages = useThread((s) => s.messages);
 
   const resolvedAgent = agentName ?? activeAgent?.name ?? "Harper";

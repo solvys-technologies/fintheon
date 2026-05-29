@@ -194,6 +194,7 @@ export function ConsiliumHub() {
   const [revisionStatus, setRevisionStatus] = useState<string | null>(null);
   const [revisionChecking, setRevisionChecking] = useState(false);
   const transitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chatHistoryButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Listen for DAG running events dispatched from AgentChattr
   useEffect(() => {
@@ -211,7 +212,6 @@ export function ConsiliumHub() {
   const sanctumDropdownRef = useRef<HTMLDivElement>(null);
   const boardroomDropdownRef = useRef<HTMLDivElement>(null);
   const apparatusDropdownRef = useRef<HTMLDivElement>(null);
-  const analysisDropdownRef = useRef<HTMLDivElement>(null);
 
   // [S23-T3] Persist current Consilium surface so useHermesChat can auto-inject ArbitrumChamber/surface
   // context into Harper + Hermes prompts without threading props through every chat widget.
@@ -235,10 +235,7 @@ export function ConsiliumHub() {
 
   useEffect(() => {
     const anyOpen =
-      sanctumDropdownOpen ||
-      boardroomDropdownOpen ||
-      apparatusDropdownOpen ||
-      analysisDropdownOpen;
+      sanctumDropdownOpen || boardroomDropdownOpen || apparatusDropdownOpen;
     if (!anyOpen) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -263,22 +260,10 @@ export function ConsiliumHub() {
       ) {
         setApparatusDropdownOpen(false);
       }
-      if (
-        analysisDropdownOpen &&
-        analysisDropdownRef.current &&
-        !analysisDropdownRef.current.contains(target)
-      ) {
-        setAnalysisDropdownOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [
-    analysisDropdownOpen,
-    apparatusDropdownOpen,
-    boardroomDropdownOpen,
-    sanctumDropdownOpen,
-  ]);
+  }, [apparatusDropdownOpen, boardroomDropdownOpen, sanctumDropdownOpen]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -966,31 +951,32 @@ export function ConsiliumHub() {
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
-            <div className="relative">
-              <button
-                onClick={() => setShowSessionsDropdown((v) => !v)}
-                className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
-                title="History"
-              >
-                <Clock className="w-3.5 h-3.5" />
-              </button>
-              <SessionsModal
-                isOpen={showSessionsDropdown}
-                onClose={() => setShowSessionsDropdown(false)}
-                onSelectSession={(id) => {
-                  window.dispatchEvent(
-                    new CustomEvent("fintheon:chat-load-session", {
-                      detail: { id },
-                    }),
-                  );
-                  setShowSessionsDropdown(false);
-                }}
-                onNewSession={() => {
-                  window.dispatchEvent(new Event("fintheon:chat-new"));
-                  setShowSessionsDropdown(false);
-                }}
-              />
-            </div>
+            <button
+              ref={chatHistoryButtonRef}
+              onClick={() => setShowSessionsDropdown((v) => !v)}
+              className="p-1.5 text-zinc-500 hover:text-[#c79f4a] transition-colors"
+              title="History"
+            >
+              <Clock className="w-3.5 h-3.5" />
+            </button>
+            <SessionsModal
+              isOpen={showSessionsDropdown}
+              portal
+              anchorRef={chatHistoryButtonRef}
+              onClose={() => setShowSessionsDropdown(false)}
+              onSelectSession={(id) => {
+                window.dispatchEvent(
+                  new CustomEvent("fintheon:chat-load-session", {
+                    detail: { id },
+                  }),
+                );
+                setShowSessionsDropdown(false);
+              }}
+              onNewSession={() => {
+                window.dispatchEvent(new Event("fintheon:chat-new"));
+                setShowSessionsDropdown(false);
+              }}
+            />
           </div>
         )}
 
@@ -1028,7 +1014,7 @@ export function ConsiliumHub() {
         </button>
 
         {activeTab === "sanctum" && sanctumSubView === "narratives" ? (
-          <div ref={analysisDropdownRef} className="relative">
+          <div className="relative">
             <NarrativeAnalysisDropdown
               open={analysisDropdownOpen}
               currentMode={narrativeSurfaceMode}

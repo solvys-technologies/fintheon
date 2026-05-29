@@ -190,7 +190,7 @@ export function CognitionPanel({ requestId, isStreaming }: Props) {
     node.scrollTop = node.scrollHeight;
   }, [collapsed, toolSteps.length]);
 
-  if (!requestId || steps.length === 0) return null;
+  if (!requestId || (!isStreaming && steps.length === 0)) return null;
 
   const latestVisibleStep = [...steps]
     .reverse()

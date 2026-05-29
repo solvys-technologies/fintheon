@@ -54,5 +54,6 @@ export function useHermesRuntime(
     lastError: chat.lastError,
     clearError: chat.clearError,
     lastRequestId: chat.lastRequestId ?? null,
+    addToolApprovalResponse: chat.addToolApprovalResponse,
   };
 }

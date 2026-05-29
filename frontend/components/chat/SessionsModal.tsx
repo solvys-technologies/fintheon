@@ -5,6 +5,10 @@ import { Search, MessageSquare, Plus, Trash2, X } from "lucide-react";
 import { BrailleSpinnerCentered } from "./primitive/BrailleSpinner";
 import { withViewTransition } from "../../lib/view-transition";
 import { useBackend } from "../../lib/backend";
+import {
+  MainContentOverlayPortal,
+  type MainContentOverlayAnchorRef,
+} from "../layout/MainContentOverlayHost";
 
 interface ConversationSummary {
   id: string;
@@ -60,6 +64,8 @@ interface SessionsModalProps {
   onSelectSession: (conversationId: string) => void;
   onNewSession: () => void;
   currentConversationId?: string;
+  anchorRef?: MainContentOverlayAnchorRef;
+  portal?: boolean;
 }
 
 export function SessionsModal({
@@ -68,6 +74,8 @@ export function SessionsModal({
   onSelectSession,
   onNewSession,
   currentConversationId,
+  anchorRef,
+  portal = false,
 }: SessionsModalProps) {
   const backend = useBackend();
   const [sessions, setSessions] = useState<ConversationSummary[]>([]);
@@ -102,16 +110,15 @@ export function SessionsModal({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+      if (anchorRef?.current?.contains(target)) return;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         onClose();
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isOpen, onClose]);
+  }, [anchorRef, isOpen, onClose]);
 
   // Filter by search
   const filtered = search.trim()
@@ -170,12 +177,14 @@ export function SessionsModal({
 
   if (!isOpen) return null;
 
-  return (
+  const surface = (
     <div
       ref={dropdownRef}
-      className="fintheon-modal-surface absolute right-0 top-full mt-1 w-[300px] z-50"
+      className={`fintheon-modal-surface ${
+        portal ? "w-full" : "absolute right-0 top-full z-50 mt-1 w-[300px]"
+      }`}
       style={{
-        maxHeight: "400px",
+        maxHeight: "min(400px, calc(100vh - 96px))",
       }}
       onKeyDown={handleKeyDown}
     >
@@ -335,4 +344,14 @@ export function SessionsModal({
       </div>
     </div>
   );
+
+  if (portal && anchorRef) {
+    return (
+      <MainContentOverlayPortal open={isOpen} anchorRef={anchorRef} width={300}>
+        {surface}
+      </MainContentOverlayPortal>
+    );
+  }
+
+  return surface;
 }

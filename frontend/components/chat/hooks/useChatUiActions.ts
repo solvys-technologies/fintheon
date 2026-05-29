@@ -166,14 +166,6 @@ export function useChatUiActions(
           } as NarrativeFlowUiActionPayload;
           onNarrativeFlowAction?.(payload);
           dispatchNarrativeFlowAction(payload);
-          if (action === "narrativeflow_show_internal_data") {
-            onRightRail?.({
-              title: String(detail.title ?? "NarrativeFlow Internal Data"),
-              surface: "narrativeflow-data",
-              markdown: String(detail.markdown ?? ""),
-              append: Boolean(detail.append),
-            });
-          }
           if (action === "narrativeflow_stage_edit") {
             onRightRail?.({
               title: "Staged NarrativeFlow Edit",

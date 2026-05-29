@@ -55,6 +55,7 @@ import {
 } from "./narrative-surface-options";
 import { useNarrativeAgentActions } from "./useNarrativeAgentActions";
 import { ALL_NARRATIVES_SLUG } from "./narrative-selection";
+import type { NarrativeRailPreview } from "./narrative-rail-preview";
 
 interface NarrativeCanvasProps {
   zoomLevel?: ZoomLevel;
@@ -93,6 +94,9 @@ export function NarrativeCanvas({
   const [requestedChatThreadId, setRequestedChatThreadId] = useState<
     string | null
   >(null);
+  const [railPreview, setRailPreview] = useState<NarrativeRailPreview | null>(
+    null,
+  );
   const [initialChatMessage, setInitialChatMessage] =
     useState<ChatInitialMessageRequest | null>(null);
   const [chatContextId, setChatContextId] = useState<string | null>(null);
@@ -233,12 +237,14 @@ export function NarrativeCanvas({
         const bundle = await createNarrativeSession(payload);
         setActiveSession(bundle.session);
         setResponse(bundle.response);
+        setRailPreview(null);
         setChatContextId(bundle.session.id ?? null);
         setIsResearchRailOpen(true);
         if (payload.query.trim() && bundle.session.id) {
           setInitialChatMessage({
             id: `opener:${bundle.session.id}:${Date.now()}`,
             text: payload.query,
+            mode: "send",
             resetConversation: true,
           });
         }
@@ -264,6 +270,7 @@ export function NarrativeCanvas({
       const bundle = await fetchNarrativeSession(id);
       setActiveSession(bundle.session);
       setResponse(bundle.response);
+      setRailPreview(null);
       setSurfaceMode("workspace");
     } catch (err) {
       setValidationMessage(
@@ -311,6 +318,7 @@ export function NarrativeCanvas({
         if (activeSession?.id === id) {
           setActiveSession(null);
           setResponse(null);
+          setRailPreview(null);
           setSurfaceMode("workspace");
         }
         setManagedSession(null);
@@ -352,6 +360,7 @@ export function NarrativeCanvas({
         if (status === "archived" && activeSession?.id === id) {
           setActiveSession(null);
           setResponse(null);
+          setRailPreview(null);
           setSurfaceMode("workspace");
         } else if (activeSession?.id === id) {
           setActiveSession(bundle.session);
@@ -426,6 +435,7 @@ export function NarrativeCanvas({
   const resetWorkspace = () => {
     setActiveSession(null);
     setResponse(null);
+    setRailPreview(null);
     setSurfaceMode("workspace");
     setIsHistoryOpen(false);
   };
@@ -482,6 +492,7 @@ export function NarrativeCanvas({
         setInitialChatMessage({
           id: `existing:${input.sessionId}:${Date.now()}`,
           text: input.message,
+          mode: "send",
           resetConversation: true,
         });
       } catch (err) {
@@ -573,6 +584,7 @@ export function NarrativeCanvas({
     setSurfaceMode,
     setIsHistoryOpen,
     setIsResearchRailOpen,
+    setRailPreview,
     setValidationMessage,
     openSession: handleOpenSession,
     renameSession: handleRenameSession,
@@ -613,6 +625,8 @@ export function NarrativeCanvas({
       }
       onCoverChange={handleCoverChange}
       onQuickAction={handleQuickAction}
+      workDrawerTab={railPreview?.tab}
+      railPreview={railPreview}
       railCanvas={railCanvas}
     >
       <ChatInterface

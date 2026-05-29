@@ -9,6 +9,7 @@ import { Clock, FileText, GitBranch, Tv, type LucideIcon } from "lucide-react";
 import { NarrativeDocsTab } from "./NarrativeDocsTab";
 import { NarrativeFlowTab } from "./NarrativeFlowTab";
 import { NarrativeTimelineTab } from "./NarrativeTimelineTab";
+import type { NarrativeRailPreview } from "./narrative-rail-preview";
 import type { NarrativeWorkspaceSession } from "./NarrativeSessionWorkspace";
 import type { SensemakingResponse } from "./sensemaking-types";
 
@@ -25,6 +26,7 @@ interface NarrativeWorkDrawerProps {
   onShowAll?: () => void;
   onQuickAction?: (action: string, catalystId: string | null) => void;
   preferredTab?: WorkDrawerTab;
+  preview?: NarrativeRailPreview | null;
   canvasSlot?: ReactNode;
 }
 
@@ -49,6 +51,7 @@ export function NarrativeWorkDrawer({
   onShowAll,
   onQuickAction,
   preferredTab,
+  preview,
   canvasSlot,
 }: NarrativeWorkDrawerProps) {
   const [activeTab, setActiveTab] = useState<WorkDrawerTab>("flow");
@@ -212,6 +215,9 @@ export function NarrativeWorkDrawer({
         className={`min-h-0 flex-1 ${activeTab === "canvas" ? "overflow-hidden p-0" : "overflow-y-auto p-3"}`}
       >
         {activeTab === "canvas" ? canvasSlot : null}
+        {preview && activeTab === preview.tab ? (
+          <NarrativeRailPreviewCard preview={preview} />
+        ) : null}
         {activeTab === "flow" ? (
           <NarrativeFlowTab
             session={session}
@@ -236,6 +242,36 @@ export function NarrativeWorkDrawer({
         ) : null}
       </div>
     </aside>
+  );
+}
+
+function NarrativeRailPreviewCard({
+  preview,
+}: {
+  preview: NarrativeRailPreview;
+}) {
+  return (
+    <section className="narrative-fade-item mb-3 overflow-hidden rounded-[8px] border border-[var(--fintheon-accent)]/18 bg-[var(--fintheon-accent)]/6">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--fintheon-accent)]/10 px-3 py-2">
+        <div className="min-w-0">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/70">
+            Preview
+          </p>
+          <h3 className="truncate text-[12px] font-semibold text-[var(--fintheon-text)]">
+            {preview.title}
+          </h3>
+        </div>
+        <time className="shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--fintheon-muted)]">
+          {new Date(preview.updatedAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </time>
+      </div>
+      <div className="max-h-[260px] overflow-y-auto whitespace-pre-wrap px-3 py-2 text-[12px] leading-5 text-[var(--fintheon-text)]/74">
+        {preview.markdown}
+      </div>
+    </section>
   );
 }
 

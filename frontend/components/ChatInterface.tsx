@@ -1,4 +1,4 @@
-// [Codex 2026-05-27] NarrativeFlow opener context is a visible draft only; never an initial hidden send.
+// [Codex 2026-05-29] NarrativeFlow opener requests can either stage a draft or send after workspace transition.
 // [claude-code 2026-03-29] S9-T5: Replace checkpoint sidebar with real conversation history, Take Note button
 // [claude-code 2026-03-28] S8-T7: Dual-pane layout (left=conversation, right=artifacts) for Chat
 import {
@@ -43,6 +43,7 @@ import {
   ALL_NARRATIVES_LABEL,
   ALL_NARRATIVES_SLUG,
 } from "./narrative/narrative-selection";
+import type { AddToolApprovalResponse } from "./chat/hooks/useToolApprovals";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -57,6 +58,7 @@ export interface ChatWorkspaceOption {
 export interface ChatInitialMessageRequest {
   id: string;
   text: string;
+  mode?: "send" | "draft";
   resetConversation?: boolean;
 }
 
@@ -72,6 +74,13 @@ function normalizeInitialDraft(
   return text;
 }
 
+function normalizeInitialSend(
+  request: ChatInitialMessageRequest | null,
+): string | null {
+  const text = request?.text.trim() ?? "";
+  return text || null;
+}
+
 function ChatInterfaceInner({
   surfaceId,
   conversationId,
@@ -83,6 +92,7 @@ function ChatInterfaceInner({
   reasoningLevel,
   setReasoningLevel,
   lastRequestId,
+  addToolApprovalResponse,
   dualPane = false,
   workspaceOptions = [],
   activeWorkspaceId = null,
@@ -105,6 +115,7 @@ function ChatInterfaceInner({
   reasoningLevel: ReasoningLevel;
   setReasoningLevel: (level: ReasoningLevel) => void;
   lastRequestId: string | null;
+  addToolApprovalResponse?: AddToolApprovalResponse;
   dualPane?: boolean;
   workspaceOptions?: ChatWorkspaceOption[];
   activeWorkspaceId?: string | null;
@@ -235,8 +246,12 @@ function ChatInterfaceInner({
   }, [conversationId, requestedConversationId, setConversationId]);
 
   useEffect(() => {
-    const draft = normalizeInitialDraft(initialMessageRequest);
-    if (!initialMessageRequest || !draft) {
+    const mode = initialMessageRequest?.mode ?? "draft";
+    const initialText =
+      mode === "send"
+        ? normalizeInitialSend(initialMessageRequest)
+        : normalizeInitialDraft(initialMessageRequest);
+    if (!initialMessageRequest || !initialText) {
       if (initialMessageRequest?.id) {
         handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
         onInitialMessageHandled?.(initialMessageRequest.id);
@@ -247,9 +262,20 @@ function ChatInterfaceInner({
       return;
     handledInitialMessageIdsRef.current.add(initialMessageRequest.id);
     if (initialMessageRequest.resetConversation) clearConversationId();
-    setComposerDraftRequest(draft);
+    if (mode === "send") {
+      setComposerDraftRequest(null);
+      handleSend(initialText);
+      onInitialMessageHandled?.(initialMessageRequest.id);
+      return;
+    }
+    setComposerDraftRequest(initialText);
     onInitialMessageHandled?.(initialMessageRequest.id);
-  }, [clearConversationId, initialMessageRequest, onInitialMessageHandled]);
+  }, [
+    clearConversationId,
+    handleSend,
+    initialMessageRequest,
+    onInitialMessageHandled,
+  ]);
 
   useEffect(() => {
     const previousCount = previousWorkItemCountRef.current;
@@ -505,6 +531,7 @@ function ChatInterfaceInner({
             messageRefs={messageRefs}
             lastError={lastError}
             lastRequestId={lastRequestId}
+            addToolApprovalResponse={addToolApprovalResponse}
             hasSubmittedMessage={hasChatStarted}
             activityEntries={activityEntries}
             citations={citations}
@@ -824,6 +851,7 @@ export default function ChatInterface({
     clearConversationId,
     lastError,
     lastRequestId,
+    addToolApprovalResponse,
   } = useHermesRuntime(
     activeAgent?.id ?? "default",
     thinkHarderState,
@@ -856,6 +884,7 @@ export default function ChatInterface({
           }
         }}
         lastRequestId={lastRequestId}
+        addToolApprovalResponse={addToolApprovalResponse}
         dualPane={isDualPane}
         workspaceOptions={workspaceOptions}
         activeWorkspaceId={activeWorkspaceId}

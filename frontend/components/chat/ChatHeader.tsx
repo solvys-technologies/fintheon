@@ -4,9 +4,9 @@
 // [claude-code 2026-04-18] S21-T1: relay button moved to FintheonComposer action cluster.
 // Clipboard-copy pickup-code flow deprecated in favor of active dispatch via /api/relay/dispatch.
 // [claude-code 2026-04-04] T4: History dropdown — Clock button toggles dropdown instead of modal
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Scroll, Plus, Clock } from "lucide-react";
-import { SessionsDropdown } from "./SessionsDropdown";
+import { SessionsModal } from "./SessionsModal";
 // [claude-code 2026-04-23] Harper Vision — screen capture status indicator
 import { VisionStatus } from "../harper-vision/VisionStatus";
 
@@ -31,6 +31,7 @@ export function ChatHeader({
   isLoading,
 }: ChatHeaderProps) {
   const [showHistory, setShowHistory] = useState(false);
+  const historyButtonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <div className="bg-transparent">
@@ -52,29 +53,29 @@ export function ChatHeader({
           >
             <Plus className="w-4 h-4" />
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowHistory((v) => !v)}
-              className={HEADER_BUTTON_CLASS}
-              title="Sessions"
-            >
-              <Clock className="w-4 h-4" />
-            </button>
-            {showHistory && (
-              <SessionsDropdown
-                onClose={() => setShowHistory(false)}
-                onSelectSession={(id) => {
-                  onSelectSession(id);
-                  setShowHistory(false);
-                }}
-                onNewSession={() => {
-                  onNewSession();
-                  setShowHistory(false);
-                }}
-                currentConversationId={currentConversationId}
-              />
-            )}
-          </div>
+          <button
+            ref={historyButtonRef}
+            onClick={() => setShowHistory((v) => !v)}
+            className={HEADER_BUTTON_CLASS}
+            title="Sessions"
+          >
+            <Clock className="w-4 h-4" />
+          </button>
+          <SessionsModal
+            isOpen={showHistory}
+            portal
+            anchorRef={historyButtonRef}
+            onClose={() => setShowHistory(false)}
+            onSelectSession={(id) => {
+              onSelectSession(id);
+              setShowHistory(false);
+            }}
+            onNewSession={() => {
+              onNewSession();
+              setShowHistory(false);
+            }}
+            currentConversationId={currentConversationId}
+          />
         </div>
       </div>
     </div>

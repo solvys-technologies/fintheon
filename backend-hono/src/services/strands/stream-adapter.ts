@@ -47,6 +47,8 @@ export function strandsToUIStream(
     onFinish?: (text: string) => Promise<void>;
     /** When set, each SSE event payload includes `agentId` for multi-stream merger labelling */
     agentId?: HermesAgentId;
+    /** Deterministic text streamed before model/tool work starts. */
+    prefaceText?: string | null;
   },
 ): ReadableStream<Uint8Array> {
   const messageId = options?.messageId ?? `msg-${Date.now()}`;
@@ -126,9 +128,22 @@ export function strandsToUIStream(
           emit({ type: "start-step" });
         }
 
+        function emitTextDelta(delta: string) {
+          closeReasoning();
+          if (!textStarted) {
+            textStarted = true;
+            emit({ type: "text-start", id: currentTextId });
+          }
+          fullText += delta;
+          emit({ type: "text-delta", id: currentTextId, delta });
+        }
+
         // Protocol framing
         emit({ type: "start", messageId });
         openStep();
+        if (options?.prefaceText) {
+          emitTextDelta(options.prefaceText);
+        }
 
         try {
           for await (const event of agent.stream(input)) {
@@ -150,18 +165,7 @@ export function strandsToUIStream(
                     closeStep();
                     openStep();
                   }
-                  // Close reasoning before first text in this step
-                  closeReasoning();
-                  if (!textStarted) {
-                    textStarted = true;
-                    emit({ type: "text-start", id: currentTextId });
-                  }
-                  fullText += delta.text;
-                  emit({
-                    type: "text-delta",
-                    id: currentTextId,
-                    delta: delta.text,
-                  });
+                  emitTextDelta(delta.text);
                 } else if (
                   delta.type === "reasoningContentDelta" &&
                   delta.text

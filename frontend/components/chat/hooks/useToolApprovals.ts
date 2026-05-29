@@ -18,7 +18,16 @@ export interface ToolApprovalRequest {
   decidedAt?: number;
 }
 
-export function useToolApprovals(requestId: string | null) {
+export type AddToolApprovalResponse = (response: {
+  id: string;
+  approved: boolean;
+  reason?: string;
+}) => void | PromiseLike<void>;
+
+export function useToolApprovals(
+  requestId: string | null,
+  addToolApprovalResponse?: AddToolApprovalResponse,
+) {
   const [approvals, setApprovals] = useState<ToolApprovalRequest[]>([]);
   const esRef = useRef<EventSource | null>(null);
   // Track which requestIds we've already subscribed to
@@ -58,6 +67,17 @@ export function useToolApprovals(requestId: string | null) {
               },
             ];
           });
+          window.dispatchEvent(
+            new CustomEvent("fintheon:tool-approval-request", {
+              detail: {
+                type: "tool-approval-request",
+                needsApproval: true,
+                id: detail.approvalId,
+                toolName: detail.toolName,
+                input: detail.toolInput,
+              },
+            }),
+          );
         }
 
         if (step.kind === "tool-approval-resolved" && step.detail) {
@@ -122,6 +142,14 @@ export function useToolApprovals(requestId: string | null) {
       );
 
       try {
+        try {
+          await addToolApprovalResponse?.({
+            id: approvalId,
+            approved: decision === "approved",
+          });
+        } catch {
+          /* legacy approval cards can predate AI SDK approval parts */
+        }
         await fetch(`${API_BASE_URL}/api/harper/tool-decision`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -139,7 +167,7 @@ export function useToolApprovals(requestId: string | null) {
         );
       }
     },
-    [],
+    [addToolApprovalResponse],
   );
 
   /** Approve a tool for the rest of this session (not permanent) */

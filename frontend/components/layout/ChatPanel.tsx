@@ -1,6 +1,6 @@
 // [claude-code 2026-04-05] Fix sidebar icons to match main Consilium toolbar (Scroll, Plus, Clock)
 // [claude-code 2026-04-03] Extracted from MainLayout.tsx — sliding chat panel
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { X, Scroll, Plus, Clock } from "lucide-react";
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { SessionsModal } from "../chat/SessionsModal";
@@ -12,6 +12,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({ showChat, onClose }: ChatPanelProps) {
   const [showSessionsDropdown, setShowSessionsDropdown] = useState(false);
+  const sessionsButtonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <div
@@ -36,31 +37,32 @@ export function ChatPanel({ showChat, onClose }: ChatPanelProps) {
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowSessionsDropdown((prev) => !prev)}
-              className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
-              title="History"
-            >
-              <Clock className="w-3.5 h-3.5" />
-            </button>
-            <SessionsModal
-              isOpen={showSessionsDropdown}
-              onClose={() => setShowSessionsDropdown(false)}
-              onSelectSession={(id) => {
-                window.dispatchEvent(
-                  new CustomEvent("fintheon:chat-load-session", {
-                    detail: { id },
-                  }),
-                );
-                setShowSessionsDropdown(false);
-              }}
-              onNewSession={() => {
-                window.dispatchEvent(new Event("fintheon:chat-new"));
-                setShowSessionsDropdown(false);
-              }}
-            />
-          </div>
+          <button
+            ref={sessionsButtonRef}
+            onClick={() => setShowSessionsDropdown((prev) => !prev)}
+            className="p-1.5 rounded-md text-zinc-600 hover:text-[var(--fintheon-accent)] hover:bg-[var(--fintheon-accent)]/8 transition-colors"
+            title="History"
+          >
+            <Clock className="w-3.5 h-3.5" />
+          </button>
+          <SessionsModal
+            isOpen={showSessionsDropdown}
+            portal
+            anchorRef={sessionsButtonRef}
+            onClose={() => setShowSessionsDropdown(false)}
+            onSelectSession={(id) => {
+              window.dispatchEvent(
+                new CustomEvent("fintheon:chat-load-session", {
+                  detail: { id },
+                }),
+              );
+              setShowSessionsDropdown(false);
+            }}
+            onNewSession={() => {
+              window.dispatchEvent(new Event("fintheon:chat-new"));
+              setShowSessionsDropdown(false);
+            }}
+          />
         </div>
         {/* Close */}
         <button

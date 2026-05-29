@@ -200,15 +200,15 @@ export function ProxVoicePanel({
                       participant.leaving
                         ? "opacity-0"
                         : "fintheon-fade-in opacity-100"
+                    } ${
+                      participant.isSpeaking ||
+                      (participant.audioLevel ?? 0) > 0.08
+                        ? "proxvoice-speaking-card"
+                        : ""
                     }`}
                     style={{
                       border:
                         "1px solid color-mix(in srgb, var(--fintheon-accent) 14%, transparent)",
-                      boxShadow:
-                        participant.isSpeaking ||
-                        (participant.audioLevel ?? 0) > 0.08
-                          ? `0 0 ${8 + Math.round((participant.audioLevel ?? 0.4) * 22)}px color-mix(in srgb, var(--fintheon-accent) ${12 + Math.round((participant.audioLevel ?? 0.4) * 24)}%, transparent)`
-                          : "none",
                     }}
                   >
                     {participant.profile?.avatarUrl ? (

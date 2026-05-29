@@ -14,6 +14,7 @@ import {
   maxNarrativeCoverUploadBytes,
 } from "./NarrativeCoverHeader";
 import { NarrativeWorkDrawer, type WorkDrawerTab } from "./NarrativeWorkDrawer";
+import type { NarrativeRailPreview } from "./narrative-rail-preview";
 import type { SensemakingResponse } from "./sensemaking-types";
 
 export interface NarrativeWorkspaceLink {
@@ -68,6 +69,7 @@ interface NarrativeSessionWorkspaceProps {
   }) => void | Promise<void>;
   onQuickAction?: (action: string, catalystId: string | null) => void;
   workDrawerTab?: WorkDrawerTab;
+  railPreview?: NarrativeRailPreview | null;
   railCanvas?: ReactNode;
   children: ReactNode;
 }
@@ -92,6 +94,7 @@ export function NarrativeSessionWorkspace({
   onCoverChange,
   onQuickAction,
   workDrawerTab,
+  railPreview,
   railCanvas,
   children,
 }: NarrativeSessionWorkspaceProps) {
@@ -338,6 +341,7 @@ export function NarrativeSessionWorkspace({
         onSelectNode={onSelectNode}
         onQuickAction={onQuickAction}
         preferredTab={workDrawerTab}
+        preview={railPreview}
         canvasSlot={canvasSlot}
       />
     </section>

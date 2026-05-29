@@ -45,6 +45,7 @@ import { ConsulControlCorners } from "./components/consul-control/ConsulControlC
 import { ProjectXSyncProvider } from "./components/projectx/ProjectXSyncProvider";
 import { useConsulControlStatus } from "./hooks/useConsulControlStatus";
 import { buildSurfaceCapabilities } from "./lib/surface-capabilities";
+import { MainContentOverlayHost } from "./components/layout/MainContentOverlayHost";
 
 // Run storage migration before any providers read localStorage
 migrateStorageKeys();
@@ -240,6 +241,7 @@ function AuthGate() {
                                   <ProjectXSyncProvider />
                                   <VersionChecker />
                                   <MainLayout />
+                                  <MainContentOverlayHost />
                                   {surfaceCapabilities.allowVoiceAssistant && (
                                     <ConsulControlLayer />
                                   )}

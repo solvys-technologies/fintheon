@@ -21,6 +21,10 @@ import {
 } from "../../ai/agent-instructions/fileroom-prompt-vault.js";
 import { buildMacroWatchlistContext } from "../../market-data/macro-watchlist.js";
 import { buildNarrativeFlowResearchProtocolBlock } from "../../ai/agent-instructions/narrativeflow-research.js";
+import {
+  buildNarrativeFlowAcknowledgement,
+  prepareNarrativeFlowAgentTurn,
+} from "../../langgraph/narrativeflow-agent-graph.js";
 import { getUserApiKey } from "../../ai/api-key-crypto.js";
 import { createLogger } from "../../../lib/logger.js";
 import { buildReleaseContext } from "../release-context.js";
@@ -200,6 +204,41 @@ ${prompt}`;
     workspace: options.workspace,
   });
   if (narrativeFlowContext) prompt = `${narrativeFlowContext}\n\n${prompt}`;
+  let narrativePreface = buildNarrativeFlowAcknowledgement({
+    surface: options.surface,
+    workspace: options.workspace,
+  });
+  let narrativeGraphThreadId: string | null = null;
+  if (options.surface === "narrativeflow") {
+    try {
+      const prepared = await prepareNarrativeFlowAgentTurn({
+        requestId,
+        conversationId,
+        userId,
+        message,
+        surface: options.surface,
+        workspace: options.workspace,
+      });
+      narrativePreface = prepared.acknowledgement;
+      narrativeGraphThreadId = prepared.enabled ? prepared.threadId : null;
+    } catch (err) {
+      log.warn("NarrativeFlow graph preparation failed", {
+        requestId,
+        error: String(err),
+      });
+    }
+  }
+  if (narrativePreface) {
+    const graphLine = narrativeGraphThreadId
+      ? `LangGraph checkpoint thread: ${narrativeGraphThreadId}\n`
+      : "";
+    prompt = `[NarrativeFlow Runtime]
+The UI has already streamed this acknowledgement to the user:
+${JSON.stringify(narrativePreface.trim())}
+Do not repeat that acknowledgement. Continue with the next concrete step, use narrativeflow_show_internal_data for non-persistent Research rail previews, and use narrativeflow_stage_edit for any persisted write.
+${graphLine}
+${prompt}`;
+  }
 
   if (extractSkillTag(message) === "NARRATIVEFLOW_RESEARCH") {
     prompt = `${buildNarrativeFlowResearchProtocolBlock()}\n\n${prompt}`;
@@ -295,6 +334,7 @@ ${prompt}`;
 
   const stream = strandsToUIStream(agent, agentInput, {
     messageId: `harper-${Date.now()}`,
+    prefaceText: narrativePreface,
     onFinish: async (text) => {
       cleanupCognition();
       log.info("Harper response complete", { requestId, textLen: text.length });

@@ -1,6 +1,7 @@
 import { ChevronDown, PanelRightOpen, Users } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { PanelIcon } from "../layout/PanelToggleGroup";
+import { MainContentOverlayPortal } from "../layout/MainContentOverlayHost";
 import {
   NARRATIVE_SURFACE_OPTIONS,
   type NarrativeSurfaceMode,
@@ -27,14 +28,61 @@ export function NarrativeAnalysisDropdown({
   onToggleDeskRail,
   onToggleResearchRail,
 }: NarrativeAnalysisDropdownProps) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const current =
     NARRATIVE_SURFACE_OPTIONS.find((option) => option.id === currentMode) ??
     NARRATIVE_SURFACE_OPTIONS[0];
   const CurrentIcon = current.icon;
 
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      onOpenChange(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onOpenChange, open]);
+
+  const menu = open ? (
+    <div
+      ref={menuRef}
+      className="fintheon-popover-surface narrative-analysis-menu t-dropdown is-open max-h-[min(520px,calc(100vh-96px))] overflow-y-auto p-1"
+      data-origin="top-right"
+    >
+      {NARRATIVE_SURFACE_OPTIONS.map((option, index) => (
+        <div key={option.id}>
+          {index > 0 ? <DropdownRuler /> : null}
+          <AnalysisChoice
+            active={currentMode === option.id}
+            icon={option.icon}
+            label={option.label}
+            description={option.description}
+            staggerIndex={index}
+            onClick={() => {
+              onSelectMode(option.id);
+              onOpenChange(false);
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <div className="relative flex items-center gap-1">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => onOpenChange(!open)}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all duration-200 hover:-translate-y-px ${
@@ -71,29 +119,9 @@ export function NarrativeAnalysisDropdown({
         }}
       />
 
-      {open ? (
-        <div
-          className="fintheon-popover-surface narrative-analysis-menu t-dropdown is-open absolute right-0 top-[calc(100%+8px)] z-50 overflow-y-auto p-1"
-          data-origin="top-right"
-        >
-          {NARRATIVE_SURFACE_OPTIONS.map((option, index) => (
-            <div key={option.id}>
-              {index > 0 ? <DropdownRuler /> : null}
-              <AnalysisChoice
-                active={currentMode === option.id}
-                icon={option.icon}
-                label={option.label}
-                description={option.description}
-                staggerIndex={index}
-                onClick={() => {
-                  onSelectMode(option.id);
-                  onOpenChange(false);
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <MainContentOverlayPortal open={open} anchorRef={triggerRef} width={300}>
+        {menu}
+      </MainContentOverlayPortal>
     </div>
   );
 }
