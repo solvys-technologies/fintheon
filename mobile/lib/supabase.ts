@@ -2,12 +2,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabasePublicKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 let supabase: SupabaseClient | null = null;
 
-if (supabaseUrl && supabaseAnonKey && !supabaseAnonKey.startsWith("<")) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (supabaseUrl && supabasePublicKey && !supabasePublicKey.startsWith("<")) {
+  supabase = createClient(supabaseUrl, supabasePublicKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,

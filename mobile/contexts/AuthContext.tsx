@@ -8,6 +8,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import { supabase, signOut as supabaseSignOut } from "../lib/supabase";
@@ -39,12 +40,14 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tier, setTier] = useState<UserTier>("fintheon_pro");
+  const bootstrappedUserRef = useRef<string | null>(null);
 
   // Restore existing session from localStorage + listen for auth state changes
   useEffect(() => {
@@ -68,6 +71,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    const token = session?.access_token ?? null;
+    if (!currentUserId || !token) return;
+    if (bootstrappedUserRef.current === currentUserId) return;
+
+    bootstrappedUserRef.current = currentUserId;
+    fetch(`${API_BASE}/api/auth/bootstrap`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {
+      bootstrappedUserRef.current = null;
+    });
+  }, [user?.id, session?.access_token]);
 
   const signIn = useCallback(async () => {
     if (!supabase) throw new Error("Supabase not configured");

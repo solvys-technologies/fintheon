@@ -6,8 +6,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
 EXPECTED_APP_ID="io.pricedinresearch.fintheon"
-DMG="$ROOT/desktop-dist/Fintheon-${VERSION}-arm64.dmg"
-APP="$ROOT/desktop-dist/mac-arm64/Fintheon.app"
+MAC_RELEASE_ARCH="${FINTHEON_MAC_RELEASE_ARCH:-universal}"
+DMG="$ROOT/desktop-dist/Fintheon-${VERSION}-${MAC_RELEASE_ARCH}.dmg"
+APP="$ROOT/desktop-dist/mac-${MAC_RELEASE_ARCH}/Fintheon.app"
 ALLOW_S100_UNSIGNED="${FINTHEON_ALLOW_S100_UNSIGNED:-0}"
 SKIP_DMG_BUILD=0
 if [[ "${1:-}" == "--skip-build" ]]; then
@@ -55,15 +56,15 @@ bash -n \
   "$ROOT/scripts/install-cli.sh" \
   "$ROOT/scripts/fintheon-cli.sh"
 
-step "7/10" "Building Mac DMG"
+step "7/10" "Building Mac DMG ($MAC_RELEASE_ARCH)"
 if [[ "$SKIP_DMG_BUILD" == "1" ]]; then
   echo "Skipping DMG rebuild; validating existing desktop-dist artifacts"
 else
   rm -rf "$ROOT/desktop-dist"
   if [[ "$ALLOW_S100_UNSIGNED" == "1" ]]; then
-    (cd "$ROOT" && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg)
+    (cd "$ROOT" && FINTHEON_AD_HOC_SIGN_MAC=true CSC_IDENTITY_AUTO_DISCOVERY=false bunx electron-builder --mac dmg "--$MAC_RELEASE_ARCH")
   else
-    (cd "$ROOT" && FINTHEON_NOTARIZE_MAC=true bunx electron-builder --mac dmg)
+    (cd "$ROOT" && FINTHEON_NOTARIZE_MAC=true bunx electron-builder --mac dmg "--$MAC_RELEASE_ARCH")
   fi
 fi
 [[ -f "$DMG" ]] || fail "DMG missing: $DMG"
@@ -95,7 +96,7 @@ fi
 
 step "9/10" "Checking update metadata"
 [[ -f "$ROOT/desktop-dist/latest-mac.yml" ]] || fail "latest-mac.yml missing"
-grep -q "Fintheon-${VERSION}-arm64.dmg" "$ROOT/desktop-dist/latest-mac.yml" || fail "latest-mac.yml points at the wrong DMG"
+grep -q "Fintheon-${VERSION}-${MAC_RELEASE_ARCH}.dmg" "$ROOT/desktop-dist/latest-mac.yml" || fail "latest-mac.yml points at the wrong DMG"
 node - "$ROOT/desktop-dist/latest-mac.yml" "$DMG" <<'NODE'
 const crypto = require("crypto");
 const fs = require("fs");

@@ -29,7 +29,7 @@ import {
   Menu,
   Monitor,
   MessageCircle,
-  PictureInPicture2,
+  Power,
   Bell,
   BellOff,
   ClipboardList,
@@ -852,11 +852,16 @@ export function TopHeader({
                 className={`toolbar-icon-btn ${topStepXEnabled ? "toolbar-active" : ""}`}
                 title={
                   topStepXEnabled
-                    ? "Hide iFrame layouts"
-                    : "Show iFrame layouts"
+                    ? "Power off trading browser"
+                    : "Power on trading browser"
+                }
+                aria-label={
+                  topStepXEnabled
+                    ? "Power off trading browser"
+                    : "Power on trading browser"
                 }
               >
-                <PictureInPicture2
+                <Power
                   className={`w-3 h-3 ${topStepXEnabled ? "toolbar-icon-active" : ""}`}
                   style={
                     topStepXEnabled ? activeIconStyle("#34d399") : undefined

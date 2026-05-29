@@ -18,6 +18,7 @@ import {
   signInWithGoogle,
   signOut as supabaseSignOut,
 } from "../lib/supabase";
+import { getRuntimeApiBase } from "../lib/runtime-api-base";
 import type { Session, User } from "@supabase/supabase-js";
 
 export type UserTier = "free" | "fintheon" | "fintheon_plus" | "fintheon_pro";
@@ -37,7 +38,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const API_BASE = getRuntimeApiBase();
 const DEV = import.meta.env.DEV;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tier, setTier] = useState<UserTier>("fintheon_pro");
+  const bootstrappedUserRef = useRef<string | null>(null);
 
   // --- Supabase Auth ---
   useEffect(() => {
@@ -77,6 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    const token = session?.access_token ?? null;
+    if (!currentUserId || !token) return;
+    if (bootstrappedUserRef.current === currentUserId) return;
+
+    bootstrappedUserRef.current = currentUserId;
+    fetch(`${API_BASE}/api/auth/bootstrap`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch((error) => {
+      bootstrappedUserRef.current = null;
+      DEV && console.warn("[Auth] user bootstrap failed:", error);
+    });
+  }, [user?.id, session?.access_token]);
 
   // Sync the user's identity to the local backend's relay connector. The
   // local backend can't know which user it serves until we tell it — without

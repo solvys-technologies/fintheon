@@ -12,9 +12,21 @@ module.exports = async function afterPack(context) {
 
   const helperDir = path.join(appPath, "Contents", "Library", "LaunchServices");
   fs.mkdirSync(helperDir, { recursive: true });
+  const helperArch =
+    context.arch === 1
+      ? "x64"
+      : context.arch === 3
+        ? "arm64"
+        : context.arch === 4
+          ? "universal"
+          : String(context.arch ?? "");
   execFileSync(
     process.execPath,
-    [path.join(__dirname, "build-privileged-helper.cjs"), helperDir],
+    [
+      path.join(__dirname, "build-privileged-helper.cjs"),
+      helperDir,
+      helperArch,
+    ],
     { stdio: "inherit" },
   );
 

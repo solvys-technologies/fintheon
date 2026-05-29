@@ -9,16 +9,38 @@ const repoRoot = path.resolve(import.meta.dirname, "..");
 const pkg = JSON.parse(
   fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"),
 );
-const endpoint =
-  process.env.FINTHEON_UPDATE_CHECK_URL ||
-  "https://fintheon.fly.dev/api/desktop/update/latest?platform=darwin&arch=arm64";
+const explicitEndpoint = process.env.FINTHEON_UPDATE_CHECK_URL || "";
+const endpointBase =
+  process.env.FINTHEON_UPDATE_BASE_URL ||
+  "https://fintheon.fly.dev/api/desktop/update/latest";
 const expectedVersion = process.env.FINTHEON_EXPECTED_VERSION || pkg.version;
 const expectedAppId = "io.pricedinresearch.fintheon";
-const expectedAsset = `Fintheon-${expectedVersion}-arm64.dmg`;
+const verifyArchs = explicitEndpoint
+  ? [null]
+  : (process.env.FINTHEON_VERIFY_ARCHES || "arm64,x64")
+      .split(",")
+      .map((arch) => arch.trim())
+      .filter(Boolean);
 
 function fail(message) {
   console.error(`FAIL: ${message}`);
   process.exit(1);
+}
+
+function endpointForArch(arch) {
+  if (explicitEndpoint) return explicitEndpoint;
+  const url = new URL(endpointBase);
+  url.searchParams.set("platform", "darwin");
+  url.searchParams.set("arch", arch);
+  return url.toString();
+}
+
+function expectedAssetsForArch(arch) {
+  if (!arch) return null;
+  return new Set([
+    `Fintheon-${expectedVersion}-${arch}.dmg`,
+    `Fintheon-${expectedVersion}-universal.dmg`,
+  ]);
 }
 
 function hashFile(filePath, algorithm, encoding) {
@@ -116,7 +138,15 @@ function verifyDownloadedDmg(dmgPath) {
 }
 
 async function main() {
-  console.log(`Checking deployed update endpoint: ${endpoint}`);
+  for (const arch of verifyArchs) {
+    await verifyEndpoint(arch);
+  }
+}
+
+async function verifyEndpoint(arch) {
+  const endpoint = endpointForArch(arch);
+  const archLabel = arch ?? "explicit";
+  console.log(`Checking deployed update endpoint [${archLabel}]: ${endpoint}`);
   const updateRes = await fetch(endpoint, {
     headers: { "User-Agent": "Fintheon-Desktop-Release-Preflight" },
   });
@@ -128,8 +158,13 @@ async function main() {
   if (update.version !== expectedVersion) {
     fail(`update version ${update.version} != expected ${expectedVersion}`);
   }
-  if (update.assetName !== expectedAsset) {
-    fail(`update asset ${update.assetName} != expected ${expectedAsset}`);
+  const expectedAssets = expectedAssetsForArch(arch);
+  if (expectedAssets && !expectedAssets.has(update.assetName)) {
+    fail(
+      `update asset ${update.assetName} is not valid for ${archLabel}; expected one of ${Array.from(
+        expectedAssets,
+      ).join(", ")}`,
+    );
   }
   if (!update.downloadUrl) fail("update endpoint did not return downloadUrl");
   if (!update.sha256 && !update.sha512)
@@ -202,7 +237,7 @@ async function main() {
     verifyDownloadedDmg(tempPath);
 
     console.log(
-      `PASS: deployed endpoint produced downloadable ${update.assetName} (${bytes} bytes, ${checksum.algorithm} verified)`,
+      `PASS: deployed endpoint produced downloadable ${update.assetName} for ${archLabel} (${bytes} bytes, ${checksum.algorithm} verified)`,
     );
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

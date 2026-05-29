@@ -6,9 +6,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="$(node -p "require('$ROOT/package.json').version")"
 PUBLISH="${1:-}"
 TAG="v$VERSION"
-DMG="$ROOT/desktop-dist/Fintheon-${VERSION}-arm64.dmg"
+MAC_RELEASE_ARCH="${FINTHEON_MAC_RELEASE_ARCH:-universal}"
+DMG="$ROOT/desktop-dist/Fintheon-${VERSION}-${MAC_RELEASE_ARCH}.dmg"
 LATEST_MAC="$ROOT/desktop-dist/latest-mac.yml"
-BLOCKMAP="$ROOT/desktop-dist/Fintheon-${VERSION}-arm64.dmg.blockmap"
+BLOCKMAP="$ROOT/desktop-dist/Fintheon-${VERSION}-${MAC_RELEASE_ARCH}.dmg.blockmap"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -42,7 +43,7 @@ rm -rf "$ROOT/desktop-dist"
 export FINTHEON_NOTARIZE_MAC=true
 unset FINTHEON_AD_HOC_SIGN_MAC
 
-(cd "$ROOT" && bunx electron-builder --mac dmg --publish never)
+(cd "$ROOT" && bunx electron-builder --mac dmg "--$MAC_RELEASE_ARCH" --publish never)
 
 "$ROOT/scripts/desktop-release-preflight.sh" --skip-build
 

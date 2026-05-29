@@ -8,6 +8,8 @@ import {
   upsertUserRole,
 } from "../../services/peers/peer-registry.js";
 import { verifySupabaseToken } from "../../services/supabase-auth.js";
+import { getOrCreateAccount } from "../../services/account-service.js";
+import { getOrCreateProfile } from "../../services/supabase-service.js";
 
 type AuthCtx = {
   userId: string;
@@ -121,6 +123,53 @@ export function createAuthRoutes(): Hono {
         avatarUrl: profile?.avatarUrl ?? null,
         settings: profile?.settings ?? {},
       },
+    });
+  });
+
+  router.post("/bootstrap", async (c) => {
+    const auth = await readAuthContext(c).catch(() => null);
+    if (!auth) return c.json({ error: "Authentication required" }, 401);
+
+    const displayName = auth.email.split("@")[0] || "Fintheon User";
+    const warnings: string[] = [];
+
+    const accountResult = await getOrCreateAccount(auth.userId, auth.email)
+      .then(() => true)
+      .catch((error) => {
+        warnings.push(`account: ${(error as Error).message}`);
+        return false;
+      });
+
+    const profileResult = await getOrCreateProfile(
+      auth.userId,
+      auth.email,
+      displayName,
+    )
+      .then((profile) => Boolean(profile))
+      .catch((error) => {
+        warnings.push(`profile: ${(error as Error).message}`);
+        return false;
+      });
+
+    const existingPeer = await getUserById(auth.userId).catch(() => null);
+    const peerResult = existingPeer
+      ? true
+      : await upsertUserRole(auth.userId, "peer", { displayName })
+          .then(() => true)
+          .catch((error) => {
+            warnings.push(`peer: ${(error as Error).message}`);
+            return false;
+          });
+
+    return c.json({
+      ok: true,
+      user: { id: auth.userId, email: auth.email },
+      provisioned: {
+        account: accountResult,
+        profile: profileResult,
+        peer: peerResult,
+      },
+      warnings,
     });
   });
 

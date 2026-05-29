@@ -3,12 +3,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getRuntimeApiBase } from "./runtime-api-base";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabasePublicKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 let supabase: SupabaseClient | null = null;
 
-if (supabaseUrl && supabaseAnonKey && !supabaseAnonKey.startsWith("<")) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (supabaseUrl && supabasePublicKey && !supabasePublicKey.startsWith("<")) {
+  supabase = createClient(supabaseUrl, supabasePublicKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
@@ -27,7 +29,7 @@ export { supabase };
 export async function signInWithGoogle() {
   if (!supabase)
     throw new Error(
-      "Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY",
+      "Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY",
     );
   // Redirect to backend callback page which will relay the auth code
   // back to the Electron app via fintheon:// deep link
@@ -46,7 +48,7 @@ export async function signInWithGoogle() {
 export async function signInWithMagicLink(email: string) {
   if (!supabase)
     throw new Error(
-      "Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY",
+      "Supabase not configured — check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_KEY",
     );
 
   const API_BASE = getRuntimeApiBase();

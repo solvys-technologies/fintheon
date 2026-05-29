@@ -9,6 +9,44 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T09:07:52-04:00",
+    agent: "codex",
+    summary:
+      "Public Mac updater hardening: release scripts now build universal signed DMGs by default, the backend update endpoint serves arch-specific assets with universal fallback, verifier checks both arm64 and x64 update paths, the local updater script can download universal artifacts when a native arch DMG is absent, the packaged privileged helper now compiles for the target macOS arch, and a root-level mobile Vercel config preserves shared imports during mobile production deploys.",
+    files: [
+      "backend-hono/src/routes/desktop-update/index.ts",
+      "scripts/build-privileged-helper.cjs",
+      "scripts/build-signed-mac-release.sh",
+      "scripts/desktop-release-preflight.sh",
+      "scripts/desktop-update-download-preflight.mjs",
+      "scripts/electron-after-pack.cjs",
+      "scripts/fintheon-update.sh",
+      "src/lib/changelog.ts",
+      "vercel.mobile-root.json",
+    ],
+  },
+  {
+    date: "2026-05-29T08:46:03-04:00",
+    agent: "codex",
+    summary:
+      "Open Gmail auth hardening: web and mobile Supabase clients now accept either anon or publishable public key env names, and signed-in users call a backend bootstrap that provisions account, profile, and peer rows by Supabase UID without invite gating.",
+    files: [
+      "backend-hono/src/routes/auth/index.ts",
+      "frontend/contexts/AuthContext.tsx",
+      "frontend/lib/supabase.ts",
+      "mobile/contexts/AuthContext.tsx",
+      "mobile/lib/supabase.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T08:32:50-04:00",
+    agent: "codex",
+    summary:
+      "Header trading browser control restored to the power glyph beside Bulletin, with matching power on/off labels while preserving the existing iFrame toggle behavior.",
+    files: ["frontend/components/layout/TopHeader.tsx", "src/lib/changelog.ts"],
+  },
+  {
     date: "2026-05-29T01:42:00-04:00",
     agent: "codex",
     summary:

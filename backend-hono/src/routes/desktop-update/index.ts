@@ -34,11 +34,15 @@ interface DesktopRelease {
   publishedAt: string | null;
 }
 
-let cachedRelease: { release: DesktopRelease; fetchedAt: number } | null = null;
+type ReleaseArch = "arm64" | "x64";
+
+let cachedReleaseByArch: Partial<
+  Record<ReleaseArch, { release: DesktopRelease; fetchedAt: number }>
+> = {};
 let cachedManifest: { release: DesktopRelease; fetchedAt: number } | null =
   null;
 
-function normalizeArch(value: string | undefined): "arm64" | "x64" {
+function normalizeArch(value: string | undefined): ReleaseArch {
   if (value === "x64" || value === "amd64") return "x64";
   return "arm64";
 }
@@ -51,6 +55,39 @@ function readSha256(asset: GitHubAsset): string | null {
   const digest = asset.digest ?? "";
   if (digest.startsWith("sha256:")) return digest.slice("sha256:".length);
   return null;
+}
+
+function getArchAssetName(version: string, arch: ReleaseArch): string {
+  return `Fintheon-${version}-${arch}.dmg`;
+}
+
+function getUniversalAssetName(version: string): string {
+  return `Fintheon-${version}-universal.dmg`;
+}
+
+function isCompatibleAssetName(
+  assetName: string,
+  version: string,
+  arch: ReleaseArch,
+): boolean {
+  return (
+    assetName === getArchAssetName(version, arch) ||
+    assetName === getUniversalAssetName(version)
+  );
+}
+
+function findCompatibleMacAsset(
+  assets: GitHubAsset[],
+  version: string,
+  arch: ReleaseArch,
+): GitHubAsset | undefined {
+  const preferredNames = [
+    getArchAssetName(version, arch),
+    getUniversalAssetName(version),
+  ];
+  return preferredNames
+    .map((name) => assets.find((asset) => asset.name === name))
+    .find((asset): asset is GitHubAsset => Boolean(asset));
 }
 
 function readManifestValue(manifest: string, key: string): string | null {
@@ -125,7 +162,10 @@ function mergeReleaseAndManifest(
   };
 }
 
-async function fetchLatestRelease(): Promise<DesktopRelease | null> {
+async function fetchLatestRelease(
+  arch: ReleaseArch,
+): Promise<DesktopRelease | null> {
+  const cachedRelease = cachedReleaseByArch[arch];
   if (cachedRelease && Date.now() - cachedRelease.fetchedAt < CACHE_TTL_MS) {
     return cachedRelease.release;
   }
@@ -147,9 +187,10 @@ async function fetchLatestRelease(): Promise<DesktopRelease | null> {
         /^v\d+\.\d+\.\d+$/.test(release.tag_name),
     );
     const version = latest ? normalizeVersion(latest.tag_name) : null;
-    const asset = latest?.assets.find(
-      (item) => item.name === `Fintheon-${version}-arm64.dmg`,
-    );
+    const asset =
+      latest && version
+        ? findCompatibleMacAsset(latest.assets, version, arch)
+        : undefined;
     if (latest && version && asset) {
       const manifest = await fetchLatestFromManifest().catch(() => null);
       const release = mergeReleaseAndManifest(latest, asset, version, manifest);
@@ -159,18 +200,26 @@ async function fetchLatestRelease(): Promise<DesktopRelease | null> {
         manifest?.version === version &&
         manifest.assetName === asset.name
       ) {
-        cachedRelease = { release: manifest, fetchedAt: Date.now() };
+        cachedReleaseByArch[arch] = {
+          release: manifest,
+          fetchedAt: Date.now(),
+        };
         return manifest;
       }
-      cachedRelease = { release, fetchedAt: Date.now() };
+      cachedReleaseByArch[arch] = { release, fetchedAt: Date.now() };
       return release;
     }
   }
 
   const release = await fetchLatestFromManifest();
-  if (!release) return null;
+  if (
+    !release ||
+    !isCompatibleAssetName(release.assetName, release.version, arch)
+  ) {
+    return null;
+  }
 
-  cachedRelease = { release, fetchedAt: Date.now() };
+  cachedReleaseByArch[arch] = { release, fetchedAt: Date.now() };
   return release;
 }
 
@@ -183,24 +232,10 @@ export function createDesktopUpdateRoutes(): Hono {
       return c.json({ ok: false, reason: "unsupported platform" }, 400);
     }
 
-    const release = await fetchLatestRelease();
+    const arch = normalizeArch(c.req.query("arch"));
+    const release = await fetchLatestRelease(arch);
     if (!release) {
       return c.json({ ok: false, reason: "latest release unavailable" }, 503);
-    }
-
-    const arch = normalizeArch(c.req.query("arch"));
-    const assetName = `Fintheon-${release.version}-${arch}.dmg`;
-    if (release.assetName !== assetName) {
-      return c.json(
-        {
-          ok: false,
-          version: release.version,
-          tag: release.tag,
-          assetName,
-          reason: "release asset unavailable",
-        },
-        404,
-      );
     }
 
     return c.json({

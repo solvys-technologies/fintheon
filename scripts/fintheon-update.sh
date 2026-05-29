@@ -382,7 +382,11 @@ if [[ "$ARCH" == "arm64" ]]; then
 else
   DMG_SUFFIX="x64"
 fi
-DMG_NAME="Fintheon-${VERSION_NUM}-${DMG_SUFFIX}.dmg"
+DMG_CANDIDATES=(
+  "Fintheon-${VERSION_NUM}-${DMG_SUFFIX}.dmg"
+  "Fintheon-${VERSION_NUM}-universal.dmg"
+)
+DMG_NAME="${DMG_CANDIDATES[0]}"
 DMG_URL="https://github.com/solvys-technologies/fintheon/releases/download/${LATEST_TAG}/${DMG_NAME}"
 DMG_LOCAL="$HOME/Downloads/$DMG_NAME"
 
@@ -391,29 +395,37 @@ DMG_LOCAL="$HOME/Downloads/$DMG_NAME"
 # through to local rebuild if gh isn't installed or isn't logged in.
 DOWNLOAD_OK=false
 if [[ -n "$LATEST_TAG" ]] && command -v gh &>/dev/null && gh auth status &>/dev/null; then
-  info "Downloading $DMG_NAME via gh release..."
-  if gh release download "$LATEST_TAG" \
-      --repo solvys-technologies/fintheon \
-      --pattern "$DMG_NAME" \
-      --output "$DMG_LOCAL" \
-      --clobber 2>/dev/null; then
-    DOWNLOAD_OK=true
-    ok "Downloaded release DMG"
-  else
-    info "gh release download failed — trying release asset API..."
-    ASSET_API_URL=$(gh release view "$LATEST_TAG" \
-      --repo solvys-technologies/fintheon \
-      --json assets \
-      --jq ".assets[] | select(.name == \"$DMG_NAME\") | .apiUrl" 2>/dev/null || true)
-    if [[ -n "$ASSET_API_URL" ]] && gh api "$ASSET_API_URL" \
-      -H "Accept: application/octet-stream" > "${DMG_LOCAL}.tmp" 2>/dev/null; then
-      mv "${DMG_LOCAL}.tmp" "$DMG_LOCAL"
+  for DMG_NAME in "${DMG_CANDIDATES[@]}"; do
+    DMG_URL="https://github.com/solvys-technologies/fintheon/releases/download/${LATEST_TAG}/${DMG_NAME}"
+    DMG_LOCAL="$HOME/Downloads/$DMG_NAME"
+    info "Downloading $DMG_NAME via gh release..."
+    if gh release download "$LATEST_TAG" \
+        --repo solvys-technologies/fintheon \
+        --pattern "$DMG_NAME" \
+        --output "$DMG_LOCAL" \
+        --clobber 2>/dev/null; then
       DOWNLOAD_OK=true
-      ok "Downloaded release DMG via asset API"
+      ok "Downloaded release DMG"
+      break
     else
-      warn "Release DMG download failed — will rebuild locally"
-      /bin/rm -f "$DMG_LOCAL" "${DMG_LOCAL}.tmp" 2>/dev/null || true
+      info "gh release download failed — trying release asset API..."
+      ASSET_API_URL=$(gh release view "$LATEST_TAG" \
+        --repo solvys-technologies/fintheon \
+        --json assets \
+        --jq ".assets[] | select(.name == \"$DMG_NAME\") | .apiUrl" 2>/dev/null || true)
+      if [[ -n "$ASSET_API_URL" ]] && gh api "$ASSET_API_URL" \
+        -H "Accept: application/octet-stream" > "${DMG_LOCAL}.tmp" 2>/dev/null; then
+        mv "${DMG_LOCAL}.tmp" "$DMG_LOCAL"
+        DOWNLOAD_OK=true
+        ok "Downloaded release DMG via asset API"
+        break
+      else
+        /bin/rm -f "$DMG_LOCAL" "${DMG_LOCAL}.tmp" 2>/dev/null || true
+      fi
     fi
+  done
+  if [[ "$DOWNLOAD_OK" != "true" ]]; then
+    warn "Release DMG download failed — will rebuild locally"
   fi
 elif [[ -n "$LATEST_TAG" ]]; then
   info "gh CLI unavailable or not authed — will rebuild locally (brew install gh && gh auth login to switch to prebuilt downloads)"
@@ -438,7 +450,7 @@ if [[ "$DOWNLOAD_OK" != "true" ]]; then
   info "Building DMG locally (fallback)... see $DMG_LOG"
   if npm run desktop:build > "$DMG_LOG" 2>&1; then
     ok "DMG built"
-    DMG_LOCAL=$(ls -t "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-${DMG_SUFFIX}.dmg 2>/dev/null | head -1)
+    DMG_LOCAL=$(ls -t "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-${DMG_SUFFIX}.dmg "$FINTHEON_ROOT/desktop-dist"/Fintheon-*-universal.dmg 2>/dev/null | head -1)
   else
     warn "DMG build failed — tail:"
     tail -10 "$DMG_LOG" | sed 's/^/    /'
