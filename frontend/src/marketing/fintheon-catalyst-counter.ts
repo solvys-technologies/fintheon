@@ -5,6 +5,7 @@ interface RiskflowStats {
 }
 
 interface RiskflowSources {
+  method_breakdown?: Record<string, number> | null;
   sources?: {
     financialJuiceRss?: { ingested?: number };
     xHomeTimeline?: {
@@ -42,6 +43,12 @@ async function readSourcesTotal(apiBase: string) {
   if (!response.ok) return null;
 
   const payload = (await response.json()) as RiskflowSources;
+  const methodTotal = Object.values(payload.method_breakdown ?? {}).reduce(
+    (sum, value) => sum + Number(value ?? 0),
+    0,
+  );
+  if (methodTotal > 0) return methodTotal;
+
   const financialJuice = payload.sources?.financialJuiceRss?.ingested ?? 0;
   const xTiers = Object.values(payload.sources?.xHomeTimeline?.tiers ?? {});
   return xTiers.reduce(
