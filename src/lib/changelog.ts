@@ -9,6 +9,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T01:42:00-04:00",
+    agent: "codex",
+    summary:
+      "v7.0.7 deploy prep: captured post-v7.0.6 mobile shell, notification, RiskFlow, LiveKit, FinancialJuice, and landing prototype fixes; refreshed install/update pointers for the release tag.",
+    files: [
+      "package.json",
+      "backend-hono/package.json",
+      "mobile/package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/install-cli.sh",
+      "scripts/fintheon-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-29T00:21:32-04:00",
     agent: "codex",
     summary:
