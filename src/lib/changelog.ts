@@ -9,6 +9,26 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-28T22:44:08-04:00",
+    agent: "codex",
+    summary:
+      "Mobile notification closeout: moved the server-backed notification list into Bulletin as an Inbox tab, added error/theme notification dots to the Bulletin trigger, routed sidebar/mobile inbox actions into Bulletin, lifted the mobile quick footer above the iOS home bar, restored soft briefing scroll paging, capped mobile back history to two presses, and prevented iOS chat-input zoom.",
+    files: [
+      "frontend/components/StickyBulletin.tsx",
+      "frontend/components/bulletin/BulletinInboxTab.tsx",
+      "frontend/components/desk/DeskDailyBriefingPanel.tsx",
+      "frontend/components/desk/DeskDashboardPrototype.tsx",
+      "frontend/components/layout/MainLayout.tsx",
+      "frontend/components/layout/MobileQuickFooter.tsx",
+      "frontend/components/layout/MobileUnderlayDrawer.tsx",
+      "frontend/components/layout/TopHeader.tsx",
+      "frontend/hooks/useStickyBulletin.ts",
+      "frontend/index.css",
+      "frontend/lib/notification-presentation.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-28T21:30:43-04:00",
     agent: "codex",
     summary:

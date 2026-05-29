@@ -764,6 +764,11 @@ html[data-zen-mode="true"] button[aria-label] {
     padding-bottom: env(safe-area-inset-bottom);
     background: var(--fintheon-bg);
   }
+
+  .fintheon-app-shell[data-surface-form-factor="mobile"]
+    :where(input, textarea, [contenteditable="true"]) {
+    font-size: 16px !important;
+  }
 }
 
 /* [claude-code 2026-04-23] S32-T5 — chat slot skeleton→content reveal */

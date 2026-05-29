@@ -22,18 +22,18 @@ export function MobileQuickFooter({
 }: MobileQuickFooterProps) {
   const footerStyle: CSSProperties = {
     ...style,
-    paddingBottom: "env(safe-area-inset-bottom)",
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)",
   };
 
   return (
     <footer
-      className="relative z-10 shrink-0 bg-[var(--fintheon-surface)] px-3 pt-1.5 md:hidden"
+      className="relative z-10 shrink-0 bg-[var(--fintheon-surface)] px-3 pt-2 md:hidden"
       data-mobile-quick-footer="true"
       style={footerStyle}
     >
       <FadingRuler className="opacity-45" />
       <nav
-        className="grid h-12 grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-center"
+        className="grid h-[52px] grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-center"
         aria-label="Mobile quick access"
       >
         <FooterButton

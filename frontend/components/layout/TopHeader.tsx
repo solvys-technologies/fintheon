@@ -44,9 +44,11 @@ import type { IVScoreResponse } from "../../types/market-data";
 import type { TradingPlatform } from "../TradingBrowser";
 import { useDND } from "../../contexts/DNDContext";
 import { useServerNotifications } from "../../contexts/NotificationsContext";
+import { getNotificationDotTone } from "../../lib/notification-presentation";
 import { ToolbarDnD } from "./ToolbarDnD";
 import { HeaderLockButton } from "./HeaderLockButton";
 import type { SurfaceCapabilities } from "../../lib/surface-capabilities";
+import type { SectionId } from "../../hooks/useStickyBulletin";
 
 type NavTab =
   | "feed"
@@ -151,6 +153,9 @@ export function TopHeader({
     getToolbarOrder(),
   );
   const [showBulletin, setShowBulletin] = useState(false);
+  const [bulletinInitialSection, setBulletinInitialSection] = useState<
+    SectionId | undefined
+  >();
   const bulletinBtnRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const platformDropdownRef = useRef<HTMLDivElement>(null);
@@ -164,11 +169,13 @@ export function TopHeader({
     top: number;
     left: number;
   } | null>(null);
-  const { dndActive, toggleManualDnd, queueCount } = useDND();
+  const { dndActive, toggleManualDnd, queueCount, queue } = useDND();
   // [claude-code 2026-04-25] S35-Unified: badge counts server-side notifications + local queue.
-  const { unreadCount: serverUnread } = useServerNotifications();
+  const { unreadCount: serverUnread, notifications: serverNotifications } =
+    useServerNotifications();
   // [claude-code 2026-04-29] S53-T3: Econ watch health moved to FooterToolbar (S55)
   const totalBadgeCount = queueCount + serverUnread;
+  const bulletinDotTone = getNotificationDotTone(serverNotifications, queue);
   const [quickClockPulse, setQuickClockPulse] = useState(false);
   const showIframeControls = allowCustomIframes;
   const isMobileSurface =
@@ -198,6 +205,31 @@ export function TopHeader({
   }, []);
   useEffect(() => {
     setToolbarOrderState(getToolbarOrder());
+  }, []);
+
+  useEffect(() => {
+    const handleOpenBulletinSection = (event: Event) => {
+      const section = (event as CustomEvent<{ section?: SectionId }>).detail
+        ?.section;
+      setBulletinInitialSection(section ?? "inbox");
+      setShowBulletin(true);
+    };
+    const handleCloseBulletin = () => setShowBulletin(false);
+    window.addEventListener(
+      "fintheon:open-bulletin-section",
+      handleOpenBulletinSection,
+    );
+    window.addEventListener("fintheon:close-bulletin", handleCloseBulletin);
+    return () => {
+      window.removeEventListener(
+        "fintheon:open-bulletin-section",
+        handleOpenBulletinSection,
+      );
+      window.removeEventListener(
+        "fintheon:close-bulletin",
+        handleCloseBulletin,
+      );
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -558,9 +590,22 @@ export function TopHeader({
               )}
               {topStepXEnabled && (
                 <button
-                  onClick={toggleManualDnd}
+                  onClick={() => {
+                    if (totalBadgeCount > 0) {
+                      setBulletinInitialSection("inbox");
+                      setShowBulletin(true);
+                      return;
+                    }
+                    toggleManualDnd();
+                  }}
                   className={`relative toolbar-icon-btn ${dndActive ? "toolbar-active" : ""}`}
-                  title={dndActive ? "Do Not Disturb (ON)" : "Notifications"}
+                  title={
+                    totalBadgeCount > 0
+                      ? "Open notification inbox"
+                      : dndActive
+                        ? "Do Not Disturb (ON)"
+                        : "Notifications"
+                  }
                 >
                   {dndActive ? (
                     <BellOff className="w-3 h-3 toolbar-icon-active" />
@@ -824,19 +869,32 @@ export function TopHeader({
             )}
             <button
               ref={bulletinBtnRef}
-              onClick={() => setShowBulletin(!showBulletin)}
-              className={`toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
+              onClick={() => {
+                setBulletinInitialSection(undefined);
+                setShowBulletin(!showBulletin);
+              }}
+              className={`relative toolbar-icon-btn ${showBulletin ? "toolbar-active" : ""}`}
               title="Bulletin"
             >
               <ClipboardList
                 className={`w-3 h-3 ${showBulletin ? "toolbar-icon-active" : ""}`}
               />
+              {bulletinDotTone !== "none" && (
+                <span
+                  className={`absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--fintheon-bg)] ${
+                    bulletinDotTone === "error"
+                      ? "bg-red-500"
+                      : "bg-[var(--fintheon-accent)]"
+                  }`}
+                />
+              )}
             </button>
             <StickyBulletin
               open={showBulletin}
               onClose={() => setShowBulletin(false)}
               anchorRef={bulletinBtnRef}
               variant={isMobileSurface ? "mobile-dropdown" : "desktop-popover"}
+              initialSection={bulletinInitialSection}
             />
             {(!isMobileSurface || allowVoiceAssistant) && (
               <FadingRuler orientation="vertical" className="mx-0.5" />

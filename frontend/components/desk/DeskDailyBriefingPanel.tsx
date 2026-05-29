@@ -200,7 +200,7 @@ export function DeskDailyBriefingPanel() {
         />
       ) : null}
 
-      <div className="mt-2 min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="mt-2 min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 py-3 [-webkit-overflow-scrolling:touch]">
         {!loaded ? (
           <p className="text-[13px] italic text-[var(--fintheon-text)]/35">
             Loading brief...

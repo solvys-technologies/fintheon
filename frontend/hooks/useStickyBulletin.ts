@@ -9,7 +9,13 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export { DAY_LABELS };
 
-export type SectionId = "desk" | "antilag" | "watch" | "notes" | "upcoming";
+export type SectionId =
+  | "inbox"
+  | "desk"
+  | "antilag"
+  | "watch"
+  | "notes"
+  | "upcoming";
 
 export interface HotTimeEntry {
   bucket: string;

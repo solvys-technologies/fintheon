@@ -64,7 +64,6 @@ import { RegimeMini } from "../mission-control/RegimeMini";
 import { MiniProposalCard } from "../mission-control/MiniProposalCard";
 import { SessionCalendarMini } from "../mission-control/SessionCalendarMini";
 import { DNDProvider, useDND } from "../../contexts/DNDContext";
-import { NotificationCenter } from "../NotificationCenter";
 import { TabRenderer } from "./TabRenderer";
 import { MissionControlContent } from "./MissionControlContent";
 import { ChatPanel } from "./ChatPanel";
@@ -269,7 +268,6 @@ function MainLayoutInner() {
     flushQueue,
   });
 
-  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileConsiliumView, setMobileConsiliumView] =
     useState<MobileConsiliumView>("chat");
@@ -291,6 +289,14 @@ function MainLayoutInner() {
   const [combinedPanelAlgoEnabled, setCombinedPanelAlgoEnabled] =
     useState(false);
   const [showChat, setShowChat] = useState(false);
+  const openBulletinInbox = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("fintheon:open-bulletin-section", {
+        detail: { section: "inbox" },
+      }),
+    );
+  }, []);
   const handleChatAlert = useCallback(
     (alert: {
       headline: string;
@@ -463,9 +469,13 @@ function MainLayoutInner() {
     ) as NavTab;
     // Trim forward history when navigating to a new tab
     const trimmed = tabHistory.slice(0, historyIndex + 1);
-    trimmed.push(safeTab);
-    setTabHistory(trimmed);
-    setHistoryIndex(trimmed.length - 1);
+    const nextHistory =
+      trimmed[trimmed.length - 1] === safeTab ? trimmed : [...trimmed, safeTab];
+    const cappedHistory = mobileDrawerMode
+      ? nextHistory.slice(-3)
+      : nextHistory;
+    setTabHistory(cappedHistory);
+    setHistoryIndex(cappedHistory.length - 1);
     setActiveTab(safeTab);
   };
 
@@ -537,9 +547,16 @@ function MainLayoutInner() {
 
   const goBack = () => {
     if (historyIndex > 0) {
-      const newIdx = historyIndex - 1;
+      const mobileHistory = mobileDrawerMode
+        ? tabHistory.slice(Math.max(0, historyIndex - 2), historyIndex + 1)
+        : tabHistory;
+      const mobileIndex = mobileDrawerMode
+        ? mobileHistory.length - 1
+        : historyIndex;
+      const newIdx = mobileIndex - 1;
+      setTabHistory(mobileHistory);
       setHistoryIndex(newIdx);
-      setActiveTab(tabHistory[newIdx]);
+      setActiveTab(mobileHistory[newIdx]);
     }
   };
 
@@ -589,7 +606,9 @@ function MainLayoutInner() {
     navigateTab: navigateTab as (tab: string) => void,
     setShowSearchModal,
     setShowYouTubeMiniplayer,
-    setNotificationCenterOpen,
+    setNotificationCenterOpen: () => {
+      window.dispatchEvent(new CustomEvent("fintheon:close-bulletin"));
+    },
     toggleManualDnd,
   });
 
@@ -1094,9 +1113,7 @@ function MainLayoutInner() {
                 handleTabChange(tab as NavTab);
               }}
               onConsiliumView={openConsiliumLiteView}
-              onNotificationCenterToggle={() =>
-                setNotificationCenterOpen((v) => !v)
-              }
+              onNotificationCenterToggle={openBulletinInbox}
               onLogout={handleLogout}
             />
           )}
@@ -1198,20 +1215,13 @@ function MainLayoutInner() {
                   onOverlayVisibilityChange={setSidebarOverlayVisible}
                   editMode={layoutEditMode}
                   onEditModeChange={setLayoutEditMode}
-                  onNotificationCenterToggle={() =>
-                    setNotificationCenterOpen((v) => !v)
-                  }
+                  onNotificationCenterToggle={openBulletinInbox}
                   onRefinementClick={() => setShowRefinement((v) => !v)}
                   refinementEnabled={refinementEnabled}
                   refinementActive={showRefinement}
                   capabilities={surfaceCapabilities}
                 />
               </div>
-              <NotificationCenter
-                open={notificationCenterOpen}
-                onClose={() => setNotificationCenterOpen(false)}
-              />
-
               {/* Left Panels */}
               {leftPanels.length > 0 && (
                 <div className="flex">{leftPanels}</div>

@@ -174,7 +174,7 @@ export function MobileUnderlayDrawer({
         <div className="mt-3 space-y-1 border-t border-[var(--fintheon-accent)]/10 pt-2">
           {badgeCount > 0 ? (
             <DrawerRow
-              label="Alerts"
+              label="Inbox"
               active={false}
               badgeCount={badgeCount}
               icon={<Bell className="h-4 w-4" />}

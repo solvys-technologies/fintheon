@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   BookOpen,
+  Bell,
   ClipboardList,
   Clock,
   Eye,
@@ -19,8 +20,13 @@ import {
   GripVertical,
   TrendingUp,
 } from "lucide-react";
-import { useStickyBulletin, DAY_LABELS } from "../hooks/useStickyBulletin";
+import {
+  useStickyBulletin,
+  DAY_LABELS,
+  type SectionId,
+} from "../hooks/useStickyBulletin";
 import { useDayPlanMultiWeek } from "../hooks/useDayPlanWeek";
+import { BulletinInboxTab } from "./bulletin/BulletinInboxTab";
 import { BulletinDeskPlanTab } from "./bulletin/BulletinDeskPlanTab";
 import { WatchTagsTab } from "./bulletin/WatchTagsTab";
 import { QueuedDeskEventFeed } from "./desk/QueuedDeskEventFeed";
@@ -30,9 +36,11 @@ interface StickyBulletinProps {
   onClose: () => void;
   anchorRef: React.RefObject<HTMLButtonElement | null>;
   variant?: "desktop-popover" | "mobile-dropdown";
+  initialSection?: SectionId;
 }
 
 const SECTIONS = [
+  { id: "inbox" as const, icon: Bell, label: "Inbox" },
   { id: "desk" as const, icon: BookOpen, label: "Desk" },
   { id: "antilag" as const, icon: Clock, label: "Antilag" },
   { id: "watch" as const, icon: Eye, label: "Watch" },
@@ -45,6 +53,7 @@ export function StickyBulletin({
   onClose,
   anchorRef,
   variant = "desktop-popover",
+  initialSection,
 }: StickyBulletinProps) {
   const b = useStickyBulletin(open, anchorRef);
   const isMobileDropdown = variant === "mobile-dropdown";
@@ -65,6 +74,10 @@ export function StickyBulletin({
       setDrag(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open && initialSection) b.setActiveSection(initialSection);
+  }, [open, initialSection]);
 
   const panelPosition = (isMobileDropdown ? null : manualPos) ?? b.popupPos;
   if (!open || !panelPosition) return null;
@@ -245,6 +258,9 @@ export function StickyBulletin({
             isMobileDropdown ? "max-h-[calc(100dvh-164px)]" : "max-h-[420px]"
           }`}
         >
+          {/* ═══ Section 1: Inbox ═══ */}
+          {b.activeSection === "inbox" && <BulletinInboxTab />}
+
           {/* ═══ Section 1: Desk Plan ═══ */}
           {b.activeSection === "desk" && <BulletinDeskPlanTab />}
 

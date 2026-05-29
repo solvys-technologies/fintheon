@@ -38,6 +38,7 @@ export function DeskDashboardPrototype({
     x: number;
     y: number;
     target: EventTarget | null;
+    zone: "top" | "bottom";
   } | null>(null);
 
   const scrollToPage = useCallback(
@@ -76,11 +77,30 @@ export function DeskDashboardPrototype({
     (event: TouchEvent<HTMLDivElement>) => {
       if (deskSecondPageMode !== "feed-only") return;
       const touch = event.touches[0];
-      touchStartRef.current = touch
-        ? { x: touch.clientX, y: touch.clientY, target: event.target }
+      if (!touch) {
+        touchStartRef.current = null;
+        return;
+      }
+      const activeSection = containerRef.current?.querySelector(
+        `[data-desk-page="${activePage}"]`,
+      );
+      const rect = activeSection?.getBoundingClientRect();
+      if (!rect) {
+        touchStartRef.current = null;
+        return;
+      }
+      const edgeZone = 112;
+      const zone =
+        touch.clientY >= rect.bottom - edgeZone
+          ? "bottom"
+          : touch.clientY <= rect.top + edgeZone
+            ? "top"
+            : null;
+      touchStartRef.current = zone
+        ? { x: touch.clientX, y: touch.clientY, target: event.target, zone }
         : null;
     },
-    [deskSecondPageMode],
+    [activePage, deskSecondPageMode],
   );
 
   const handleMobileTouchEnd = useCallback(
@@ -93,8 +113,10 @@ export function DeskDashboardPrototype({
       if (!touch) return;
       const deltaY = touch.clientY - start.y;
       const deltaX = Math.abs(touch.clientX - start.x);
-      if (Math.abs(deltaY) < 72 || deltaX > 54) return;
+      if (Math.abs(deltaY) < 112 || deltaX > 54) return;
       const direction = deltaY < 0 ? 1 : -1;
+      if (direction > 0 && start.zone !== "bottom") return;
+      if (direction < 0 && start.zone !== "top") return;
       if (hasScrollableRoom(start.target, direction)) return;
       scrollToPage(activePage + direction);
     },
@@ -109,6 +131,7 @@ export function DeskDashboardPrototype({
   if (deskSecondPageMode === "feed-only") {
     return (
       <div
+        ref={containerRef}
         className="relative flex h-full w-full touch-pan-y overflow-hidden bg-[var(--fintheon-bg)] text-[var(--fintheon-text)]"
         onTouchStart={handleMobileTouchStart}
         onTouchEnd={handleMobileTouchEnd}
