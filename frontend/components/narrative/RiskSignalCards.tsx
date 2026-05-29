@@ -150,11 +150,21 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
 
   const driftData = useRiskSignalDrift(signals);
 
-  const textSize = compact ? "text-[10.5px]" : "text-[11.5px]";
-  const titleSize = compact ? "text-[11.5px]" : "text-[12.5px]";
-  const metaSize = compact ? "text-[9px]" : "text-[9.5px]";
-  const microSize = compact ? "text-[8px]" : "text-[8.5px]";
-  const padding = compact ? "px-1.5 py-2.5" : "px-2.5 py-3";
+  const textSize = compact
+    ? "text-[10.5px] max-[767px]:text-[12px]"
+    : "text-[11.5px]";
+  const titleSize = compact
+    ? "text-[11.5px] max-[767px]:text-[13px]"
+    : "text-[12.5px]";
+  const metaSize = compact
+    ? "text-[9px] max-[767px]:text-[10px]"
+    : "text-[9.5px]";
+  const microSize = compact
+    ? "text-[8px] max-[767px]:text-[9px]"
+    : "text-[8.5px]";
+  const padding = compact
+    ? "px-1.5 py-2.5 max-[767px]:px-2 max-[767px]:py-3"
+    : "px-2.5 py-3";
 
   if (loading) {
     return (
@@ -249,83 +259,95 @@ export function RiskSignalCards({ compact = false }: { compact?: boolean }) {
                 </span>
               </div>
             </button>
-            {expanded && (
-              <div className="relative ml-5 mt-2 space-y-2 px-2 py-2 pr-16">
-                <FadingRuler />
-                <p
-                  className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed`}
-                >
-                  {displayAnalysis(signal)}
-                </p>
-
-                {isPendingRefinement(signal) && (
-                  <div
-                    className={`${microSize} uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55`}
+            <div
+              aria-hidden={!expanded}
+              className={`grid transition-[grid-template-rows,opacity,transform,filter] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                expanded
+                  ? "translate-y-0 opacity-100 blur-0"
+                  : "pointer-events-none -translate-y-1 opacity-0 blur-[1px]"
+              }`}
+              style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div className="relative ml-5 mt-2 space-y-2 px-2 py-2 pr-16 max-[767px]:ml-4 max-[767px]:pr-3">
+                  <FadingRuler />
+                  <p
+                    className={`${textSize} text-[var(--fintheon-text)]/70 leading-relaxed max-[767px]:text-[var(--fintheon-text)]/78`}
                   >
-                    Pending Agentic Desk refinement
-                  </div>
-                )}
+                    {displayAnalysis(signal)}
+                  </p>
 
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}
-                  >
-                    Estimated Drift
-                  </span>
-                  {driftData[signal.id]?.loading ? (
-                    <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
-                  ) : (
-                    <span
-                      className={`${metaSize} text-[var(--fintheon-accent)] font-mono font-medium`}
+                  {isPendingRefinement(signal) && (
+                    <div
+                      className={`${microSize} uppercase tracking-[0.16em] text-[var(--fintheon-accent)]/55`}
                     >
-                      {driftData[signal.id]?.label ?? "—"}
+                      Pending Agentic Desk refinement
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}
+                    >
+                      Estimated Drift
                     </span>
+                    {driftData[signal.id]?.loading ? (
+                      <span className="h-3 w-20 rounded-sm bg-[var(--fintheon-accent)]/10 animate-pulse" />
+                    ) : (
+                      <span
+                        className={`${metaSize} text-[var(--fintheon-accent)] font-mono font-medium`}
+                      >
+                        {driftData[signal.id]?.label ?? "—"}
+                      </span>
+                    )}
+                  </div>
+
+                  {signal.relatedHeadlines.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}
+                        >
+                          Related Headlines
+                        </span>
+                        <span
+                          className={`${microSize} text-[var(--fintheon-muted)]/30`}
+                        >
+                          {formatAge(signal.generatedAt)}
+                        </span>
+                      </div>
+                      {signal.relatedHeadlines.map((h, i) => (
+                        <div
+                          key={i}
+                          className={`${textSize} text-[var(--fintheon-muted)]/50 line-clamp-1 max-[767px]:text-[var(--fintheon-muted)]/62`}
+                        >
+                          {h}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {signal.narrativeThreads.length > 0 && (
+                    <div className="flex flex-wrap gap-x-2 gap-y-1">
+                      {signal.narrativeThreads.map((t) => (
+                        <span
+                          key={t}
+                          className={`${microSize} text-[var(--fintheon-accent)]/70`}
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {expanded && (
+                    <AgenticFeedbackControls
+                      surface="risk-signals"
+                      itemId={signal.id}
+                    />
                   )}
                 </div>
-
-                {signal.relatedHeadlines.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span
-                        className={`${microSize} text-[var(--fintheon-muted)]/30 uppercase tracking-wider`}
-                      >
-                        Related Headlines
-                      </span>
-                      <span
-                        className={`${microSize} text-[var(--fintheon-muted)]/30`}
-                      >
-                        {formatAge(signal.generatedAt)}
-                      </span>
-                    </div>
-                    {signal.relatedHeadlines.map((h, i) => (
-                      <div
-                        key={i}
-                        className={`${textSize} text-[var(--fintheon-muted)]/50 line-clamp-1`}
-                      >
-                        {h}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {signal.narrativeThreads.length > 0 && (
-                  <div className="flex flex-wrap gap-x-2 gap-y-1">
-                    {signal.narrativeThreads.map((t) => (
-                      <span
-                        key={t}
-                        className={`${microSize} text-[var(--fintheon-accent)]/70`}
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <AgenticFeedbackControls
-                  surface="risk-signals"
-                  itemId={signal.id}
-                />
               </div>
-            )}
+            </div>
           </div>
         );
       })}

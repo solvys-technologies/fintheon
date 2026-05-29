@@ -19,6 +19,7 @@ interface IVScoreCardProps {
   loading?: boolean;
   layoutOption?: "tickers-only" | "combined";
   compactCopy?: boolean;
+  mobileCombined?: boolean;
 }
 
 function getScoreColor(score: number) {
@@ -143,6 +144,7 @@ export function IVScoreCard({
   loading,
   layoutOption,
   compactCopy = false,
+  mobileCombined = false,
 }: IVScoreCardProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [popupPos, setPopupPos] = useState<{
@@ -235,6 +237,27 @@ export function IVScoreCard({
   }, [showTooltip]);
 
   if (loading || !data) {
+    if (mobileCombined) {
+      return (
+        <div className="relative flex h-9 min-w-[184px] max-w-[calc(100vw-124px)] items-center justify-between gap-2 rounded-lg border border-[var(--fintheon-accent)]/20 bg-[var(--fintheon-bg)] px-3">
+          <span className="flex items-baseline gap-1.5">
+            <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+              VIX
+            </span>
+            <span className="font-mono text-[13px] text-gray-600">--</span>
+          </span>
+          <span className="h-4 w-px bg-[var(--fintheon-accent)]/18" />
+          <span className="flex items-baseline gap-1.5">
+            <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+              IV
+            </span>
+            <span className="font-mono text-[13px] font-bold text-gray-600">
+              --
+            </span>
+          </span>
+        </div>
+      );
+    }
     return (
       <div className="relative bg-[var(--fintheon-bg)] border border-[var(--fintheon-accent)]/20 rounded-lg px-3 h-7 flex items-center">
         <span className="text-[9px] text-gray-500">IV Score</span>
@@ -253,6 +276,97 @@ export function IVScoreCard({
     : (vixPulse ?? {
         borderColor: "rgba(var(--fintheon-accent-rgb, 199, 159, 74), 0.2)",
       });
+
+  if (mobileCombined) {
+    return (
+      <div
+        ref={triggerRef}
+        className="relative flex h-9 min-w-[196px] max-w-[calc(100vw-124px)] items-center justify-between gap-2 rounded-lg border bg-[var(--fintheon-bg)] px-3"
+        style={borderStyle}
+        onMouseEnter={handleShowTooltip}
+        onMouseLeave={handleHideTooltip}
+      >
+        <span className="flex items-baseline gap-1.5">
+          <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+            VIX
+          </span>
+          <span
+            className={`font-mono text-[13px] text-gray-300 ${vixFlash ? "animate-[vix-value-flash_150ms_ease-in-out]" : ""}`}
+          >
+            {data.vix.level.toFixed(2)}
+          </span>
+        </span>
+        <span className="h-4 w-px bg-[var(--fintheon-accent)]/22" />
+        <span className="flex items-baseline gap-1.5">
+          <span className="text-[9px] uppercase tracking-[0.16em] text-gray-500">
+            IV
+          </span>
+          <span className={`font-mono text-[14px] font-bold ${color}`}>
+            {data.score.toFixed(1)}
+          </span>
+        </span>
+        {pts ? (
+          <>
+            <span className="h-4 w-px bg-[var(--fintheon-accent)]/22" />
+            <span className="font-mono text-[10.5px] font-medium text-[var(--fintheon-accent)]">
+              ±{pts.scaledPoints}
+            </span>
+          </>
+        ) : null}
+        <button
+          type="button"
+          className="ml-0.5 text-gray-500 transition-colors hover:text-gray-400"
+          aria-label="Open IV breakdown"
+          onClick={() => setShowTooltip((value) => !value)}
+        >
+          <Info className="h-2.5 w-2.5" />
+        </button>
+
+        {showTooltip &&
+          popupPos &&
+          createPortal(
+            <div
+              className="w-80 max-w-[90vw] bg-[#0a0a08] border border-[var(--fintheon-accent)]/30 rounded-lg p-4 shadow-xl animate-tooltip-fade"
+              style={{
+                position: "fixed",
+                top: popupPos.top,
+                left: popupPos.left,
+                zIndex: 9999,
+              }}
+              onMouseEnter={handleShowTooltip}
+              onMouseLeave={handleHideTooltip}
+            >
+              <h4 className="text-sm font-semibold text-[var(--fintheon-accent)] mb-3">
+                Agentic Scoring Breakdown
+              </h4>
+              <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-gray-400">VIX</span>
+                  <span className="font-mono text-gray-200">
+                    {data.vix.level.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-gray-400">Blended IV</span>
+                  <span className={`font-mono font-bold ${color}`}>
+                    {data.score.toFixed(1)}/10
+                  </span>
+                </div>
+                {pts ? (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-gray-400">Implied range</span>
+                    <span className="font-mono text-[var(--fintheon-accent)]">
+                      ±{pts.scaledPoints} pts
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </div>,
+            document.body,
+          )}
+      </div>
+    );
+  }
 
   return (
     <div
