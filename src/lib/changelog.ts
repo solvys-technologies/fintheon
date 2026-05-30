@@ -9,6 +9,24 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-30T01:06:00-04:00",
+    agent: "codex",
+    summary:
+      "S86 orchestration: added the cloud-ready sprint pack for moving Fintheon's default runtime from local backend dependency to cloud backend plus global Hermes, with Desktop network degradation, mobile/web cloud parity, Portless blocker-only scope, a LiveKit decision gate, deploy observability, and final unification validation.",
+    files: [
+      "sprint-md/S86-ORCH-local-to-cloud-backend.md",
+      "sprint-md/S86-ORCHESTRATION.md",
+      "sprint-md/S86-T1-cloud-backend-contract.md",
+      "sprint-md/S86-T2-global-hermes-runtime.md",
+      "sprint-md/S86-T3-desktop-cloud-first-runtime.md",
+      "sprint-md/S86-T4-mobile-web-cloud-parity.md",
+      "sprint-md/S86-T5-realtime-livekit-gate.md",
+      "sprint-md/S86-T6-cloud-deploy-observability.md",
+      "sprint-md/S86-T7-unification-validation.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-30T00:48:58-04:00",
     agent: "codex",
     summary:
