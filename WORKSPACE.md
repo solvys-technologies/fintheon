@@ -1,6 +1,6 @@
 # Fintheon Workspace — Agent Context File
 
-> **Last updated**: 2026-03-28 by claude-code (S7 sprint)
+> **Last updated**: 2026-05-30 by codex (sprint numbering correction)
 > This file is the source of truth for any agent on any device picking up this repo.
 
 ## What is Fintheon?
@@ -119,8 +119,15 @@ When adding new agents, follow the modular architecture: new agents get a philos
 
 Format: `v.{MONTH}.{DATE}.{PATCH}`
 
-- Current branch: `v.8.25.4`
-- Always commit with version tag: `[v.8.25.4] feat(scope): description`
+- Current correction branch: `v7.0.9-security-infra`
+- Always commit with the current package/release version tag, for example `[v7.0.9] feat(scope): description` on this branch.
+
+## Sprint Numbering
+
+- Read `sprint-md/SPRINT-NUMBERING.md` before creating or renumbering sprint files.
+- The active sprint lane currently resumes from S83: S84 is App Store Review Readiness + iOS Developer Enrollment, and S85 is Infisical Secrets + Portless Desktop Infra.
+- S100+ is a post-beta/deferred milestone lane, not the active sprint chronology. Do not choose the next sprint by taking the highest numeric `S{N}` file.
+- The accidental S120/S121 jump was corrected to S84/S85 on 2026-05-30.
 
 ## Agent Coordination
 

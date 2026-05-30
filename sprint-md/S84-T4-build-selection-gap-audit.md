@@ -1,4 +1,4 @@
-# Sprint Brief: S120-T4 -- Build Selection + Native Build Gap Audit
+# Sprint Brief: S84-T4 -- Build Selection + Native Build Gap Audit
 
 ## Context
 
@@ -6,10 +6,10 @@ App Store Connect requires a build to be selected for review. The current Finthe
 
 ## Linear Organization
 
-- Issue naming: `S120-T4: Build selection + native build gap audit`
+- Issue naming: `S84-T4: Build selection + native build gap audit`
 - Linear issue: `SOL-240`
 - Parent: `SOL-233`
-- Brief path: `@sprint-md/S120-T4-build-selection-gap-audit.md`
+- Brief path: `@sprint-md/S84-T4-build-selection-gap-audit.md`
 - Project: `Beta -- Mobile PWA`
 - Cycle: `8 - Beta Closed`
 - Owner: Codex for repo audit, TP/Admin for App Store Connect build selection

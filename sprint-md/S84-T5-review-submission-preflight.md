@@ -1,15 +1,15 @@
-# Sprint Brief: S120-T5 -- Review Submission Preflight + Evidence Packet
+# Sprint Brief: S84-T5 -- Review Submission Preflight + Evidence Packet
 
 ## Context
 
-This is the final S120 gate. It confirms the App Store Connect blocker list is empty and captures evidence before anyone submits the app for review.
+This is the final S84 gate. It confirms the App Store Connect blocker list is empty and captures evidence before anyone submits the app for review.
 
 ## Linear Organization
 
-- Issue naming: `S120-T5: Review submission preflight + evidence packet`
+- Issue naming: `S84-T5: Review submission preflight + evidence packet`
 - Linear issue: `SOL-241`
 - Parent: `SOL-233`
-- Brief path: `@sprint-md/S120-T5-review-submission-preflight.md`
+- Brief path: `@sprint-md/S84-T5-review-submission-preflight.md`
 - Project: `Beta -- Mobile PWA`
 - Cycle: `8 - Beta Closed`
 - Owner: TP/validator

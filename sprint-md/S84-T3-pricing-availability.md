@@ -1,4 +1,4 @@
-# Sprint Brief: S120-T3 -- Pricing Tier + Availability
+# Sprint Brief: S84-T3 -- Pricing Tier + Availability
 
 ## Context
 
@@ -6,10 +6,10 @@ App Store Connect requires Pricing to be set before review. Fintheon currently a
 
 ## Linear Organization
 
-- Issue naming: `S120-T3: Pricing tier + availability gate`
+- Issue naming: `S84-T3: Pricing tier + availability gate`
 - Linear issue: `SOL-239`
 - Parent: `SOL-233`
-- Brief path: `@sprint-md/S120-T3-pricing-availability.md`
+- Brief path: `@sprint-md/S84-T3-pricing-availability.md`
 - Project: `Beta -- Mobile PWA`
 - Cycle: `8 - Beta Closed`
 - Owner: TP/Admin

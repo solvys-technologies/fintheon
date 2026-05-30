@@ -211,7 +211,7 @@ Save the brief to `sprint-md/S{SPRINT}-BRIEF-{slug}.md` at the CURRENT workspace
 - If a legacy `docs/sprint-briefs/` folder exists in the repo, DO NOT write there. New plans always go to `sprint-md/`.
 - Shipped briefs get archived to `sprint-changelog/` by `/solvys-deploy`. `sprint-md/` should only ever contain in-flight work.
 
-**Sprint numbering:** Check existing files in `sprint-md/` AND `sprint-changelog/` (and any legacy `docs/sprint-briefs/`) for the highest S{N}. If the latest shipped is S26, the new brief is S27. Always confirm with the user if unsure.
+**Sprint numbering:** In Fintheon, read `sprint-md/SPRINT-NUMBERING.md` before assigning S{N}. S100+ is a post-beta/deferred milestone lane and must not be treated as the latest active sprint. Determine the next active sprint from the latest non-deferred active lane across `sprint-md/`, `sprint-changelog/`, legacy `docs/sprint-briefs/`, branches, commits, and Linear context. Always confirm with the user if unsure.
 
 ## Phase 5 -- Handoff
 

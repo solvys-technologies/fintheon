@@ -21,6 +21,7 @@
 
 - Linear watcher state machine: `Todo/Backlog` → user moves issue to `In Progress (Solvys Agent)` → watcher dispatches Codex CLI locally → Cursor fallback only if Codex is unavailable → `linear-ack-complete.sh` or Codex equivalent → `Awaiting Review`
 - Sprint branch naming format: `sprint/S{N}` (e.g., `sprint/S62`)
+- Sprint numbering source of truth: read `@sprint-md/SPRINT-NUMBERING.md`. S100+ is a post-beta/deferred milestone lane, not the active sprint chronology. The accidental S120/S121 jump was corrected to S84/S85.
 - ORCH tickets live under `sprint-md/S{SPRINT}-ORCH-{slug}.md` with child issues and execution waves
 - Agent standard instructions injected by Linear watcher include: no classes, no enums, no emojis; keep files under 300 lines; read existing context files first
 - Cursor skills live in `.cursor/skills/<name>/SKILL.md`; Claude Code agent skills in `.claude/skills/<name>/SKILL.md`

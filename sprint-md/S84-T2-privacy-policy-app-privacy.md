@@ -1,4 +1,4 @@
-# Sprint Brief: S120-T2 -- Privacy Policy URL + App Privacy Practices
+# Sprint Brief: S84-T2 -- Privacy Policy URL + App Privacy Practices
 
 ## Context
 
@@ -6,10 +6,10 @@ App Store Connect requires a Privacy Policy URL and Admin-provided privacy pract
 
 ## Linear Organization
 
-- Issue naming: `S120-T2: Privacy policy URL + App Privacy practices`
+- Issue naming: `S84-T2: Privacy policy URL + App Privacy practices`
 - Linear issue: `SOL-238`
 - Parent: `SOL-233`
-- Brief path: `@sprint-md/S120-T2-privacy-policy-app-privacy.md`
+- Brief path: `@sprint-md/S84-T2-privacy-policy-app-privacy.md`
 - Project: `Beta -- Mobile PWA`
 - Cycle: `8 - Beta Closed`
 - Owner: Codex for website page, TP/Admin for App Store Connect privacy declarations

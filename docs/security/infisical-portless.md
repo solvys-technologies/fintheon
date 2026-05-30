@@ -1,4 +1,4 @@
-# S121 Infisical and Portless Runbook
+# S85 Infisical and Portless Runbook
 
 ## Current Boundary
 
@@ -76,9 +76,9 @@ bun run security:infisical:sync -- --env=prod
 bun scripts/security/infisical-sync-check.mjs --env=prod --trigger
 ```
 
-## Secret Incident Response
+## Secret Evidence Capture
 
-Rotation receipt shape:
+Inventory or rotation receipt shape:
 
 ```text
 date:
@@ -95,7 +95,8 @@ notes:
 Never record raw secret values. Use provider receipt IDs, key names, commit
 ranges, and redacted scanner fingerprints only.
 
-Credential classes to rotate or verify revoked:
+Credential classes to inventory, and rotate only if TP reopens rotation or a
+provider confirms live exposure:
 
 - Supabase database password and service role
 - GitHub PATs and release/upload tokens
@@ -126,7 +127,7 @@ Force-push only after TP confirms repo freeze and backup.
 
 Enable secret scanning and push protection from repository settings or API.
 If GitHub blocks the setting because of account plan, org policy, or missing
-admin rights, record the exact blocker in the S121 receipt and keep local
+admin rights, record the exact blocker in the S85 receipt and keep local
 Infisical/current-tree scanning as the compensating control.
 
 ```bash
@@ -174,4 +175,4 @@ curl -fsS https://fintheon.fly.dev/healthz
 curl -fsS https://fintheon.fly.dev/api/diagnostics | head -c 400
 ```
 
-Do not run a Vite dev server for S121 validation.
+Do not run a Vite dev server for S85 validation.

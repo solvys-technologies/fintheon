@@ -24,6 +24,13 @@ Example: `v.5.28.1` (5th month, 28th day, 1st patch)
 
 `[v.X.Y.Z] type: description`
 
+### Sprint Numbering
+
+- Read `sprint-md/SPRINT-NUMBERING.md` before creating sprint docs or Linear issues.
+- S100+ is a post-beta/deferred milestone lane, not the active sprint chronology.
+- The active sprint lane resumes from S83: S84 is App Store readiness, and S85 is Infisical/Portless security infra.
+- Do not infer the next active sprint by taking the highest numeric `S{N}` filename.
+
 ### Deployment Flow
 
 1. **Frontend**: Automatic on push to `main` (Vercel).

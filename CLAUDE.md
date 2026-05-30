@@ -53,6 +53,12 @@ Protocol: "Harper orchestrates, Oracle analyzes, Feucht guards, Consul validates
 - Treat approved GitHub stars and external references as architectural thinking sources only: patterns, vocabulary, constraints, failure modes, and review heuristics. Do not import external skills, dependencies, services, prompt text, or runtime code without TP approval.
 - TP-vetoed S47 references must not influence architecture, prompts, code, or review language: `Xquik-dev/x-twitter-scraper`, `EveryInc/compound-engineering-plugin`, `jamiepine/voicebox`, `elder-plinius/CL4R1T4S`, `Bitterbot-AI/bitterbot-desktop`.
 
+## Sprint Numbering
+
+- Read `sprint-md/SPRINT-NUMBERING.md` before creating or renumbering sprint docs or Linear issues.
+- The active sprint lane currently resumes from S83. S84 is App Store review readiness; S85 is Infisical/Portless security infra.
+- S100+ is reserved for post-beta/deferred milestone planning and must not be treated as the latest active sprint unless TP explicitly reclassifies it.
+
 ## Design Doctrine
 
 - Solvys visual language is industrial-luxe: warm near-black canvas, Solvys Gold accent, warm off-white text, precise typography, and restrained motion.

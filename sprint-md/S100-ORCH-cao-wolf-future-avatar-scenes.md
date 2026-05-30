@@ -4,6 +4,8 @@
 
 S100 adds future CAO wolf avatar scenes for Open Beta interactions beyond the initial chat greeting. The current greeting prototype remains separate and is not owned by this ORCH.
 
+S100 is a post-beta/deferred milestone starting point. It is not evidence of the latest active sprint, and agents must not use it to choose the next active sprint number.
+
 ## Linear Scope
 
 - Issue naming: `S100-ORCH: CAO wolf future avatar scenes`

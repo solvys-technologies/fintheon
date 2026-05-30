@@ -1,4 +1,4 @@
-# Sprint Brief: S120-T1 -- App Information Content Rights
+# Sprint Brief: S84-T1 -- App Information Content Rights
 
 ## Context
 
@@ -6,10 +6,10 @@ App Store Connect requires Content Rights Information in App Information before 
 
 ## Linear Organization
 
-- Issue naming: `S120-T1: App Information content rights`
+- Issue naming: `S84-T1: App Information content rights`
 - Linear issue: `SOL-237`
 - Parent: `SOL-233`
-- Brief path: `@sprint-md/S120-T1-app-information-content-rights.md`
+- Brief path: `@sprint-md/S84-T1-app-information-content-rights.md`
 - Project: `Beta -- Mobile PWA`
 - Cycle: `8 - Beta Closed`
 - Owner: TP/Admin

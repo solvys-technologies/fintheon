@@ -1,8 +1,8 @@
-# Sprint Brief: S121 -- Infisical Secrets + Portless Desktop Infra (single-agent)
+# Sprint Brief: S85 -- Infisical Secrets + Portless Desktop Infra (single-agent)
 
 ## Intent
 
-Fintheon should stop depending on repo-tracked, installer-embedded, or local plaintext secrets. One Claude Code instance will finish the public-repo secret incident response, rotate and scrub exposed credentials, make Infisical the canonical source of truth for backend and deploy secrets, keep Fly/Vercel only as runtime deployment targets synced from Infisical, and standardize Portless-backed local backend hostnames for all Fintheon Desktop install/update configs.
+Fintheon should stop depending on repo-tracked, installer-embedded, or local plaintext secrets. One Claude Code instance will finish the public-repo secret evidence capture, make Infisical the canonical source of truth for backend and deploy secrets, keep Fly/Vercel only as runtime deployment targets synced from Infisical, and standardize Portless-backed local backend hostnames for the Desktop-local blocker path.
 
 ## Branch Target
 
@@ -12,14 +12,19 @@ Fintheon should stop depending on repo-tracked, installer-embedded, or local pla
 
 `SOL-242` -- Todo
 
+## Numbering Note
+
+This sprint was originally misnumbered as S121. It was corrected to S85 on 2026-05-30 because S100+ is a post-beta/deferred lane, not the active sprint chronology.
+
 ## Scope -- Included
 
-- [ ] Complete the exposed-secret incident response: inventory exposed values, rotate/revoke them, and verify no live-looking secrets remain in current `HEAD`.
-- [ ] Rewrite/scrub public git history for the known exposed paths, then force-push only after TP confirms the freeze window.
+- [ ] Complete exposed-secret evidence capture: inventory exposed classes, owners, and affected paths without raw values, and verify no live-looking secrets remain in current `HEAD`.
+- [ ] Do not rotate secrets unless TP reopens the incident-response lane or a provider confirms a live-compromise blocker.
+- [ ] Plan any public history scrub for the known exposed paths, then force-push only after TP confirms the freeze window.
 - [ ] Enable GitHub secret scanning and push protection for `solvys-technologies/fintheon`; document any plan/license blocker if GitHub refuses.
 - [ ] Add Infisical as the canonical secret source for local operator machines, CI, Fly, and Vercel syncs.
 - [ ] Keep Fly and Vercel as deployment targets populated from Infisical, not as the manually maintained source of truth.
-- [ ] Ensure Desktop installer/update scripts install or verify Portless, register `fintheon.test`, `hermes.fintheon.test`, and `news.fintheon.test`, and prove local health with localhost and Portless routes.
+- [ ] Use Portless for the Desktop-local backend blocker path: installer/update scripts install or verify Portless, register `fintheon.test`, `hermes.fintheon.test`, and `news.fintheon.test`, and prove local health with localhost and Portless routes.
 - [ ] Preserve Electron's current behavior: prefer healthy Portless local backend on macOS, fall back to localhost, then fall back to `https://fintheon.fly.dev`.
 - [ ] Add operator docs/runbooks for rotation, Infisical sync, Portless Desktop repair, and safe validation without printing secret values.
 
@@ -140,7 +145,7 @@ Fallback behavior:
 
 ## Acceptance Criteria
 
-- [ ] Every exposed credential class has a rotation/revocation receipt recorded without raw values.
+- [ ] Every exposed credential class has a redacted inventory owner and status recorded without raw values; rotation is not required unless TP reopens that lane or a provider confirms live exposure.
 - [ ] Current `HEAD` has no live-looking secrets in known exposed files or scanner output.
 - [ ] Public git history has been scrubbed or, if GitHub blocks rewrite, the blocker and compensating controls are documented.
 - [ ] GitHub secret scanning and push protection are enabled, or the exact account/plan blocker is documented.
@@ -188,5 +193,5 @@ curl -fsS https://fintheon.fly.dev/api/diagnostics | head -c 400
 ## Commit Format
 
 ```bash
-[v7.0.9] chore: S121 Infisical secrets and Portless desktop infra
+[v7.0.9] chore: S85 Infisical secrets and Portless desktop infra
 ```

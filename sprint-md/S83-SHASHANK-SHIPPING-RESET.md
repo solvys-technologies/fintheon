@@ -42,7 +42,7 @@ Next-week File Room and memo workflow, due May 31, 2026:
 
 Deferred Open Beta work:
 
-- SOL-195 through SOL-198 / S100: CAO wolf future avatar scenes, held in Backlog unless TP explicitly reopens it.
+- SOL-195 through SOL-198 / S100: CAO wolf future avatar scenes, held in the post-beta/deferred lane unless TP explicitly reopens it.
 
 ## Required Working Style
 
