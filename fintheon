@@ -84,7 +84,7 @@ section() {
 # Public bootstrap constants (NOT secrets — vault handles the rest)
 _SUPABASE_URL="https://nrcfnzclbjboctptxaxx.supabase.co"
 _SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM"
-_DATABASE_URL="postgresql://postgres.nrcfnzclbjboctptxaxx:Pricedinresearch0670963957%24@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
+_DATABASE_URL="${FINTHEON_SETUP_DATABASE_URL:-${DATABASE_URL:-}}"
 
 do_install() {
   torch_banner "FINTHEON INSTALL" "No API keys needed. Sign in."
@@ -216,7 +216,7 @@ HERMESEOF
 
   BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
   if [[ -f "$BACKEND_ENV" ]]; then
-    grep -q "^DATABASE_URL=" "$BACKEND_ENV" || echo "DATABASE_URL=$_DATABASE_URL" >> "$BACKEND_ENV"
+    [[ -z "$_DATABASE_URL" ]] || grep -q "^DATABASE_URL=" "$BACKEND_ENV" || echo "DATABASE_URL=$_DATABASE_URL" >> "$BACKEND_ENV"
     grep -q "^SUPABASE_URL=" "$BACKEND_ENV" || echo "SUPABASE_URL=$_SUPABASE_URL" >> "$BACKEND_ENV"
     grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" || echo "SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
     grep -q "^PORT=" "$BACKEND_ENV" || echo "PORT=8080" >> "$BACKEND_ENV"
@@ -231,7 +231,6 @@ HERMESEOF
 # Fintheon Backend — Bootstrap Environment
 # Secrets are loaded from the cloud vault on boot. No API keys needed here.
 PORT=8080
-DATABASE_URL=$_DATABASE_URL
 SUPABASE_URL=$_SUPABASE_URL
 SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY
 ENABLE_CENTRAL_SCORING=true
@@ -247,6 +246,7 @@ BOARDROOM_MEETING_HOUR_LOCAL=10
 HERMES_PREMARKET_CRON=0 8 * * 1-5
 HERMES_POSTMARKET_CRON=30 16 * * 1-5
 ENVEOF
+    [[ -z "$_DATABASE_URL" ]] || echo "DATABASE_URL=$_DATABASE_URL" >> "$BACKEND_ENV"
     ok "Bootstrap .env created"
   fi
 

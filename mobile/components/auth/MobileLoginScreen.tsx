@@ -33,10 +33,11 @@ export function MobileLoginScreen({
     <div style={shellStyle}>
       <LoadingGlobe
         phase={submitted ? "auth" : "idle"}
-        density={0.72}
-        style={{ position: "absolute", inset: "-8vmin" }}
+        density={0.82}
+        style={globeStyle}
       />
       <div style={scanlineStyle} />
+      <div style={washStyle} />
       <main style={contentStyle}>
         <section style={panelStyle}>
           <LoadingStatusCard
@@ -48,12 +49,23 @@ export function MobileLoginScreen({
             onClick={handleSignIn}
             disabled={busy}
             style={{
-              ...buttonStyle,
+              ...secondaryButtonStyle,
               cursor: busy ? "wait" : "pointer",
               opacity: busy ? 0.55 : 1,
             }}
           >
             [SIGN IN WITH GOOGLE]
+          </button>
+          <button
+            onClick={handleSignIn}
+            disabled={busy}
+            style={{
+              ...primaryButtonStyle,
+              cursor: busy ? "wait" : "pointer",
+              opacity: busy ? 0.55 : 1,
+            }}
+          >
+            [SIGN UP]
           </button>
         </section>
       </main>
@@ -69,43 +81,67 @@ const shellStyle: CSSProperties = {
   color: "var(--fintheon-text, #f0ead6)",
 };
 
+const globeStyle: CSSProperties = {
+  position: "absolute",
+  inset: "-16vmin -54vmin 12vmin -44vmin",
+  opacity: 0.74,
+  filter: "saturate(1.08) contrast(1.08)",
+};
+
 const contentStyle: CSSProperties = {
   position: "relative",
-  zIndex: 2,
+  zIndex: 3,
   display: "grid",
   minHeight: "100vh",
-  placeItems: "center",
-  padding: 24,
+  alignItems: "end",
+  padding: "24px 22px calc(22px + env(safe-area-inset-bottom))",
 };
 
 const panelStyle: CSSProperties = {
   display: "grid",
-  gap: 14,
+  gap: 10,
   justifyItems: "center",
-  width: "min(316px, calc(100vw - 48px))",
-  padding: "15px 14px 16px",
+  width: "100%",
+  padding: "14px 12px 15px",
   border:
     "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 18%, transparent)",
   borderRadius: 8,
   background:
-    "color-mix(in srgb, var(--fintheon-surface, #0a0905) 83%, transparent)",
-  backdropFilter: "blur(18px) saturate(1.18)",
-  WebkitBackdropFilter: "blur(18px) saturate(1.18)",
+    "color-mix(in srgb, var(--fintheon-surface, #0a0905) 72%, transparent)",
+  backdropFilter: "blur(22px) saturate(1.22)",
+  WebkitBackdropFilter: "blur(22px) saturate(1.22)",
   overflow: "hidden",
 };
 
-const buttonStyle: CSSProperties = {
+const buttonBaseStyle: CSSProperties = {
   width: "100%",
   fontFamily: "var(--font-data, 'Space Mono', monospace)",
   fontSize: 12,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
+  borderRadius: 999,
+  padding: "13px 16px",
+  transition:
+    "opacity 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  ...buttonBaseStyle,
+  color: "#080705",
+  background:
+    "linear-gradient(115deg, color-mix(in srgb, #f0ead6 88%, transparent), color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 14%, #f0ead6))",
+  border: "1px solid color-mix(in srgb, #f0ead6 66%, transparent)",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -14px 24px rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.32)",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  ...buttonBaseStyle,
   color: "var(--fintheon-text, #f0ead6)",
-  background: "transparent",
+  background:
+    "color-mix(in srgb, var(--fintheon-surface, #0a0905) 44%, transparent)",
   border:
     "1px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 24%, transparent)",
-  borderRadius: 8,
-  padding: "12px 16px",
 };
 
 const scanlineStyle: CSSProperties = {
@@ -115,5 +151,14 @@ const scanlineStyle: CSSProperties = {
     "repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 3px), radial-gradient(circle at center, transparent 0 42%, rgba(0,0,0,0.56) 78%)",
   mixBlendMode: "screen",
   opacity: 0.28,
+  pointerEvents: "none",
+};
+
+const washStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  zIndex: 1,
+  background:
+    "linear-gradient(0deg, rgba(5,4,2,0.96) 0%, rgba(5,4,2,0.72) 32%, transparent 70%), linear-gradient(90deg, rgba(5,4,2,0.82), transparent 52%, rgba(5,4,2,0.7))",
   pointerEvents: "none",
 };

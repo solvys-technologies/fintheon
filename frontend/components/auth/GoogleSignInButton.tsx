@@ -6,16 +6,18 @@ type GoogleSignInButtonProps = {
   onClick: () => void;
   isLoading: boolean;
   disabled?: boolean;
+  label?: string;
 };
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onClick,
   isLoading,
   disabled,
+  label = "Continue with Google",
 }) => (
   <>
     <style>{`
-      @keyframes heat-shimmer-sweep {
+      @keyframes liquid-glass-sheen {
         0% {
           background-position: -200% center;
         }
@@ -23,25 +25,101 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           background-position: 200% center;
         }
       }
-      .heat-shimmer-btn {
+      .auth-primary-button {
+        position: relative;
+        display: flex;
+        min-height: 56px;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: 0.72rem;
+        overflow: hidden;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, #f0ead6 62%, transparent);
+        background:
+          linear-gradient(
+            115deg,
+            color-mix(in srgb, #f0ead6 88%, transparent) 0%,
+            color-mix(in srgb, #f0ead6 74%, transparent) 48%,
+            color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 14%, #f0ead6) 100%
+          );
+        background-size: 220% 100%;
+        color: #080705;
+        font-size: 0.88rem;
+        font-weight: 750;
+        letter-spacing: 0;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.78),
+          inset 0 -18px 30px rgba(255, 255, 255, 0.11),
+          0 14px 42px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(24px) saturate(1.42);
+        -webkit-backdrop-filter: blur(24px) saturate(1.42);
+        transition:
+          border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+          transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+        animation: liquid-glass-sheen 5.8s ease-in-out infinite;
+      }
+
+      .auth-primary-button::before {
+        content: "";
+        position: absolute;
+        inset: 1px 8px auto;
+        height: 44%;
+        border-radius: 999px;
+        background: color-mix(in srgb, white 38%, transparent);
+        opacity: 0.62;
+        pointer-events: none;
+      }
+
+      .auth-primary-button::after {
+        content: "";
+        position: absolute;
+        inset: 0;
         background-image: linear-gradient(
           90deg,
           transparent 0%,
           transparent 35%,
-          rgba(199, 159, 74, 0.08) 45%,
-          rgba(199, 159, 74, 0.15) 50%,
-          rgba(199, 159, 74, 0.08) 55%,
+          rgba(255, 255, 255, 0.2) 47%,
+          rgba(255, 255, 255, 0.42) 50%,
+          rgba(255, 255, 255, 0.2) 53%,
           transparent 65%,
           transparent 100%
         );
         background-size: 200% 100%;
-        animation: heat-shimmer-sweep 4.8s ease-in-out infinite;
+        animation: liquid-glass-sheen 4.8s ease-in-out infinite;
+        opacity: 0.72;
+        pointer-events: none;
+      }
+
+      .auth-primary-button > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .auth-primary-button:hover:not(:disabled) {
+        border-color: color-mix(in srgb, #f0ead6 82%, transparent);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.86),
+          inset 0 -18px 30px rgba(255, 255, 255, 0.14),
+          0 18px 48px rgba(0, 0, 0, 0.34);
+        transform: translateY(-1px);
+      }
+
+      .auth-primary-button:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 72%, transparent);
+        outline-offset: 3px;
+      }
+
+      .auth-primary-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
       }
     `}</style>
     <button
       onClick={onClick}
       disabled={disabled ?? isLoading}
-      className="heat-shimmer-btn group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-lg border border-[#c79f4a]/15 bg-[#0a0906] px-6 py-3.5 text-sm font-medium tracking-wide text-[#f0ead6] transition-all duration-300 hover:border-[#c79f4a]/35 hover:bg-[#0a0906]/80 focus:outline-none focus:ring-1 focus:ring-[#c79f4a]/30 focus:ring-offset-1 focus:ring-offset-[#050402] disabled:opacity-50 disabled:cursor-not-allowed"
+      className="auth-primary-button"
       style={{ animation: isLoading ? "none" : undefined }}
     >
       {isLoading ? (
@@ -67,7 +145,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
               fill="#EA4335"
             />
           </svg>
-          <span>Sign in with Google</span>
+          <span>{label}</span>
         </>
       )}
     </button>

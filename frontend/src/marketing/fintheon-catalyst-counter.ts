@@ -14,7 +14,12 @@ interface RiskflowSources {
   };
 }
 
-function getApiBase() {
+interface RiskSignalResponse {
+  signals?: unknown[];
+  staleSignals?: unknown[];
+}
+
+export function getApiBase() {
   const envBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
     /\/$/,
     "",
@@ -69,12 +74,38 @@ async function readTotalIngested(apiBase: string) {
   return readSourcesTotal(apiBase);
 }
 
+async function readRiskSignalCount(apiBase: string) {
+  const response = await fetch(`${apiBase}/api/riskflow/risk-signals`);
+  if (!response.ok) return null;
+
+  const payload = (await response.json()) as RiskSignalResponse;
+  if (Array.isArray(payload.signals)) return payload.signals.length;
+  if (Array.isArray(payload.staleSignals)) return payload.staleSignals.length;
+  return null;
+}
+
 export function setupCatalystCounter(target: HTMLElement) {
   target.textContent = "[LOADING]";
 
   readTotalIngested(getApiBase())
     .then((total) => {
       if (typeof total !== "number" || total <= 0) {
+        target.textContent = "DB LINK PENDING";
+        return;
+      }
+      target.textContent = formatCount(total);
+    })
+    .catch(() => {
+      target.textContent = "DB LINK PENDING";
+    });
+}
+
+export function setupRiskSignalCounter(target: HTMLElement) {
+  target.textContent = "[LOADING]";
+
+  readRiskSignalCount(getApiBase())
+    .then((total) => {
+      if (typeof total !== "number") {
         target.textContent = "DB LINK PENDING";
         return;
       }

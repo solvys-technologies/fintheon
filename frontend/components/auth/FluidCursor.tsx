@@ -1,190 +1,195 @@
 import React, {
   forwardRef,
-  useCallback,
   useEffect,
   useImperativeHandle,
-  useRef,
   useState,
 } from "react";
-
-type TrailPoint = {
-  x: number;
-  y: number;
-  id: number;
-  opacity: number;
-  scale: number;
-};
+import { LoadingGlobe, type LoadingGlobePhase } from "../loading/LoadingGlobe";
 
 export type FluidCursorHandle = {
   snapTo: (x: number, y: number) => void;
 };
 
-const SNAP_DURATION = 450;
+interface FluidCursorProps {
+  phase?: LoadingGlobePhase;
+}
 
-export const FluidCursor = forwardRef<FluidCursorHandle>((_, ref) => {
-  const [position, setPosition] = useState({ x: -100, y: -100 });
-  const [trail, setTrail] = useState<TrailPoint[]>([]);
-  const [pulseBoost, setPulseBoost] = useState(false);
-  const trailAnimationRef = useRef<number>(0);
-  const snapAnimationRef = useRef<number>(0);
-  const trailIdCounter = useRef(0);
-  const isSnappingRef = useRef(false);
-  const positionRef = useRef(position);
-  const snapStateRef = useRef<{
-    startX: number;
-    startY: number;
-    targetX: number;
-    targetY: number;
-    startTime: number;
-  } | null>(null);
+interface PointerState {
+  x: number;
+  y: number;
+  isFine: boolean;
+  isVisible: boolean;
+  isInteractive: boolean;
+}
 
-  const addTrailPoint = useCallback((x: number, y: number) => {
-    const newPoint: TrailPoint = {
-      x,
-      y,
-      id: trailIdCounter.current++,
-      opacity: 1,
-      scale: 1,
-    };
-    setTrail((prev) => [...prev.slice(-20), newPoint]);
-  }, []);
+const LENS_SIZE = 86;
+const LENS_RADIUS = LENS_SIZE / 2;
 
-  // Update mouse position
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isSnappingRef.current) return;
-      const nextPos = { x: e.clientX, y: e.clientY };
-      positionRef.current = nextPos;
-      setPosition(nextPos);
-      addTrailPoint(e.clientX, e.clientY);
-    };
+export const FluidCursor = forwardRef<FluidCursorHandle, FluidCursorProps>(
+  ({ phase = "idle" }, ref) => {
+    const [pointer, setPointer] = useState<PointerState>({
+      x: -120,
+      y: -120,
+      isFine: false,
+      isVisible: false,
+      isInteractive: false,
+    });
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [addTrailPoint]);
-
-  const runSnap = useCallback(
-    (timestamp: number) => {
-      const state = snapStateRef.current;
-      if (!state) return;
-
-      const elapsed = timestamp - state.startTime;
-      const progress = Math.min(elapsed / SNAP_DURATION, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const nextX = state.startX + (state.targetX - state.startX) * eased;
-      const nextY = state.startY + (state.targetY - state.startY) * eased;
-
-      const nextPos = { x: nextX, y: nextY };
-      positionRef.current = nextPos;
-      setPosition(nextPos);
-      addTrailPoint(nextX, nextY);
-
-      if (progress < 1) {
-        snapAnimationRef.current = requestAnimationFrame(runSnap);
-      } else {
-        snapStateRef.current = null;
-        isSnappingRef.current = false;
-        setPulseBoost(true);
-        window.setTimeout(() => setPulseBoost(false), 650);
-      }
-    },
-    [addTrailPoint],
-  );
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      snapTo: (x, y) => {
-        isSnappingRef.current = true;
-        snapStateRef.current = {
-          startX: positionRef.current.x,
-          startY: positionRef.current.y,
-          targetX: x,
-          targetY: y,
-          startTime: performance.now(),
-        };
-        if (snapAnimationRef.current)
-          cancelAnimationFrame(snapAnimationRef.current);
-        snapAnimationRef.current = requestAnimationFrame(runSnap);
-      },
-    }),
-    [runSnap],
-  );
-
-  // Animation loop for the "melting" effect
-  const animateTrail = () => {
-    setTrail((prevTrail) =>
-      prevTrail
-        .map((point) => ({
-          ...point,
-          opacity: point.opacity - 0.02, // Fade out
-          scale: point.scale + 0.015, // Expand slightly (melt)
-        }))
-        .filter((point) => point.opacity > 0),
+    useImperativeHandle(
+      ref,
+      () => ({
+        snapTo: (x, y) => {
+          setPointer((current) => ({
+            ...current,
+            x,
+            y,
+            isVisible: true,
+          }));
+        },
+      }),
+      [],
     );
-    trailAnimationRef.current = requestAnimationFrame(animateTrail);
-  };
 
-  useEffect(() => {
-    trailAnimationRef.current = requestAnimationFrame(animateTrail);
-    return () => {
-      if (trailAnimationRef.current)
-        cancelAnimationFrame(trailAnimationRef.current);
-      if (snapAnimationRef.current)
-        cancelAnimationFrame(snapAnimationRef.current);
-    };
-  }, []);
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+      const media = window.matchMedia("(pointer: fine)");
 
-  useEffect(() => {
-    positionRef.current = position;
-  }, [position]);
+      function updateFinePointer() {
+        setPointer((current) => ({ ...current, isFine: media.matches }));
+      }
 
-  return (
-    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden mix-blend-screen">
-      {/* The Melting Trail */}
-      {trail.map((point) => (
-        <div
-          key={point.id}
-          className="absolute rounded-full border border-yellow-500/50"
-          style={{
-            left: point.x,
-            top: point.y,
-            width: "20px",
-            height: "20px",
-            transform: `translate(-50%, -50%) scale(${point.scale})`,
-            opacity: point.opacity,
-            filter: "blur(2px)", // Soften the edges for "butter" effect
-          }}
-        />
-      ))}
+      function handlePointerMove(event: PointerEvent) {
+        if (event.pointerType && event.pointerType !== "mouse") return;
+        const target = event.target;
+        const element = target instanceof Element ? target : null;
+        const isInteractive = Boolean(
+          element?.closest(
+            "button,input,textarea,select,a,[role='button'],[contenteditable='true']",
+          ),
+        );
 
-      {/* The Main Pulsating Cursor Rings */}
+        setPointer({
+          x: event.clientX,
+          y: event.clientY,
+          isFine: media.matches,
+          isVisible: true,
+          isInteractive,
+        });
+      }
+
+      function handlePointerLeave() {
+        setPointer((current) => ({ ...current, isVisible: false }));
+      }
+
+      updateFinePointer();
+      media.addEventListener("change", updateFinePointer);
+      window.addEventListener("pointermove", handlePointerMove);
+      document.addEventListener("mouseleave", handlePointerLeave);
+
+      return () => {
+        media.removeEventListener("change", updateFinePointer);
+        window.removeEventListener("pointermove", handlePointerMove);
+        document.removeEventListener("mouseleave", handlePointerLeave);
+      };
+    }, []);
+
+    if (!pointer.isFine || !pointer.isVisible || pointer.isInteractive)
+      return null;
+
+    return (
       <div
-        className="absolute"
+        aria-hidden="true"
+        className="liquid-dot-cursor"
         style={{
-          left: position.x,
-          top: position.y,
-          transform: "translate(-50%, -50%)",
+          transform: `translate3d(${pointer.x}px, ${pointer.y}px, 0)`,
         }}
       >
-        {/* Inner Ring */}
-        <div
-          className={`absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-400 opacity-90 shadow-[0_0_12px_rgba(234,179,8,0.5)] ${
-            pulseBoost ? "animate-ping" : "animate-pulse"
-          }`}
-        ></div>
-
-        {/* Outer Ring (Counter Pulse) */}
-        <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-600/60 opacity-70 transition-all duration-300 ease-out"></div>
-
-        {/* Center Dot */}
-        <div
-          className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-400"
-          style={{ boxShadow: "0 0 6px rgba(234,179,8,0.8)" }}
-        ></div>
+        <style>{liquidCursorCss}</style>
+        <div className="liquid-dot-cursor__lens">
+          <div
+            className="liquid-dot-cursor__viewport"
+            style={{
+              left: LENS_RADIUS - pointer.x,
+              top: LENS_RADIUS - pointer.y,
+              transform: "scale(1.2)",
+              transformOrigin: `${pointer.x}px ${pointer.y}px`,
+            }}
+          >
+            <LoadingGlobe
+              phase={phase}
+              density={0.82}
+              className="liquid-dot-cursor__globe"
+              style={{
+                position: "absolute",
+                inset: "-10vmin -18vmin -8vmin 24vmin",
+                opacity: 0.82,
+                filter: "saturate(1.2) contrast(1.18) brightness(1.08)",
+              }}
+            />
+          </div>
+        </div>
+        <div className="liquid-dot-cursor__dot" />
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 FluidCursor.displayName = "FluidCursor";
+
+const liquidCursorCss = `
+  .liquid-dot-cursor {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 20;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    will-change: transform;
+  }
+
+  .liquid-dot-cursor__lens {
+    position: absolute;
+    left: -${LENS_RADIUS}px;
+    top: -${LENS_RADIUS}px;
+    width: ${LENS_SIZE}px;
+    height: ${LENS_SIZE}px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--fintheon-text, #f0ead6) 18%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--fintheon-text, #f0ead6) 6%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 34%, transparent),
+      inset 0 -12px 24px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 8%, transparent),
+      0 0 22px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 14%, transparent);
+    backdrop-filter: blur(7px) saturate(1.45) contrast(1.16);
+    -webkit-backdrop-filter: blur(7px) saturate(1.45) contrast(1.16);
+  }
+
+  .liquid-dot-cursor__viewport {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    will-change: transform;
+  }
+
+  .liquid-dot-cursor__dot {
+    position: absolute;
+    left: -2px;
+    top: -2px;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--fintheon-text, #f0ead6) 92%, white 8%);
+    box-shadow:
+      0 0 7px color-mix(in srgb, var(--fintheon-primary, var(--fintheon-accent)) 72%, transparent),
+      0 0 16px color-mix(in srgb, var(--fintheon-text, #f0ead6) 22%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .liquid-dot-cursor__lens {
+      display: none;
+    }
+  }
+`;

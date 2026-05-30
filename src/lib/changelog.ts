@@ -9,6 +9,104 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T20:45:53-04:00",
+    agent: "codex",
+    summary:
+      "Fintheon landing prototype polish pass: loosened mobile agent reveal progress, tightened the data-rain silence gap, removed duplicate hero eyebrow copy, matched the nav CTA to the glass desk button, recessed nav links into a pill bar, replaced the license KPI with live Risk Signal count, and wired the beta form to a real public marketing waitlist endpoint backed by Supabase.",
+    files: [
+      "backend-hono/migrations/20260529_marketing_waitlist.sql",
+      "backend-hono/src/routes/index.ts",
+      "backend-hono/src/routes/marketing/index.ts",
+      "frontend/fintheon-landing-prototype.html",
+      "frontend/public/marketing/fintheon-landing-prototype.css",
+      "frontend/src/marketing/fintheon-catalyst-counter.ts",
+      "frontend/src/marketing/fintheon-landing-prototype.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T20:25:00-04:00",
+    agent: "codex",
+    summary:
+      "v7.0.8 notarized release prep: captured the final mobile-domain frontend shell deployment, post-tag landing/legal/auth fixes, refreshed install/update pointers, added the live Risk Signal landing counter, and moved the public Mac artifact path from ad-hoc beta fallback to Developer ID notarization.",
+    files: [
+      "package.json",
+      "backend-hono/package.json",
+      "mobile/package.json",
+      "frontend/main.tsx",
+      "frontend/public/sw.js",
+      "frontend/src/marketing/fintheon-catalyst-counter.ts",
+      "frontend/src/marketing/fintheon-landing-prototype.ts",
+      "scripts/fintheon-update.sh",
+      "scripts/fintheon-setup.sh",
+      "scripts/fintheon-cli.sh",
+      "scripts/install-cli.sh",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T20:15:19-04:00",
+    agent: "codex",
+    summary:
+      "Fixed the Fintheon landing prototype circuit fuse spark by applying the scroll-driven circuit progress and spark coordinates directly to the rail element instead of the parent section; added smooth FAQ open/close transitions.",
+    files: [
+      "frontend/src/marketing/fintheon-landing-prototype.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T15:10:00-04:00",
+    agent: "codex",
+    summary:
+      "Added standalone public Privacy Policy and Terms of Use pages for the Fintheon website, linked them from the landing prototype footer, styled the legal layout against the existing marketing surface, and created the S120 App Store review-readiness sprint docs.",
+    files: [
+      "frontend/fintheon-landing-prototype.html",
+      "frontend/public/privacy/index.html",
+      "frontend/public/terms/index.html",
+      "frontend/public/marketing/fintheon-landing-prototype.css",
+      "sprint-md/S120-ORCH-ios-developer-enrollment.md",
+      "sprint-md/S120-T1-app-information-content-rights.md",
+      "sprint-md/S120-T2-privacy-policy-app-privacy.md",
+      "sprint-md/S120-T3-pricing-availability.md",
+      "sprint-md/S120-T4-build-selection-gap-audit.md",
+      "sprint-md/S120-T5-review-submission-preflight.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T14:24:30-04:00",
+    agent: "codex",
+    summary:
+      "Auth surface split: kept the web login on the globe-led copy layout, and gave the standalone mobile login its own sparse globe-backed bottom panel with the existing access/sign-in text plus a new sign-up button on the same OAuth path.",
+    files: [
+      "frontend/components/auth/AuthShell.tsx",
+      "mobile/components/auth/MobileLoginScreen.tsx",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T13:53:33-04:00",
+    agent: "codex",
+    summary:
+      "Fintheon landing prototype agent reveal pass: replaced the hidden stacked pain-point carousel with a scroll-driven circuit fuse rail, wired the spark to GSAP scroll progress, added desktop circuit labels for each agent beat, kept mobile cards in readable document flow, and swapped the PsychAssist beat for trading lockout copy.",
+    files: [
+      "frontend/fintheon-landing-prototype.html",
+      "frontend/public/marketing/fintheon-landing-prototype.css",
+      "frontend/src/marketing/fintheon-landing-prototype.ts",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
+    date: "2026-05-29T13:39:05-04:00",
+    agent: "codex",
+    summary:
+      "Fintheon landing prototype mobile surface fix: zoomed the Consilium mockup crop on phone widths, constrained the section to prevent horizontal overflow, and left-aligned the mobile copy/chips so the text remains readable.",
+    files: [
+      "frontend/public/marketing/fintheon-landing-prototype.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-29T12:47:41-04:00",
     agent: "codex",
     summary:

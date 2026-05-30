@@ -9,9 +9,7 @@ import "./index.css";
 installEasternTimeFormatOverride();
 installRuntimeApiBaseFetchBridge();
 
-const MOBILE_PRODUCTION_HOSTS = new Set([
-  "fintheon.pricedinresearch.io",
-]);
+const MOBILE_PRODUCTION_HOSTS = new Set(["fintheon.pricedinresearch.io"]);
 
 // Suppress noisy third-party warnings (e.g. Snowplow "Invalid environment undefined")
 const _origWarn = console.warn;

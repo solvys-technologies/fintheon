@@ -28,8 +28,8 @@ const ENV_EXAMPLE = join(BACKEND_DIR, ".env.example");
 const ENV_FILE = join(BACKEND_DIR, ".env");
 const FRONTEND_ENV = join(FRONTEND_DIR, ".env.local");
 const DEFAULT_PORT = 8080;
-const FLY_DEPLOYED_SUPABASE_DATABASE_URL =
-  "postgresql://postgres:PIR0670963957%24@db.nrcfnzclbjboctptxaxx.supabase.co:5432/postgres";
+const SETUP_DATABASE_URL =
+  process.env.FINTHEON_SETUP_DATABASE_URL ?? process.env.DATABASE_URL ?? "";
 
 /* ------------------------------------------------------------------ */
 /*  Setup context — accumulated across steps                           */
@@ -299,16 +299,16 @@ async function collectApiKeys() {
 /* ------------------------------------------------------------------ */
 
 function writeEnvFiles() {
-  const databaseUrl = ctx.databaseUrl || FLY_DEPLOYED_SUPABASE_DATABASE_URL;
-  if (!ctx.databaseUrl) ctx.databaseUrl = databaseUrl;
+  const databaseUrl = ctx.databaseUrl || SETUP_DATABASE_URL;
+  if (databaseUrl && !ctx.databaseUrl) ctx.databaseUrl = databaseUrl;
 
   // Backend .env
   const updates: Record<string, string> = {
     BYPASS_AUTH: "true",
-    DATABASE_URL: databaseUrl,
     AI_PRIMARY_PROVIDER: "deepseek-direct",
   };
 
+  if (databaseUrl) updates.DATABASE_URL = databaseUrl;
   if (ctx.openRouterKey) updates.OPENROUTER_API_KEY = ctx.openRouterKey;
   if (ctx.openAiKey) updates.OPENAI_API_KEY = ctx.openAiKey;
   if (ctx.port !== DEFAULT_PORT) updates.PORT = String(ctx.port);

@@ -3,7 +3,7 @@ import { validateEnv } from "../index.js";
 
 const FULL_VALID_ENV: Record<string, string | undefined> = {
   NODE_ENV: "production",
-  DATABASE_URL: "postgresql://user:pass@host/db",
+  DATABASE_URL: "postgresql://user:${PASSWORD}@host/db",
   SUPABASE_URL: "https://abc.supabase.co",
   SUPABASE_SERVICE_ROLE_KEY: "a-very-long-service-role-key-value",
   DEEPSEEK_API_KEY: "sk-deepseek-test-key-value",
@@ -87,12 +87,14 @@ describe("validateEnv", () => {
       {
         ...FULL_VALID_ENV,
         DATABASE_URL: undefined,
-        NEON_DATABASE_URL: "postgresql://u:p@h/db",
+        NEON_DATABASE_URL: "postgresql://user:${PASSWORD}@host/db",
       },
       () => {
         const result = validateEnv();
         expect(result.ok).toBe(true);
-        expect(process.env.DATABASE_URL).toBe("postgresql://u:p@h/db");
+        expect(process.env.DATABASE_URL).toBe(
+          "postgresql://user:${PASSWORD}@host/db",
+        );
       },
     );
   });

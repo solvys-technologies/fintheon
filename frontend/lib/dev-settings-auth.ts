@@ -1,4 +1,4 @@
-// [claude-code 2026-04-24] S37: password rotated to PricedInResearch122356 + exposed generic gate helpers so the Refinement Engine edit-lock can reuse the same session.
+// [claude-code 2026-04-24] S37: Shared developer gate for Developer Settings and the Refinement Engine edit lock.
 // [claude-code 2026-03-27] S2-T6: Password gate for Developer Settings — SHA-256 check, session + local storage
 
 const DEV_PASSWORD_HASH =

@@ -89,6 +89,7 @@ import { createWebPushPublicRoutes, createWebPushRoutes } from "./web-push.js";
 import { createOracleRoutes } from "./oracle.js";
 import { createMeRoutes } from "./me/index.js";
 import { createMaintenanceRoutes } from "./maintenance.js";
+import { createMarketingRoutes } from "./marketing/index.js";
 // [claude-code 2026-04-23] Routines Console retired — replaced by in-process schedulers + hooks.
 // [claude-code 2026-04-20] S21: Harper Voice integration (formerly Omi) + PsychAssist fork admin
 import { createHarperVoiceRoutes } from "./harper-voice.js";
@@ -322,6 +323,8 @@ export function registerRoutes(app: Hono): void {
   app.route("/api/earnings", createEarningsRoutes());
   // MCP registry — live read/write of ~/.claude/mcp.json (public, local-only)
   app.route("/api/mcp", createMcpRoutes());
+  // Public marketing intake — beta waitlist capture for the website.
+  app.route("/api/marketing", createMarketingRoutes());
 
   // Supabase OAuth callback relay — serves HTML that deep-links back to Electron
   app.route("/api/auth/supabase", createAuthCallbackRoute());

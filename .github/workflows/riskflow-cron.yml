@@ -15,16 +15,17 @@ jobs:
     steps:
       - name: Call Riskflow endpoint looped every 2 minutes (3 attempts)
         env:
-          URL: https://pulse-api-withered-dust-1394.fly.dev/api/riskflow/cron/prefetch
+          URL: https://fintheon.fly.dev/api/riskflow/cron/prefetch
           # Recommended: create a repository secret named CRON_SECRET_TOKEN and set it there.
-          # If the secret is not defined, the script will fall back to the literal token below.
+          # Required: configure CRON_SECRET_TOKEN as a repository secret.
           CRON_SECRET_TOKEN: ${{ secrets.CRON_SECRET_TOKEN }}
         run: |
           set -euo pipefail
 
-          # If CRON_SECRET_TOKEN is empty, fall back to literal token. Replace '[YOUR_TOKEN]' with your token,
-          # or better: set a repository secret named CRON_SECRET_TOKEN.
-          : "${CRON_SECRET_TOKEN:='f0d6123339ba216079100a957149b52fefaf0868565905226345dd18ea6b72a6'}"
+          if [ -z "${CRON_SECRET_TOKEN:-}" ]; then
+            echo "CRON_SECRET_TOKEN repository secret is required"
+            exit 1
+          fi
 
           echo "Starting prefetched POST loop to ${URL}"
           for i in 1 2 3; do

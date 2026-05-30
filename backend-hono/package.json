@@ -1,6 +1,6 @@
 {
   "name": "fintheon-api",
-  "version": "7.0.7",
+  "version": "7.0.8",
   "description": "Fintheon Trading Platform API - Hono + Neon PostgreSQL",
   "type": "module",
   "main": "dist/index.js",

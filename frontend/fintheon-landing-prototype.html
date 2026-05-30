@@ -44,7 +44,6 @@
           <div class="hero-rain"></div>
         </div>
         <div class="hero-copy">
-          <p class="overline">Fintheon</p>
           <h1>
             Five AI agents. Every signal, score, and narrative. One Unified
             Surface.
@@ -65,12 +64,12 @@
             Live catalysts ingested
           </p>
           <p>
+            <span data-risk-signal-count>[LOADING]</span>
+            Live risk signals
+          </p>
+          <p class="hero-metric-print">
             <span>&lt; 4.5s</span>
             Average Time-to-Print
-          </p>
-          <p>
-            <span>One-Time License Available</span>
-            Bring your own Keys, Bring your own Docs. Monthly plans available.
           </p>
         </div>
       </section>
@@ -118,15 +117,39 @@
             <p class="overline">The desk inherits its nervous system</p>
             <h2>Five agents, one surface, no decorative intelligence.</h2>
             <p>
-              Each agent reveals itself as the tape changes context. The
-              background image lane is wired now, ready for the Wall Street
-              sequence.
+              Scroll the fuse. Each circuit branch lights as the desk routes raw
+              Wall Street noise into one executable read.
             </p>
+          </div>
+          <div class="agent-circuit" aria-hidden="true">
+            <svg
+              class="circuit-board"
+              viewBox="0 0 160 520"
+              preserveAspectRatio="none"
+            >
+              <path
+                class="circuit-path circuit-path-base"
+                d="M42 18 L42 72 C42 88 58 88 58 104 L58 148 C58 166 28 166 28 184 L28 232 C28 250 72 250 72 268 L72 318 C72 336 46 336 46 354 L46 402 C46 420 92 420 92 438 L92 502"
+              />
+              <path
+                class="circuit-path circuit-path-active"
+                data-circuit-active
+                d="M42 18 L42 72 C42 88 58 88 58 104 L58 148 C58 166 28 166 28 184 L28 232 C28 250 72 250 72 268 L72 318 C72 336 46 336 46 354 L46 402 C46 420 92 420 92 438 L92 502"
+              />
+            </svg>
+            <span class="circuit-spark" data-circuit-spark></span>
+            <ol class="circuit-labels">
+              <li data-circuit-node style="--node-y: 4%">RiskFlow</li>
+              <li data-circuit-node style="--node-y: 25%">NarrativeFlow</li>
+              <li data-circuit-node style="--node-y: 49%">Lockouts</li>
+              <li data-circuit-node style="--node-y: 72%">Consilium</li>
+              <li data-circuit-node style="--node-y: 96%">Harper</li>
+            </ol>
           </div>
           <div class="agent-steps" aria-label="Fintheon agent reveal">
             <article
               data-agent-step
-              data-bg="/marketing/fintheon-hero-ascii-poster.jpg"
+              data-bg="/marketing/fintheon-agent-bg-1.jpg"
             >
               <p class="step-label">01 / Risk</p>
               <h3>RiskFlow scores the tape.</h3>
@@ -135,7 +158,10 @@
                 and what the desk can afford to ignore.
               </p>
             </article>
-            <article data-agent-step data-bg="/halftone-heroes/hero-bg-1.png">
+            <article
+              data-agent-step
+              data-bg="/marketing/fintheon-agent-bg-2.jpg"
+            >
               <p class="step-label">02 / Narrative</p>
               <h3>NarrativeFlow catches the turn.</h3>
               <p>
@@ -143,15 +169,21 @@
                 them back as research.
               </p>
             </article>
-            <article data-agent-step data-bg="/halftone-heroes/hero-bg-2.png">
-              <p class="step-label">03 / Discipline</p>
-              <h3>PsychAssist watches the operator.</h3>
+            <article
+              data-agent-step
+              data-bg="/marketing/fintheon-agent-bg-3.jpg"
+            >
+              <p class="step-label">03 / Lockouts</p>
+              <h3>Trading lockouts hold the line.</h3>
               <p>
-                The system intervenes before adrenaline turns analysis into
-                revenge and conviction into leverage.
+                When velocity starts steering the desk, lockout rails can pause
+                the next order before pressure becomes exposure.
               </p>
             </article>
-            <article data-agent-step data-bg="/halftone-heroes/hero-bg-3.png">
+            <article
+              data-agent-step
+              data-bg="/marketing/fintheon-agent-bg-4.jpg"
+            >
               <p class="step-label">04 / Consilium</p>
               <h3>Agents argue before you do.</h3>
               <p>
@@ -161,7 +193,7 @@
             </article>
             <article
               data-agent-step
-              data-bg="/marketing/fintheon-desk-mockup.png"
+              data-bg="/marketing/fintheon-agent-bg-4.jpg"
             >
               <p class="step-label">05 / Harper</p>
               <h3>The morning read arrives already assembled.</h3>
@@ -193,9 +225,18 @@
           <form class="beta-gate" aria-label="Join the Fintheon beta waitlist">
             <label>
               <span>Email address</span>
-              <input type="email" name="email" placeholder="trader@desk.com" />
+              <input
+                type="email"
+                name="email"
+                placeholder="trader@desk.com"
+                autocomplete="email"
+                required
+              />
             </label>
             <button type="submit">Request access</button>
+            <p class="waitlist-status" data-waitlist-status aria-live="polite">
+              Captured directly by Priced In Research.
+            </p>
           </form>
         </div>
       </section>
@@ -261,9 +302,13 @@
 
     <footer id="footer" class="footer">
       <span>Fintheon by Priced In Research</span>
-      <a href="mailto:contact@pricedinresearch.io"
-        >contact@pricedinresearch.io</a
-      >
+      <nav class="footer-links" aria-label="Legal and contact links">
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/terms/">Terms of Use</a>
+        <a href="mailto:contact@pricedinresearch.io"
+          >contact@pricedinresearch.io</a
+        >
+      </nav>
     </footer>
 
     <script
