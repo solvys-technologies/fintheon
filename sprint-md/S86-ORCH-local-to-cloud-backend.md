@@ -92,3 +92,7 @@ number.
   path with no client-side secrets.
 - T7 validates backend build, frontend/mobile type/build gates, cloud health,
   Desktop API-base selection, and offline/degraded behavior.
+- T7 must run the surface parity demo in
+  `@sprint-md/S86-SURFACE-PARITY-DEMO.md` and prove the same signed-in user
+  has a cloud-backed, user-owned experience across Desktop, web/PWA, and mobile
+  PWA.

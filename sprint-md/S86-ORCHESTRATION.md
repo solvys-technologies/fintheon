@@ -55,7 +55,8 @@ requirements are clear.
 `@sprint-md/S86-T7-unification-validation.md`
 
 T7 is the validator. It is blocked by T1 through T6 and is the only track
-allowed to reconcile cross-track integration issues.
+allowed to reconcile cross-track integration issues. T7 must also run
+`@sprint-md/S86-SURFACE-PARITY-DEMO.md` before S86 can be accepted.
 
 ## Local Watcher Fallback
 

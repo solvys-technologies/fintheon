@@ -9,6 +9,19 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-30T01:24:00-04:00",
+    agent: "codex",
+    summary:
+      "S86 validation addendum: added explicit Desktop/web/mobile surface parity testing, a user-owned cloud-backed demo flow, network degradation evidence requirements, and Desk sprint lineage so S86 validates product ownership parity rather than backend reachability alone.",
+    files: [
+      "sprint-md/S86-SURFACE-PARITY-DEMO.md",
+      "sprint-md/S86-ORCH-local-to-cloud-backend.md",
+      "sprint-md/S86-ORCHESTRATION.md",
+      "sprint-md/S86-T7-unification-validation.md",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-30T01:06:00-04:00",
     agent: "codex",
     summary:

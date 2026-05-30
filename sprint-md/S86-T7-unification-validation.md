@@ -19,6 +19,9 @@ have posted validation evidence in Linear.
   cloud Hermes semantics, Desktop degraded state, and LiveKit decision.
 - Run the full validation gate across backend, frontend, mobile, Desktop smoke,
   cloud health, and secret scanner.
+- Run the surface parity demo in
+  `@sprint-md/S86-SURFACE-PARITY-DEMO.md` across Desktop, web/PWA, and mobile
+  PWA.
 - Confirm Linear issue descriptions and sprint docs match actual shipped
   behavior.
 - Add final changelog entry with validation evidence and remaining caveats.
@@ -51,6 +54,12 @@ have posted validation evidence in Linear.
 - Network-loss behavior is verified and documented.
 - Portless remains blocker/developer repair only.
 - LiveKit decision is recorded and implemented only if justified.
+- The same signed-in test user sees the same active desk and cloud-backed
+  user-owned state across Desktop, web/PWA, and mobile PWA.
+- A safe user-owned mutation made on one surface is visible on the other two, or
+  a precise blocker is posted to `SOL-250`.
+- Any intentionally surface-specific Desk gap is listed and explained instead
+  of silently treated as parity.
 
 ## Validation Commands
 
@@ -62,4 +71,6 @@ cd mobile && bun run build
 cd .. && bun run desktop:smoke
 curl -fsS https://fintheon.fly.dev/healthz
 curl -fsS https://fintheon.fly.dev/api/diagnostics | head -c 1000
+# Run the manual/demo gate in @sprint-md/S86-SURFACE-PARITY-DEMO.md and post
+# evidence to SOL-250.
 ```
