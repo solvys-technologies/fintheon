@@ -22,6 +22,7 @@ bun --version
 
 # ----------------------------------------------------------------------------
 # 2. Write .env files (gitignored; needed for typecheck/build/tests)
+# Live secrets come from Infisical/operator env, not this repo bootstrap.
 # ----------------------------------------------------------------------------
 echo "==> Writing env files"
 

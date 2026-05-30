@@ -511,6 +511,29 @@ for i in {1..15}; do
   fi
 done
 
+# ── Step 9.5: Ensure Portless Desktop routes ────────────────────────────────
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  info "Checking Portless Desktop routes..."
+  if bun run portless:desktop:install >/tmp/fintheon-portless-install.log 2>&1; then
+    ok "Portless service installed"
+  else
+    warn "Portless install skipped — repair: cd $FINTHEON_ROOT && bun run portless:desktop:install"
+  fi
+  if bun run portless:desktop >/tmp/fintheon-portless-sync.log 2>&1; then
+    ok "Portless hosts synced"
+  else
+    warn "Portless hosts not synced — repair: cd $FINTHEON_ROOT && bun run portless:desktop"
+  fi
+  if [[ -f "$FINTHEON_ROOT/scripts/security/portless-desktop-check.mjs" ]]; then
+    if node "$FINTHEON_ROOT/scripts/security/portless-desktop-check.mjs" >/tmp/fintheon-portless-check.log 2>&1; then
+      ok "Portless route health verified"
+    else
+      warn "Portless route health needs repair — run: cd $FINTHEON_ROOT && bun run portless:desktop:check"
+    fi
+  fi
+fi
+
 # ── Step 10: Refresh X feed tokens ─────────────────────────────────────────
 # [claude-code 2026-04-16] Force-reload Rettiwt keys from DB + reset cooldowns on update.
 # [claude-code 2026-04-20] Non-contributor case demoted from warn → info; it's

@@ -81,6 +81,21 @@ section() {
   echo -e "  ${_GOLD}── $1 ${_DIM}─────────────────────────────────────${_R}"
 }
 
+ensure_portless_routes() {
+  [[ "$(uname -s)" == "Darwin" ]] || return 0
+  cd "$FINTHEON_ROOT"
+  if bun run portless:desktop:install >/tmp/fintheon-portless-install.log 2>&1; then
+    ok "Portless service installed"
+  else
+    warn "Portless install skipped — repair: cd $FINTHEON_ROOT && bun run portless:desktop:install"
+  fi
+  if bun run portless:desktop >/tmp/fintheon-portless-sync.log 2>&1; then
+    ok "Portless hosts synced"
+  else
+    warn "Portless hosts not synced — repair: cd $FINTHEON_ROOT && bun run portless:desktop"
+  fi
+}
+
 # Optional public bootstrap values. Infisical is canonical; repo installers do
 # not embed live project keys.
 _SUPABASE_URL="${FINTHEON_SETUP_SUPABASE_URL:-${SUPABASE_URL:-}}"
@@ -306,6 +321,7 @@ do_start() {
       warn "Backend slow — check: tail -f /tmp/fintheon-backend.log"
     fi
   done
+  ensure_portless_routes
   if [[ -d /Applications/Fintheon.app ]]; then
     open /Applications/Fintheon.app 2>/dev/null || true
   fi

@@ -22,7 +22,7 @@ For subsequent updates:
 fintheon update
 ```
 
-The automated setup installs Xcode CLI Tools, Homebrew, Node.js, Bun, clones the repo, writes `.env` with production defaults, installs Hermes, builds everything, and launches the app.
+The automated setup installs Xcode CLI Tools, Homebrew, Node.js, Bun, clones the repo, writes local `.env` scaffolding without live secrets, installs Hermes, verifies Portless Desktop routes, builds everything, and launches the app.
 
 ---
 
@@ -51,26 +51,20 @@ Copy the environment file:
 cp backend-hono/.env.example backend-hono/.env
 ```
 
-The `.env.example` ships with production-safe defaults including Supabase connection. The ONLY variable a user needs to add is `OPENROUTER_API_KEY` for AI features.
+The `.env.example` is a local scaffold. Infisical is the canonical source for backend, CI, Fly, and Vercel secrets; see `docs/security/infisical-portless.md`.
 
 ### Required Environment Variables
 
-| Variable             | Where               | Description                                                                                    |
-| -------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
-| `OPENROUTER_API_KEY` | `backend-hono/.env` | OpenRouter API key — get at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
+Operators with production or deploy access should use Infisical:
 
-### Pre-Configured (DO NOT prompt users for these)
+```bash
+export INFISICAL_PROJECT_ID=<project-id>
+export INFISICAL_ENV=dev
+export INFISICAL_TOKEN=<machine-identity-token>
+infisical run --projectId "$INFISICAL_PROJECT_ID" --env dev --path=/backend --path=/desktop-local --command "cd backend-hono && bun run dev"
+```
 
-These are embedded in `.env.example` with production defaults:
-
-| Variable              | Value                                      | Why                                         |
-| --------------------- | ------------------------------------------ | ------------------------------------------- |
-| `SUPABASE_URL`        | `https://nrcfnzclbjboctptxaxx.supabase.co` | Production Supabase project                 |
-| `SUPABASE_ANON_KEY`   | Pre-filled                                 | Publishable anon key (safe for client-side) |
-| `BYPASS_AUTH`         | `true`                                     | Local/Electron auth bypass                  |
-| `PORT`                | `8080`                                     | Backend port                                |
-| `AI_PRIMARY_PROVIDER` | `openrouter`                               | Default inference provider                  |
-| All scheduling vars   | Pre-filled                                 | Boardroom, pre/post market crons            |
+Desktop end users should not be asked for production server secrets.
 
 ### NEVER ask users for these — the app works without them:
 
@@ -155,8 +149,8 @@ The CLI is installed to `/usr/local/bin/fintheon` (or `~/.local/bin/fintheon` if
 When helping a user set up Fintheon:
 
 1. Direct them to the one-line install command above
-2. The only thing they may need to provide after setup is `OPENROUTER_API_KEY`
-3. Everything else is pre-configured
+2. Do not ask them for production server secrets
+3. If Portless routes fail, run `bun run portless:desktop:check` from the repo
 
 **CRITICAL — DO NOT ask users for:**
 

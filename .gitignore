@@ -28,9 +28,16 @@ secrets.env
 **/.env*.local
 **/.env.bak*
 **/.env.*.bak
+**/.env*.backup
+**/.env*.orig
 .env.development
 scripts/.linear-env
 .env.local.db
+.infisical.json
+.infisical.local.json
+*.pem
+*.key
+*.p8
 .firecrawl/
 .claude/command-log.txt
 

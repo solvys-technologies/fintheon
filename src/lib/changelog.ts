@@ -9,6 +9,37 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-30T00:20:51-04:00",
+    agent: "codex",
+    summary:
+      "S121 security-infra start: added redacted current-tree secret inventory, Infisical env/sync status checks, Portless Desktop route validation, CI scanning, Infisical/Portless runbook docs, enabled GitHub secret scanning/push protection, scrubbed tracked installer/env public auth values, and wired install/start/update flows to install or repair Portless host routing.",
+    files: [
+      ".cursor/install.sh",
+      ".github/workflows/ci.yml",
+      ".gitignore",
+      ".infisical.example.json",
+      ".env.production",
+      "README.md",
+      "SETUP.md",
+      "backend-hono/package.json",
+      "docs/handoff-www-supabase-auth.md",
+      "docs/security/infisical-portless.md",
+      "fintheon",
+      "frontend/.env.development",
+      "frontend/.env.production",
+      "mobile/package.json",
+      "package.json",
+      "scripts/fintheon-update.sh",
+      "scripts/install-cli.sh",
+      "scripts/portless-desktop-services.mjs",
+      "scripts/security/infisical-env-check.mjs",
+      "scripts/security/infisical-sync-check.mjs",
+      "scripts/security/portless-desktop-check.mjs",
+      "scripts/security/secret-inventory.mjs",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-29T22:03:42-04:00",
     agent: "codex",
     summary:

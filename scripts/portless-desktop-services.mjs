@@ -24,7 +24,9 @@ function run(args, options = {}) {
     stdio: options.capture ? "pipe" : "inherit",
   });
   if (result.error?.code === "ENOENT") {
-    console.error("Portless is not installed. Run `bun install` first.");
+    console.error(
+      "Portless is not installed. Run `bun install`, then `bun run portless:desktop:install`.",
+    );
     process.exit(1);
   }
   if (result.status !== 0 && !options.allowFail)

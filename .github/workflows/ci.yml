@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - "backend-hono/**"
+      - "scripts/security/**"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "backend-hono/**"
+      - "scripts/security/**"
       - ".github/workflows/ci.yml"
 
 jobs:
@@ -21,6 +23,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Redacted secret inventory
+        run: node scripts/security/secret-inventory.mjs --mode=current
 
       - name: Install backend dependencies
         working-directory: backend-hono

@@ -73,7 +73,8 @@ Both paths do the same thing. The installer handles everything:
 - Homebrew, Node 22, Bun
 - Hermes agent
 - All JS dependencies
-- Bootstrap environment (secrets loaded from cloud)
+- Bootstrap environment (secrets loaded from Infisical/cloud fallback)
+- Portless Desktop routes (`fintheon.test`, `hermes.fintheon.test`, `news.fintheon.test`)
 - Backend + frontend build
 
 After install, open the app and sign in with Google.
@@ -118,6 +119,10 @@ fintheon restart
 lsof -ti:8080 | xargs kill -9
 fintheon start
 
+# Portless local routes broken
+bun run portless:desktop:install
+bun run portless:desktop:check
+
 # macOS blocks the app
 xattr -cr /Applications/Fintheon.app
 
@@ -125,3 +130,6 @@ xattr -cr /Applications/Fintheon.app
 rm -rf ~/Documents/Codebases/fintheon
 # Then re-run Option A or B
 ```
+
+Security and operator secret handling live in
+[`docs/security/infisical-portless.md`](docs/security/infisical-portless.md).

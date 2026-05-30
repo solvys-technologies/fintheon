@@ -52,6 +52,21 @@ if [[ ! -d "$FINTHEON_ROOT/.git" ]] && [[ "$1" != "setup" ]]; then
   exit 1
 fi
 
+ensure_portless_routes() {
+  [[ "$(uname -s)" == "Darwin" ]] || return 0
+  cd "$FINTHEON_ROOT" || return 0
+  if bun run portless:desktop:install >/tmp/fintheon-portless-install.log 2>&1; then
+    echo "  ✓ Portless service installed"
+  else
+    echo "  ⚠ Portless repair: cd $FINTHEON_ROOT && bun run portless:desktop:install"
+  fi
+  if bun run portless:desktop >/tmp/fintheon-portless-sync.log 2>&1; then
+    echo "  ✓ Portless hosts synced"
+  else
+    echo "  ⚠ Portless repair: cd $FINTHEON_ROOT && bun run portless:desktop"
+  fi
+}
+
 case "$1" in
   update)
     bash "$FINTHEON_ROOT/scripts/fintheon-update.sh"
@@ -91,6 +106,7 @@ case "$1" in
           echo "  ⚠ Backend slow — check: tail -f /tmp/fintheon-backend.log"
         fi
       done
+      ensure_portless_routes
       echo ""
     else
       echo ""
@@ -119,6 +135,7 @@ case "$1" in
         fi
         sleep 2
       done
+      ensure_portless_routes
 
       # Launch app
       if [[ -d /Applications/Fintheon.app ]]; then
@@ -199,6 +216,15 @@ case "$1" in
       echo "  jq:           ✓ $(jq --version 2>/dev/null || echo 'available')"
     else
       echo "  jq:           ⚠ Missing (diagnostics use python3 fallback)"
+    fi
+
+    # Portless
+    if [[ -f "$FINTHEON_ROOT/scripts/security/portless-desktop-check.mjs" ]]; then
+      if node "$FINTHEON_ROOT/scripts/security/portless-desktop-check.mjs" >/tmp/fintheon-portless-check.log 2>&1; then
+        echo "  Portless:     ✓ Routes healthy"
+      else
+        echo "  Portless:     ⚠ Needs repair (run: cd $FINTHEON_ROOT && bun run portless:desktop:check)"
+      fi
     fi
 
     # Build check

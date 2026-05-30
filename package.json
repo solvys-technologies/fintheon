@@ -1,6 +1,6 @@
 {
   "name": "fintheon",
-  "version": "7.0.8",
+  "version": "7.0.9",
   "type": "module",
   "packageManager": "bun",
   "dependencies": {
@@ -67,6 +67,10 @@
     "portless:desktop": "node scripts/portless-desktop-services.mjs sync",
     "portless:desktop:status": "node scripts/portless-desktop-services.mjs status",
     "portless:desktop:install": "portless service install --no-tls --tld test",
+    "portless:desktop:check": "node scripts/security/portless-desktop-check.mjs",
+    "security:secrets": "node scripts/security/secret-inventory.mjs --mode=current",
+    "security:infisical:env": "node scripts/security/infisical-env-check.mjs",
+    "security:infisical:sync": "node scripts/security/infisical-sync-check.mjs --env=prod",
     "release:mac": "bash scripts/build-signed-mac-release.sh --publish",
     "release:preflight": "bash scripts/desktop-release-preflight.sh",
     "release:verify-dmg": "node scripts/desktop-update-download-preflight.mjs",

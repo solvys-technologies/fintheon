@@ -1,0 +1,9 @@
+{
+  "projectId": "<infisical-project-id>",
+  "defaultEnvironment": "dev",
+  "secretPaths": ["/backend", "/frontend-public", "/desktop-local", "/ci"],
+  "syncs": {
+    "flyio": ["<fintheon-fly-sync-id>", "<riskflow-worker-fly-sync-id>"],
+    "vercel": ["<public-web-vercel-sync-id>", "<mobile-vercel-sync-id>"]
+  }
+}
