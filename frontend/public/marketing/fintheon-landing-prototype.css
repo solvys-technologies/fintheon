@@ -1264,13 +1264,38 @@ details.is-closing p {
   }
 
   .hero {
-    min-height: 112dvh;
+    min-height: 100dvh;
     align-items: start;
-    padding-top: 122px;
+    padding-top: 84px;
+    padding-bottom: 34px;
   }
 
   .hero-copy {
-    padding-bottom: 4vh;
+    padding-bottom: 0;
+  }
+
+  h1 {
+    max-width: 100%;
+    margin-bottom: 16px;
+    font-size: clamp(2.45rem, 10.8vw, 3.05rem);
+    line-height: 0.98;
+  }
+
+  .lede {
+    max-width: 100%;
+    font-size: 0.96rem;
+    line-height: 1.52;
+  }
+
+  .hero-actions {
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .primary-button,
+  .ghost-button {
+    padding: 12px 16px;
+    font-size: 0.78rem;
   }
 
   .hero-signal-strip {

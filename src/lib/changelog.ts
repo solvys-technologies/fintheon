@@ -9,6 +9,16 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-29T22:03:42-04:00",
+    agent: "codex",
+    summary:
+      "Tightened the Fintheon landing prototype mobile hero by reducing top padding and adding a smaller mobile headline/lede/button scale so the copy and CTAs fit inside the first hero viewport.",
+    files: [
+      "frontend/public/marketing/fintheon-landing-prototype.css",
+      "src/lib/changelog.ts",
+    ],
+  },
+  {
     date: "2026-05-29T20:45:53-04:00",
     agent: "codex",
     summary:
