@@ -114,6 +114,7 @@ function scanText({ scope, path, text }) {
     for (const match of line.matchAll(assignmentPattern)) {
       const key = match[1];
       const value = match[2].trim().replace(/[,;]$/, "");
+      if (isNonSecretKey(key)) continue;
       if (!secretKeyPattern.test(key)) continue;
       if (isPlaceholder(value)) continue;
       const jwt = value.startsWith("eyJ") ? describeJwt(value) : null;
@@ -186,14 +187,31 @@ function decodeJwtPayload(value) {
 function isPlaceholder(value) {
   const normalized = value.trim();
   if (!normalized || normalized.length < 8) return true;
-  if (/\/\/(?:user|username|postgres|example):(?:password|pass|postgres|example)@/i.test(normalized))
+  if (
+    /^(process\.env|import\.meta\.env|env\.|config\.|ctx\.|c\.env\()/i.test(
+      normalized,
+    )
+  )
+    return true;
+  if (/^[A-Z0-9_]+$/.test(normalized)) return true;
+  if (/^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)+$/.test(normalized)) return true;
+  if (/^\{?\{?[A-Z0-9_]+\}?\}?$/.test(normalized)) return true;
+  if (/^\$\(|^\$\{[^}]+:?[-=]?.*\}$/.test(normalized)) return true;
+  if (/\$\{[A-Z0-9_]+/.test(normalized)) return true;
+  if (/\/\/[^:@/]+:(?:password|pass|postgres|example)@/i.test(normalized))
+    return true;
+  if (/\/\/[^:@/]+:[^@/]+@(?:localhost|127\.0\.0\.1)/i.test(normalized))
     return true;
   if (/^\$\{\{\s*secrets\./i.test(normalized)) return true;
   if (/^\$[A-Z0-9_]+$/.test(normalized)) return true;
   if (/^<[^>]+>$/.test(normalized)) return true;
-  return /^(your-|example|placeholder|changeme|redacted|disabled|null|undefined|false|true)/i.test(
+  return /^(your-|example|placeholder|changeme|redacted|disabled|null|undefined|false|true)|YOUR_|test-key|very-long|managed-token|bearer_token|connection_string_here/i.test(
     normalized,
   );
+}
+
+function isNonSecretKey(key) {
+  return /(?:_STATUS|_FALLBACK|_VAR|_TOKENS)$/.test(key);
 }
 
 function shouldSkip(path) {
