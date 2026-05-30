@@ -58,6 +58,8 @@ SUPABASE_DATABASE_URL="${SUPABASE_DATABASE_URL:-${DATABASE_URL:-}}"
 if [[ -z "$SUPABASE_DATABASE_URL" && -f "$FINTHEON_ROOT/scripts/setup.ts" ]]; then
   SUPABASE_DATABASE_URL="$(node -e 'const fs=require("fs"); const text=fs.readFileSync(process.argv[1],"utf8"); const match=text.match(/FLY_DEPLOYED_SUPABASE_DATABASE_URL\s*=\s*[\r\n\s]*"([^"]+)"/); if (match) process.stdout.write(match[1]);' "$FINTHEON_ROOT/scripts/setup.ts" 2>/dev/null || true)"
 fi
+BOOTSTRAP_SUPABASE_URL="${FINTHEON_SETUP_SUPABASE_URL:-${SUPABASE_URL:-}}"
+BOOTSTRAP_SUPABASE_ANON_KEY="${FINTHEON_SETUP_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-}}"
 
 # ── Solvys Gold ANSI palette ──────────────────────────────────────────────────
 _R='\033[0m'
@@ -235,8 +237,12 @@ if [[ -f "$BACKEND_ENV" ]]; then
   if [[ -n "$SUPABASE_DATABASE_URL" ]] && ! grep -q "^DATABASE_URL=" "$BACKEND_ENV" 2>/dev/null; then
     echo "DATABASE_URL=$SUPABASE_DATABASE_URL" >> "$BACKEND_ENV"
   fi
-  grep -q "^SUPABASE_URL=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_URL=https://nrcfnzclbjboctptxaxx.supabase.co" >> "$BACKEND_ENV"
-  grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" 2>/dev/null || echo "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM" >> "$BACKEND_ENV"
+  if [[ -n "$BOOTSTRAP_SUPABASE_URL" ]] && ! grep -q "^SUPABASE_URL=" "$BACKEND_ENV" 2>/dev/null; then
+    echo "SUPABASE_URL=$BOOTSTRAP_SUPABASE_URL" >> "$BACKEND_ENV"
+  fi
+  if [[ -n "$BOOTSTRAP_SUPABASE_ANON_KEY" ]] && ! grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" 2>/dev/null; then
+    echo "SUPABASE_ANON_KEY=$BOOTSTRAP_SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
+  fi
   grep -q "^PORT=" "$BACKEND_ENV" 2>/dev/null || echo "PORT=8080" >> "$BACKEND_ENV"
   grep -q "^ENABLE_CENTRAL_SCORING=" "$BACKEND_ENV" 2>/dev/null || echo "ENABLE_CENTRAL_SCORING=true" >> "$BACKEND_ENV"
   grep -q "^BROWSER_WORKER_SESSION_DIR=" "$BACKEND_ENV" 2>/dev/null || echo "BROWSER_WORKER_SESSION_DIR=.runtime/browser-session" >> "$BACKEND_ENV"

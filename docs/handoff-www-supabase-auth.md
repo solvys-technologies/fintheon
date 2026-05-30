@@ -65,8 +65,8 @@ The Vercel deployment needs the new Supabase env vars (replacing the old Clerk o
    - `VITE_CLERK_DOMAIN`
    - `VITE_CLERK_PROXY_URL`
 3. **Add** these new variables (apply to Production + Preview + Development):
-   - `VITE_SUPABASE_URL` = `https://nrcfnzclbjboctptxaxx.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM`
+   - `VITE_SUPABASE_URL` = `<supabase-project-url>`
+   - `VITE_SUPABASE_ANON_KEY` = `<supabase-anon-or-publishable-key>`
    - `VITE_BYPASS_AUTH` = `false` (Production only)
 4. Trigger a **redeploy** after adding the variables
 
@@ -79,7 +79,7 @@ The backend on Fly also needs updated secrets.
 1. Go to **https://fly.io/apps/fintheon** → Secrets
 2. **Delete**: `CLERK_SECRET_KEY`
 3. **Add** (if not already present):
-   - `SUPABASE_ANON_KEY` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM`
+   - `SUPABASE_ANON_KEY` = `<supabase-anon-or-publishable-key>`
 4. Verify `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are still set
 5. Verify `BYPASS_AUTH` is NOT set (or set to `false`) for production
 

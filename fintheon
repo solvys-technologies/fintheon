@@ -81,9 +81,10 @@ section() {
   echo -e "  ${_GOLD}── $1 ${_DIM}─────────────────────────────────────${_R}"
 }
 
-# Public bootstrap constants (NOT secrets — vault handles the rest)
-_SUPABASE_URL="https://nrcfnzclbjboctptxaxx.supabase.co"
-_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yY2ZuemNsYmpib2N0cHR4YXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NDgxODksImV4cCI6MjA4OTUyNDE4OX0.JXzVk5CDL6rxU5t_rl-Ku2YnPi0PeBF-VOpcSEZTbIM"
+# Optional public bootstrap values. Infisical is canonical; repo installers do
+# not embed live project keys.
+_SUPABASE_URL="${FINTHEON_SETUP_SUPABASE_URL:-${SUPABASE_URL:-}}"
+_SUPABASE_ANON_KEY="${FINTHEON_SETUP_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-}}"
 _DATABASE_URL="${FINTHEON_SETUP_DATABASE_URL:-${DATABASE_URL:-}}"
 
 do_install() {
@@ -217,8 +218,8 @@ HERMESEOF
   BACKEND_ENV="$FINTHEON_ROOT/backend-hono/.env"
   if [[ -f "$BACKEND_ENV" ]]; then
     [[ -z "$_DATABASE_URL" ]] || grep -q "^DATABASE_URL=" "$BACKEND_ENV" || echo "DATABASE_URL=$_DATABASE_URL" >> "$BACKEND_ENV"
-    grep -q "^SUPABASE_URL=" "$BACKEND_ENV" || echo "SUPABASE_URL=$_SUPABASE_URL" >> "$BACKEND_ENV"
-    grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" || echo "SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
+    [[ -z "$_SUPABASE_URL" ]] || grep -q "^SUPABASE_URL=" "$BACKEND_ENV" || echo "SUPABASE_URL=$_SUPABASE_URL" >> "$BACKEND_ENV"
+    [[ -z "$_SUPABASE_ANON_KEY" ]] || grep -q "^SUPABASE_ANON_KEY=" "$BACKEND_ENV" || echo "SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY" >> "$BACKEND_ENV"
     grep -q "^PORT=" "$BACKEND_ENV" || echo "PORT=8080" >> "$BACKEND_ENV"
     grep -q "^ENABLE_CENTRAL_SCORING=" "$BACKEND_ENV" || echo "ENABLE_CENTRAL_SCORING=true" >> "$BACKEND_ENV"
     grep -q "^AI_PRIMARY_PROVIDER=" "$BACKEND_ENV" || echo "AI_PRIMARY_PROVIDER=deepseek-direct" >> "$BACKEND_ENV"
@@ -231,8 +232,8 @@ HERMESEOF
 # Fintheon Backend — Bootstrap Environment
 # Secrets are loaded from the cloud vault on boot. No API keys needed here.
 PORT=8080
-SUPABASE_URL=$_SUPABASE_URL
-SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY
+SUPABASE_URL=${_SUPABASE_URL}
+SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}
 ENABLE_CENTRAL_SCORING=true
 DISPATCH_SCHEDULER_ENABLED=true
 
@@ -254,8 +255,8 @@ ENVEOF
   if [[ ! -f "$FRONTEND_ENV" ]]; then
     cat > "$FRONTEND_ENV" << FENVEOF
 VITE_API_URL=http://localhost:8080
-VITE_SUPABASE_URL=$_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY=$_SUPABASE_ANON_KEY
+VITE_SUPABASE_URL=${_SUPABASE_URL}
+VITE_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}
 VITE_BYPASS_AUTH=false
 FENVEOF
     ok "Frontend .env.local created"
